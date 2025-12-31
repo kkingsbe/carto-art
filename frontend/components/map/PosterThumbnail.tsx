@@ -16,8 +16,10 @@ export const PosterThumbnail: React.FC<PosterThumbnailProps> = ({ config, classN
     const lng = location.center[0];
     // Simple hash-like function from coordinates
     const combined = (lat + 180) * 1000 + (lng + 180) * 10;
-    return Math.abs(Math.sin(combined) * 10000);
+    return Math.floor(Math.abs(Math.sin(combined) * 10000));
   }, [location.center]);
+
+  const round = (num: number) => Math.round(num * 1000) / 1000;
 
   const renderPattern = () => {
     const mainColor = palette.roads.motorway || palette.text;
@@ -32,7 +34,9 @@ export const PosterThumbnail: React.FC<PosterThumbnailProps> = ({ config, classN
       for (let i = 0; i < count; i++) {
         const angle = (i / count) * Math.PI * 2;
         const dist = 20 + (seed % (10 + i * 5));
-        p.push(`${50 + Math.cos(angle) * dist},${50 + Math.sin(angle) * dist}`);
+        const x = round(50 + Math.cos(angle) * dist);
+        const y = round(50 + Math.sin(angle) * dist);
+        p.push(`${x},${y}`);
       }
       return p.join(' ');
     }, [seed]);
@@ -57,8 +61,8 @@ export const PosterThumbnail: React.FC<PosterThumbnailProps> = ({ config, classN
             {[...Array(5)].map((_, i) => (
               <circle 
                 key={i} 
-                cx={50 + (Math.sin(seed + i) * 5)} 
-                cy={50 + (Math.cos(seed + i) * 5)} 
+                cx={round(50 + (Math.sin(seed + i) * 5))} 
+                cy={round(50 + (Math.cos(seed + i) * 5))} 
                 r={10 + i * 7} 
                 stroke={mainColor} 
                 strokeWidth="0.5" 
@@ -90,8 +94,8 @@ export const PosterThumbnail: React.FC<PosterThumbnailProps> = ({ config, classN
             {[...Array(12)].map((_, i) => (
               <circle 
                 key={i} 
-                cx={20 + (Math.sin(seed * i) * 30 + 30)} 
-                cy={20 + (Math.cos(seed * i) * 30 + 30)} 
+                cx={round(20 + (Math.sin(seed * i) * 30 + 30))} 
+                cy={round(20 + (Math.cos(seed * i) * 30 + 30))} 
                 r="0.5" 
                 fill={textColor} 
                 opacity="0.4" 
@@ -114,11 +118,11 @@ export const PosterThumbnail: React.FC<PosterThumbnailProps> = ({ config, classN
               x="20" y="20" width="60" height="60" 
               fill={mainColor} 
               opacity="0.2" 
-              transform={`rotate(${(seed % 90) - 45} 50 50)`} 
+              transform={`rotate(${round((seed % 90) - 45)} 50 50)`} 
             />
             <circle cx="50" cy="50" r="25" fill={accentColor} opacity="0.3" />
             <path 
-              d={`M 10,50 Q 50,${10 + (seed % 80)} 90,50`} 
+              d={`M 10,50 Q 50,${round(10 + (seed % 80))} 90,50`} 
               fill="none" 
               stroke={textColor} 
               strokeWidth="1" 

@@ -9,8 +9,9 @@ import { TypographyControls } from '@/components/controls/TypographyControls';
 import { LayerControls } from '@/components/controls/LayerControls';
 import { FormatControls } from '@/components/controls/FormatControls';
 import { ExamplesGallery } from '@/components/controls/ExamplesGallery';
+import { SavedProjects } from '@/components/controls/SavedProjects';
 import type { Tab } from './TabNavigation';
-import type { PosterConfig, PosterLocation, PosterStyle, ColorPalette } from '@/types/poster';
+import type { PosterConfig, PosterLocation, PosterStyle, ColorPalette, SavedProject } from '@/types/poster';
 
 interface ControlDrawerProps {
   activeTab: Tab;
@@ -24,6 +25,10 @@ interface ControlDrawerProps {
   updateFormat: (format: Partial<PosterConfig['format']>) => void;
   updateLayers: (layers: Partial<PosterConfig['layers']>) => void;
   setConfig: (config: PosterConfig) => void;
+  savedProjects: SavedProject[];
+  saveProject: (name: string, config: PosterConfig) => void;
+  deleteProject: (id: string) => void;
+  renameProject: (id: string, name: string) => void;
 }
 
 export function ControlDrawer({
@@ -38,6 +43,10 @@ export function ControlDrawer({
   updateFormat,
   updateLayers,
   setConfig,
+  savedProjects,
+  saveProject,
+  deleteProject,
+  renameProject,
 }: ControlDrawerProps) {
   return (
     <aside className={cn(
@@ -116,6 +125,17 @@ export function ControlDrawer({
               onFormatChange={updateFormat}
             />
           </div>
+        )}
+
+        {activeTab === 'saved' && (
+          <SavedProjects
+            projects={savedProjects}
+            currentConfig={config}
+            onSave={saveProject}
+            onLoad={setConfig}
+            onDelete={deleteProject}
+            onRename={renameProject}
+          />
         )}
       </div>
     </aside>

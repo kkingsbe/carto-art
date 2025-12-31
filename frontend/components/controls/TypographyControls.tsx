@@ -141,6 +141,21 @@ export function TypographyControls({ config, onTypographyChange, onLocationChang
                   displayValue={`${typography.backdropHeight ?? 35}%`}
                 />
               </div>
+              
+              {typography.textBackdrop === 'gradient' && (
+                <div>
+                  <ControlLabel>Gradient Sharpness</ControlLabel>
+                  <ControlSlider
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={typography.backdropSharpness ?? 50}
+                    onChange={(e) => onTypographyChange({ backdropSharpness: parseInt(e.target.value) })}
+                    displayValue={typography.backdropSharpness === 0 ? 'Soft' : typography.backdropSharpness === 100 ? 'Abrupt' : `${typography.backdropSharpness}%`}
+                  />
+                </div>
+              )}
+
               <div>
                 <ControlLabel>Backdrop Opacity</ControlLabel>
                 <ControlSlider

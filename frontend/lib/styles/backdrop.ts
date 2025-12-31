@@ -82,15 +82,20 @@ export function getBackdropGradientStyles(
 ): GradientDefinition | null {
   const { typography } = config;
   const backdropType = typography.textBackdrop || 'gradient';
+  const s = (typography.backdropSharpness ?? 50) / 100;
   
+  // Transition end: where the gradient becomes fully opaque (relative to its start)
+  // s=0 (soft) -> 1.0 (fade over the whole area)
+  // s=1 (abrupt) -> 0.05 (becomes opaque almost immediately)
+  const transitionEnd = 1.0 - (s * 0.95);
+
   if (backdropType === 'gradient') {
     if (typography.position === 'bottom') {
       return {
         direction: 'to bottom',
         stops: [
           { pos: 0, alpha: 0 },
-          { pos: 0.5, alpha: 0.5 },
-          { pos: 0.7, alpha: 1 },
+          { pos: transitionEnd, alpha: 1 },
           { pos: 1, alpha: 1 }
         ]
       };
@@ -98,10 +103,9 @@ export function getBackdropGradientStyles(
       return {
         direction: 'to top',
         stops: [
-          { pos: 0, alpha: 1 },
-          { pos: 0.1, alpha: 1 },
-          { pos: 0.5, alpha: 0.1 },
-          { pos: 1, alpha: 0 }
+          { pos: 0, alpha: 0 },
+          { pos: transitionEnd, alpha: 1 },
+          { pos: 1, alpha: 1 }
         ]
       };
     }
@@ -111,7 +115,7 @@ export function getBackdropGradientStyles(
         direction: 'to bottom',
         stops: [
           { pos: 0, alpha: scrimAlpha },
-          { pos: 0.4, alpha: scrimAlpha * 0.7 },
+          { pos: 1 - (1 - transitionEnd) * 0.6, alpha: scrimAlpha * 0.5 },
           { pos: 1, alpha: 0 }
         ]
       };
@@ -120,7 +124,7 @@ export function getBackdropGradientStyles(
         direction: 'to bottom',
         stops: [
           { pos: 0, alpha: 0 },
-          { pos: 0.6, alpha: scrimAlpha * 0.7 },
+          { pos: (1 - transitionEnd) * 0.6, alpha: scrimAlpha * 0.5 },
           { pos: 1, alpha: scrimAlpha }
         ]
       };

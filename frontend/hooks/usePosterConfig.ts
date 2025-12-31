@@ -1,6 +1,6 @@
 'use client';
 
-import { useReducer, useCallback, useEffect, useRef } from 'react';
+import { useReducer, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import type { PosterConfig, PosterLocation, PosterStyle, ColorPalette } from '@/types/poster';
 import { DEFAULT_CONFIG } from '@/lib/config/defaults';
@@ -81,7 +81,7 @@ export function usePosterConfig() {
   const isInitialized = useRef(false);
 
   const [config, dispatch] = useReducer(posterReducer, DEFAULT_CONFIG);
-  const shouldAutoLocate = useRef(true);
+  const [shouldAutoLocate, setShouldAutoLocate] = useState(() => !searchParams.has('s'));
 
   // Initialize from URL on mount
   useEffect(() => {
@@ -91,7 +91,7 @@ export function usePosterConfig() {
     if (stateParam) {
       const decoded = decodeConfig(stateParam);
       if (decoded) {
-        shouldAutoLocate.current = false;
+        setShouldAutoLocate(false);
         dispatch({ type: 'SET_CONFIG', payload: { ...DEFAULT_CONFIG, ...decoded } });
       }
     }
@@ -113,21 +113,22 @@ export function usePosterConfig() {
   }, [config, pathname, router, searchParams]);
 
   const setConfig = useCallback((config: PosterConfig) => {
-    shouldAutoLocate.current = false;
+    setShouldAutoLocate(false);
     dispatch({ type: 'SET_CONFIG', payload: config });
   }, []);
 
   const handleUserLocationFound = useCallback((location: PosterLocation) => {
-    if (shouldAutoLocate.current) {
+    if (shouldAutoLocate) {
       dispatch({ type: 'SET_LOCATION', payload: location });
+      setShouldAutoLocate(false); // Only auto-locate once
     }
-  }, []);
+  }, [shouldAutoLocate]);
 
   // Isolate geolocation side effect
-  useUserLocation(handleUserLocationFound);
+  useUserLocation(handleUserLocationFound, shouldAutoLocate);
 
   const updateLocation = useCallback((location: Partial<PosterLocation>) => {
-    shouldAutoLocate.current = false;
+    setShouldAutoLocate(false);
     dispatch({ type: 'UPDATE_LOCATION', payload: location });
   }, []);
 

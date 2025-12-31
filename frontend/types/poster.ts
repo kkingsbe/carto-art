@@ -87,6 +87,7 @@ export interface PosterConfig {
     textBackdrop?: 'none' | 'subtle' | 'strong' | 'gradient'; // Added gradient type
     backdropHeight?: number; // percentage (0-100)
     backdropAlpha?: number;  // opacity (0-1)
+    backdropSharpness?: number; // New: 0-100 (soft to abrupt)
     maxWidth?: number; // New: max width percentage (0-100)
   };
   format: {
@@ -115,5 +116,12 @@ export interface PosterConfig {
     markerColor?: string;
     roadWeight: number; // New: control road line thickness
   };
+}
+
+export interface SavedProject {
+  id: string;
+  name: string;
+  config: PosterConfig;
+  updatedAt: number;
 }
 

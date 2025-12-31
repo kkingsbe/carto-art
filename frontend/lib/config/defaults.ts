@@ -34,6 +34,7 @@ export const DEFAULT_CONFIG: PosterConfig = {
     textBackdrop: 'gradient',
     backdropHeight: 35,
     backdropAlpha: 1.0,
+    backdropSharpness: 50,
     maxWidth: 80,
   },
   format: {

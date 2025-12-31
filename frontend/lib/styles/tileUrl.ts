@@ -69,6 +69,21 @@ export function getContourTileJsonUrl(): string | null {
 }
 
 /**
+ * Returns the URL for AWS Terrarium terrain tiles (elevation data).
+ * These are high-resolution (3-10m in US) and free.
+ */
+export function getAwsTerrariumTileUrl(): string {
+  const path = 'aws-terrain/terrarium/{z}/{x}/{y}.png';
+  const baseUrl = getBaseUrl();
+  
+  if (baseUrl) {
+    return joinBaseAndPath(baseUrl, `${PROXY_BASE}/${path}`);
+  }
+
+  return `${PROXY_BASE}/${path}`;
+}
+
+/**
  * Returns the URL for Terrain-RGB tiles (elevation data).
  */
 export function getTerrainRgbTileJsonUrl(): string | null {

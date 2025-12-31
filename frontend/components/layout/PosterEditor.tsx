@@ -2,6 +2,7 @@
 
 import { useMemo, useCallback, useState } from 'react';
 import { usePosterConfig } from '@/hooks/usePosterConfig';
+import { useSavedProjects } from '@/hooks/useSavedProjects';
 import { useMapExport } from '@/hooks/useMapExport';
 import { Maximize, Plus, Minus } from 'lucide-react';
 import { MapPreview } from '@/components/map/MapPreview';
@@ -29,6 +30,13 @@ export function PosterEditor() {
     setConfig,
   } = usePosterConfig();
   
+  const { 
+    projects, 
+    saveProject, 
+    deleteProject, 
+    renameProject 
+  } = useSavedProjects();
+
   const { isExporting, exportToPNG, setMapRef, fitToLocation, zoomIn, zoomOut } = useMapExport(config);
 
   const numericRatio = useMemo(() => {
@@ -91,6 +99,10 @@ export function PosterEditor() {
         updateFormat={updateFormat}
         updateLayers={updateLayers}
         setConfig={setConfig}
+        savedProjects={projects}
+        saveProject={saveProject}
+        deleteProject={deleteProject}
+        renameProject={renameProject}
       />
 
       {/* Main Content */}

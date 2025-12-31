@@ -5,6 +5,7 @@ const SOURCES: Record<string, string> = {
   maptiler: 'https://api.maptiler.com/',
   kontur: 'https://disaster.ninja/active/api/tiles/bivariate/v1/',
   osm: 'https://tiles.openstreetmap.org/',
+  'aws-terrain': 'https://s3.amazonaws.com/elevation-tiles-prod/',
 };
 
 export async function GET(

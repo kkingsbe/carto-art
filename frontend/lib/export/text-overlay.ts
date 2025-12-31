@@ -75,9 +75,17 @@ export function drawTextOverlay(
     } else {
       const isTop = typography.position === 'top';
       const yTop = isTop ? 0 : exportHeight - scrimHeight;
-      const gradient = ctx.createLinearGradient(0, yTop, 0, yTop + scrimHeight);
-      
       const gradientDef = getBackdropGradientStyles(config, scrimAlpha);
+      
+      let gradient: CanvasGradient;
+      if (gradientDef?.direction === 'to top') {
+        // Flow from bottom to top
+        gradient = ctx.createLinearGradient(0, yTop + scrimHeight, 0, yTop);
+      } else {
+        // Default to flow from top to bottom
+        gradient = ctx.createLinearGradient(0, yTop, 0, yTop + scrimHeight);
+      }
+      
       if (gradientDef) {
         const bg = palette.background;
         gradientDef.stops.forEach(stop => {

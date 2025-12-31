@@ -3,7 +3,7 @@ import {
   getOpenFreeMapPlanetTileJsonUrl, 
   getContourTileJsonUrl, 
   getPopulationTileUrl,
-  getTerrainRgbTileJsonUrl
+  getAwsTerrariumTileUrl
 } from '@/lib/styles/tileUrl';
 import { TERRAIN_TILE_SIZE } from '@/lib/styles/config';
 
@@ -149,8 +149,9 @@ const mapStyle = {
     },
     terrain: {
       type: 'raster-dem',
-      url: getTerrainRgbTileJsonUrl() || '',
+      tiles: [getAwsTerrariumTileUrl()],
       tileSize: TERRAIN_TILE_SIZE,
+      encoding: 'terrarium',
     },
   },
   glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',

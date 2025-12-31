@@ -1,4 +1,4 @@
-export const TERRAIN_TILE_SIZE = 512;
+export const TERRAIN_TILE_SIZE = 256;
 
 
 

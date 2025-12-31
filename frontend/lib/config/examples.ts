@@ -122,6 +122,70 @@ export const POSTER_EXAMPLES: PosterExample[] = [
         roadWeight: 0.1,
       }
     }
+  },
+  {
+    id: 'tucson-minimal',
+    name: 'Tucson',
+    description: 'A clean "Minimal" look at the Arizona desert city.',
+    config: {
+      ...DEFAULT_CONFIG,
+      location: {
+        name: 'Tucson',
+        city: 'Tucson, AZ',
+        subtitle: 'Arizona, United States',
+        center: [-110.96359522925843, 32.158429280115655] as [number, number],
+        bounds: [[-111.15, 32.05], [-110.75, 32.35]] as [[number, number], [number, number]],
+        zoom: 9.799049962367631,
+      },
+      style: getStyle('minimal'),
+      palette: getStyle('minimal').palettes.find(p => p.id === 'minimal-navy') || getStyle('minimal').defaultPalette,
+      typography: {
+        ...DEFAULT_CONFIG.typography,
+        titleFont: 'Inter',
+        titleSize: 4.3,
+        titleWeight: 700,
+        titleLetterSpacing: 0.12,
+        titleAllCaps: true,
+        subtitleFont: 'Inter',
+        subtitleSize: 4.7,
+        showTitle: false,
+        showSubtitle: true,
+        showCoordinates: true,
+        position: 'bottom',
+        textBackdrop: 'gradient',
+        backdropHeight: 28,
+        backdropAlpha: 0.9,
+        backdropSharpness: 97,
+        maxWidth: 80,
+      },
+      format: {
+        ...DEFAULT_CONFIG.format,
+        aspectRatio: '1:1',
+        orientation: 'portrait',
+        margin: 8,
+        borderStyle: 'double',
+        texture: 'paper',
+        textureIntensity: 18,
+      },
+      layers: {
+        ...DEFAULT_CONFIG.layers,
+        streets: true,
+        buildings: false,
+        water: true,
+        parks: false,
+        terrain: true,
+        hillshadeExaggeration: 1,
+        contours: false,
+        contourDensity: 10,
+        population: false,
+        labels: true,
+        labelSize: 0.8,
+        labelMaxWidth: 10,
+        marker: false,
+        markerType: 'crosshair',
+        roadWeight: 0.2,
+      }
+    }
   }
 ];
 

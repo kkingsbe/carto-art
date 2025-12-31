@@ -98,7 +98,7 @@ export function MapPreview({
         onError={handleError}
         antialias={true}
         pixelRatio={2}
-        maxZoom={14.9}
+        maxZoom={18}
         minZoom={1}
       >
       {showMarker && (
