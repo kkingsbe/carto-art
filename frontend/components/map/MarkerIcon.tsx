@@ -12,7 +12,7 @@ interface MarkerIconProps {
 export const MarkerIcon: React.FC<MarkerIconProps> = ({
   type = 'pin',
   size = 40,
-  color = '#ef4444',
+  color,
   borderColor = 'white',
   shadow = true,
 }) => {

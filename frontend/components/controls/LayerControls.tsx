@@ -26,8 +26,8 @@ export function LayerControls({ layers, onLayersChange, availableToggles, palett
   const [showMarkerColorPicker, setShowMarkerColorPicker] = useState(false);
   
   const effectiveMarkerColor = useMemo(() => {
-    return layers.markerColor || palette.accent || palette.text;
-  }, [layers.markerColor, palette.accent, palette.text]);
+    return layers.markerColor || palette.primary || palette.accent || palette.text;
+  }, [layers.markerColor, palette.primary, palette.accent, palette.text]);
 
   const toggleLayer = (key: keyof PosterConfig['layers']) => {
     onLayersChange({ [key]: !layers[key] });
@@ -258,7 +258,7 @@ export function LayerControls({ layers, onLayersChange, availableToggles, palett
                       'focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500',
                       'dark:bg-gray-800 dark:border-gray-700 dark:text-white'
                     )}
-                    placeholder={palette.accent || palette.text}
+                    placeholder={palette.primary || palette.accent || palette.text}
                   />
                 </div>
                 

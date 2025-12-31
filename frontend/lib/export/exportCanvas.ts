@@ -102,7 +102,7 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
       const markerX = marginPx + drawWidth / 2;
       const markerY = marginPx + drawHeight / 2;
       const markerSize = exportResolution.width * 0.045;
-      const markerColor = config.layers.markerColor || config.palette.accent || config.palette.text;
+      const markerColor = config.layers.markerColor || config.palette.primary || config.palette.accent || config.palette.text;
       drawMarker(exportCtx, markerX, markerY, markerSize, markerColor, config.layers.markerType || 'crosshair');
     }
 
