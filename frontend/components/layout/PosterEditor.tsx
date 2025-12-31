@@ -15,8 +15,8 @@ import { ControlDrawer } from './ControlDrawer';
 import type MapLibreGL from 'maplibre-gl';
 
 export function PosterEditor() {
-  const [activeTab, setActiveTab] = useState<Tab>('location');
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>('examples');
+  const [isDrawerOpen, setIsDrawerOpen] = useState(true);
 
   const { 
     config, 
@@ -25,7 +25,8 @@ export function PosterEditor() {
     updatePalette, 
     updateTypography,
     updateFormat,
-    updateLayers 
+    updateLayers,
+    setConfig,
   } = usePosterConfig();
   
   const { isExporting, exportToPNG, setMapRef, fitToLocation, zoomIn, zoomOut } = useMapExport(config);
@@ -89,6 +90,7 @@ export function PosterEditor() {
         updateTypography={updateTypography}
         updateFormat={updateFormat}
         updateLayers={updateLayers}
+        setConfig={setConfig}
       />
 
       {/* Main Content */}

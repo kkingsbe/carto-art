@@ -8,14 +8,14 @@ Think of it as a cartographic art tool - turning real OpenStreetMap/terrain data
 
 ## Gallery
 
-| ![Chesapeake Bay](examples/chesapeke-poster.png) | ![Denver](examples/denver-poster.png) |
+| ![Chesapeake Bay](frontend/public/examples/chesapeke-poster.png) | ![Denver](frontend/public/examples/denver-poster.png) |
 |:---:|:---:|
 | **Chesapeake Bay** | **Denver** |
-| ![DMV](examples/dmv-poster.png) | ![Salt Lake City](examples/salt-lake-city-poster.png) |
+| ![DMV](frontend/public/examples/dmv-poster.png) | ![Salt Lake City](frontend/public/examples/salt-lake-city-poster.png) |
 | **DMV Area** | **Salt Lake City** |
-| ![Hawaii](examples/hawaii-poster.png) | ![Reggio Calabria](examples/reggio-calabria-poster.png) |
+| ![Hawaii](frontend/public/examples/hawaii-poster.png) | ![Reggio Calabria](frontend/public/examples/reggio-calabria-poster.png) |
 | **Hawaii** | **Reggio Calabria** |
-| ![Washington DC Artistic](examples/washington-artistic-poster.png) | ![Washington DC Artistic 2](examples/washington-artistic-poster-2.png) |
+| ![Washington DC Artistic](frontend/public/examples/washington-artistic-poster.png) | ![Washington DC Artistic 2](frontend/public/examples/washington-artistic-poster-2.png) |
 | **Washington DC (Artistic)** | **Washington DC (Artistic 2)** |
 
 ---

@@ -8,6 +8,7 @@ import { ColorControls } from '@/components/controls/ColorControls';
 import { TypographyControls } from '@/components/controls/TypographyControls';
 import { LayerControls } from '@/components/controls/LayerControls';
 import { FormatControls } from '@/components/controls/FormatControls';
+import { ExamplesGallery } from '@/components/controls/ExamplesGallery';
 import type { Tab } from './TabNavigation';
 import type { PosterConfig, PosterLocation, PosterStyle, ColorPalette } from '@/types/poster';
 
@@ -22,6 +23,7 @@ interface ControlDrawerProps {
   updateTypography: (typography: Partial<PosterConfig['typography']>) => void;
   updateFormat: (format: Partial<PosterConfig['format']>) => void;
   updateLayers: (layers: Partial<PosterConfig['layers']>) => void;
+  setConfig: (config: PosterConfig) => void;
 }
 
 export function ControlDrawer({
@@ -35,6 +37,7 @@ export function ControlDrawer({
   updateTypography,
   updateFormat,
   updateLayers,
+  setConfig,
 }: ControlDrawerProps) {
   return (
     <aside className={cn(
@@ -51,6 +54,13 @@ export function ControlDrawer({
             <Minus className="w-5 h-5" />
           </button>
         </div>
+
+        {activeTab === 'examples' && (
+          <ExamplesGallery
+            onSelect={setConfig}
+            currentConfig={config}
+          />
+        )}
 
         {activeTab === 'location' && (
           <div className="space-y-6">
