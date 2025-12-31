@@ -15,8 +15,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Map Poster Generator",
+  title: "CartoArt | Map Poster Generator",
   description: "Create beautifully stylized map posters from real geographic data",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
