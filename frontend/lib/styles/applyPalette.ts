@@ -69,12 +69,17 @@ function updateLayerPaint(layer: any, palette: ColorPalette, layers: PosterConfi
   // Hillshade
   if (id === 'hillshade' && type === 'hillshade') {
     const isDark = isColorDark(palette.background);
+    
+    // Add exaggeration from config if available
+    const exaggeration = layers?.hillshadeExaggeration ?? 0.5;
+    
     if (palette.hillshade) {
       layer.paint = {
         ...layer.paint,
         'hillshade-shadow-color': palette.hillshade,
         'hillshade-highlight-color': palette.background,
         'hillshade-accent-color': palette.hillshade,
+        'hillshade-exaggeration': exaggeration,
       };
     } else {
       layer.paint = {
@@ -82,6 +87,7 @@ function updateLayerPaint(layer: any, palette: ColorPalette, layers: PosterConfi
         'hillshade-shadow-color': isDark ? '#000000' : (palette.secondary || palette.text),
         'hillshade-highlight-color': isDark ? (palette.secondary || palette.text) : palette.background,
         'hillshade-accent-color': isDark ? '#000000' : (palette.secondary || palette.text),
+        'hillshade-exaggeration': exaggeration,
       };
     }
     return;

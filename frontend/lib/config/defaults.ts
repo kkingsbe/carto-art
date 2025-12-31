@@ -50,6 +50,7 @@ export const DEFAULT_CONFIG: PosterConfig = {
     water: true,
     parks: true,
     terrain: true,
+    hillshadeExaggeration: 0.5,
     contours: false,
     contourDensity: 50,
     population: false,

@@ -104,6 +104,7 @@ export interface PosterConfig {
     water: boolean;
     parks: boolean;
     terrain: boolean;
+    hillshadeExaggeration: number; // New: control hillshade intensity
     contours: boolean;
     contourDensity: number; // New: control contour line density (interval)
     population: boolean;

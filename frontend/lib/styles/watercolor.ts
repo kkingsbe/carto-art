@@ -5,6 +5,7 @@ import {
   getPopulationTileUrl,
   getTerrainRgbTileJsonUrl
 } from '@/lib/styles/tileUrl';
+import { TERRAIN_TILE_SIZE } from '@/lib/styles/config';
 
 const coastalPalette: ColorPalette = {
   id: 'watercolor-coastal',
@@ -205,7 +206,7 @@ const mapStyle = {
     terrain: {
       type: 'raster-dem',
       url: getTerrainRgbTileJsonUrl() || '',
-      tileSize: 256,
+      tileSize: TERRAIN_TILE_SIZE,
     },
   },
   glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',

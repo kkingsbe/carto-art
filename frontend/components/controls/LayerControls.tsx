@@ -28,6 +28,10 @@ export function LayerControls({ layers, onLayersChange, availableToggles }: Laye
     onLayersChange({ contourDensity: value });
   };
 
+  const handleHillshadeExaggerationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onLayersChange({ hillshadeExaggeration: parseFloat(e.target.value) });
+  };
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-2">
@@ -52,31 +56,54 @@ export function LayerControls({ layers, onLayersChange, availableToggles }: Laye
               <div className="px-9 pb-2 space-y-1">
                 <div className="flex justify-between">
                   <span className="text-[10px] text-gray-500 uppercase">Label Size</span>
-                  <span className="text-[10px] text-gray-500 font-mono">{layers.labelSize.toFixed(1)}x</span>
+                  <span className="text-[10px] text-gray-500 font-mono">{(layers.labelSize ?? 1.0).toFixed(1)}x</span>
                 </div>
                 <input
                   type="range"
                   min="0.5"
                   max="2.5"
                   step="0.1"
-                  value={layers.labelSize}
+                  value={layers.labelSize ?? 1.0}
                   onChange={handleLabelSizeChange}
                   className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
                 />
 
                 <div className="flex justify-between pt-2">
                   <span className="text-[10px] text-gray-500 uppercase">Label Wrap</span>
-                  <span className="text-[10px] text-gray-500 font-mono">{layers.labelMaxWidth}</span>
+                  <span className="text-[10px] text-gray-500 font-mono">{layers.labelMaxWidth ?? 10}</span>
                 </div>
                 <input
                   type="range"
                   min="2"
                   max="20"
                   step="1"
-                  value={layers.labelMaxWidth}
+                  value={layers.labelMaxWidth ?? 10}
                   onChange={handleLabelMaxWidthChange}
                   className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
                 />
+              </div>
+            )}
+
+            {/* Hillshade Exaggeration Control - only show if this is the terrain toggle and it's active */}
+            {item.id === 'terrain' && layers.terrain && (
+              <div className="px-9 pb-2 space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-[10px] text-gray-500 uppercase">Shading Intensity</span>
+                  <span className="text-[10px] text-gray-500 font-mono">{(layers.hillshadeExaggeration ?? 0.5).toFixed(2)}x</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.0"
+                  max="1.5"
+                  step="0.05"
+                  value={layers.hillshadeExaggeration ?? 0.5}
+                  onChange={handleHillshadeExaggerationChange}
+                  className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
+                />
+                <div className="flex justify-between text-[8px] text-gray-400 uppercase px-0.5">
+                  <span>Flat</span>
+                  <span>Dramatic</span>
+                </div>
               </div>
             )}
 
@@ -85,14 +112,14 @@ export function LayerControls({ layers, onLayersChange, availableToggles }: Laye
               <div className="px-9 pb-2 space-y-1">
                 <div className="flex justify-between">
                   <span className="text-[10px] text-gray-500 uppercase">Line Interval</span>
-                  <span className="text-[10px] text-gray-500 font-mono">{layers.contourDensity}m</span>
+                  <span className="text-[10px] text-gray-500 font-mono">{layers.contourDensity ?? 50}m</span>
                 </div>
                 <input
                   type="range"
                   min="10"
                   max="250"
                   step="10"
-                  value={layers.contourDensity}
+                  value={layers.contourDensity ?? 50}
                   onChange={handleContourDensityChange}
                   className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
                 />
