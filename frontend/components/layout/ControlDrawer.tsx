@@ -62,60 +62,55 @@ export function ControlDrawer({
           />
         )}
 
-        {activeTab === 'location' && (
-          <div className="space-y-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Location & Map</h2>
-            <LocationSearch
-              onLocationSelect={updateLocation}
-              currentLocation={config.location}
-            />
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg text-sm text-blue-800 dark:text-blue-200">
-              <p>Tip: Drag the map to fine-tune the position.</p>
+        {activeTab === 'map' && (
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <LocationSearch
+                onLocationSelect={updateLocation}
+                currentLocation={config.location}
+              />
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg text-sm text-blue-800 dark:text-blue-200">
+                <p>Tip: Drag the map to fine-tune the position.</p>
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+              <LayerControls
+                layers={config.layers}
+                onLayersChange={updateLayers}
+                availableToggles={config.style.layerToggles}
+                palette={config.palette}
+              />
             </div>
           </div>
         )}
 
-        {activeTab === 'style' && (
-          <div className="space-y-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Style & Colors</h2>
-            <StyleSelector
-              selectedStyleId={config.style.id}
-              onStyleSelect={updateStyle}
-            />
-            <ColorControls
-              palette={config.palette}
-              presets={config.style.palettes}
-              onPaletteChange={updatePalette}
-            />
+        {activeTab === 'design' && (
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <StyleSelector
+                selectedStyleId={config.style.id}
+                onStyleSelect={updateStyle}
+              />
+              <ColorControls
+                palette={config.palette}
+                presets={config.style.palettes}
+                onPaletteChange={updatePalette}
+              />
+            </div>
+
+            <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+              <TypographyControls
+                config={config}
+                onTypographyChange={updateTypography}
+                onLocationChange={updateLocation}
+              />
+            </div>
           </div>
         )}
 
-        {activeTab === 'text' && (
+        {activeTab === 'format' && (
           <div className="space-y-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Typography</h2>
-            <TypographyControls
-              config={config}
-              onTypographyChange={updateTypography}
-              onLocationChange={updateLocation}
-            />
-          </div>
-        )}
-
-        {activeTab === 'layers' && (
-          <div className="space-y-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Map Layers</h2>
-            <LayerControls
-              layers={config.layers}
-              onLayersChange={updateLayers}
-              availableToggles={config.style.layerToggles}
-              palette={config.palette}
-            />
-          </div>
-        )}
-
-        {activeTab === 'layout' && (
-          <div className="space-y-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Format & Layout</h2>
             <FormatControls
               format={config.format}
               onFormatChange={updateFormat}

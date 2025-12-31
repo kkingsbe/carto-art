@@ -4,7 +4,8 @@ import { PosterConfig, LayerToggle, ColorPalette } from '@/types/poster';
 import { cn } from '@/lib/utils';
 import { HexColorPicker } from 'react-colorful';
 import { useState, useMemo } from 'react';
-import { Type, Palette, Heart, Home, MapPin, Target, Circle, Radio } from 'lucide-react';
+import { Type, Palette, Heart, Home, MapPin, Target, Circle, Radio, Check } from 'lucide-react';
+import { ControlSection, ControlCheckbox, ControlSlider, ControlLabel, ControlInput } from '@/components/ui/control-components';
 
 interface LayerControlsProps {
   layers: PosterConfig['layers'];
@@ -43,7 +44,6 @@ export function LayerControls({ layers, onLayersChange, availableToggles, palett
 
   const handleContourDensityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
-    console.log('Contour density changed:', value);
     onLayersChange({ contourDensity: value });
   };
 
@@ -56,225 +56,212 @@ export function LayerControls({ layers, onLayersChange, availableToggles, palett
   };
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-2">
-        {availableToggles.map((item) => (
-          <div key={item.id} className="space-y-2">
-            <label
-              className="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
-            >
-              <input
-                type="checkbox"
-                checked={layers[item.id as keyof PosterConfig['layers']] as boolean ?? false}
-                onChange={() => toggleLayer(item.id as keyof PosterConfig['layers'])}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <span className="text-sm text-gray-900 dark:text-gray-100">
-                {item.name}
-              </span>
-            </label>
+    <div className="space-y-6">
+      <ControlSection title="Visible Layers">
+        <div className="grid grid-cols-1 gap-2">
+          {availableToggles.map((item) => (
+            <div key={item.id} className="space-y-2">
+            <ControlCheckbox
+              label={item.name}
+              checked={layers[item.id as keyof PosterConfig['layers']] as boolean ?? false}
+              onChange={() => toggleLayer(item.id as keyof PosterConfig['layers'])}
+            />
 
-            {/* Road Weight Control - only show if this is the streets toggle and it's active */}
+            {/* Road Weight Control */}
             {item.id === 'streets' && layers.streets && (
-              <div className="px-9 pb-2 space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-[10px] text-gray-500 uppercase">Line Weight</span>
-                  <span className="text-[10px] text-gray-500 font-mono">{(layers.roadWeight ?? 1.0).toFixed(1)}x</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.1"
-                  max="3.0"
-                  step="0.1"
-                  value={layers.roadWeight ?? 1.0}
-                  onChange={handleRoadWeightChange}
-                  className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
-                />
-                <div className="flex justify-between text-[8px] text-gray-400 uppercase px-0.5">
-                  <span>Fine</span>
-                  <span>Bold</span>
+              <div className="pl-8 pr-2 pb-2">
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-3">
+                  <div className="space-y-1">
+                    <ControlLabel className="text-[10px] uppercase text-gray-500">Line Weight</ControlLabel>
+                    <ControlSlider
+                      min="0.1"
+                      max="3.0"
+                      step="0.1"
+                      value={layers.roadWeight ?? 1.0}
+                      onChange={handleRoadWeightChange}
+                      displayValue={`${(layers.roadWeight ?? 1.0).toFixed(1)}x`}
+                    />
+                    <div className="flex justify-between text-[10px] text-gray-400 uppercase font-medium">
+                      <span>Fine</span>
+                      <span>Bold</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Label Size Control - only show if this is the labels toggle and it's active */}
+            {/* Label Size Control */}
             {item.id === 'labels' && layers.labels && (
-              <div className="px-9 pb-2 space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-[10px] text-gray-500 uppercase">Label Size</span>
-                  <span className="text-[10px] text-gray-500 font-mono">{(layers.labelSize ?? 1.0).toFixed(1)}x</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.5"
-                  max="2.5"
-                  step="0.1"
-                  value={layers.labelSize ?? 1.0}
-                  onChange={handleLabelSizeChange}
-                  className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
-                />
+              <div className="pl-8 pr-2 pb-2">
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-4">
+                  <div className="space-y-1">
+                    <ControlLabel className="text-[10px] uppercase text-gray-500">Label Size</ControlLabel>
+                    <ControlSlider
+                      min="0.5"
+                      max="2.5"
+                      step="0.1"
+                      value={layers.labelSize ?? 1.0}
+                      onChange={handleLabelSizeChange}
+                      displayValue={`${(layers.labelSize ?? 1.0).toFixed(1)}x`}
+                    />
+                  </div>
 
-                <div className="flex justify-between pt-2">
-                  <span className="text-[10px] text-gray-500 uppercase">Label Wrap</span>
-                  <span className="text-[10px] text-gray-500 font-mono">{layers.labelMaxWidth ?? 10}</span>
+                  <div className="space-y-1">
+                    <ControlLabel className="text-[10px] uppercase text-gray-500">Label Wrap</ControlLabel>
+                    <ControlSlider
+                      min="2"
+                      max="20"
+                      step="1"
+                      value={layers.labelMaxWidth ?? 10}
+                      onChange={handleLabelMaxWidthChange}
+                      displayValue={layers.labelMaxWidth ?? 10}
+                    />
+                  </div>
                 </div>
-                <input
-                  type="range"
-                  min="2"
-                  max="20"
-                  step="1"
-                  value={layers.labelMaxWidth ?? 10}
-                  onChange={handleLabelMaxWidthChange}
-                  className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
-                />
               </div>
             )}
 
-            {/* Hillshade Exaggeration Control - only show if this is the terrain toggle and it's active */}
+            {/* Hillshade Exaggeration Control */}
             {item.id === 'terrain' && layers.terrain && (
-              <div className="px-9 pb-2 space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-[10px] text-gray-500 uppercase">Shading Intensity</span>
-                  <span className="text-[10px] text-gray-500 font-mono">{(layers.hillshadeExaggeration ?? 0.5).toFixed(2)}x</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.0"
-                  max="1.5"
-                  step="0.05"
-                  value={layers.hillshadeExaggeration ?? 0.5}
-                  onChange={handleHillshadeExaggerationChange}
-                  className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
-                />
-                <div className="flex justify-between text-[8px] text-gray-400 uppercase px-0.5">
-                  <span>Flat</span>
-                  <span>Dramatic</span>
+              <div className="pl-8 pr-2 pb-2">
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-3">
+                  <div className="space-y-1">
+                    <ControlLabel className="text-[10px] uppercase text-gray-500">Shading Intensity</ControlLabel>
+                    <ControlSlider
+                      min="0.0"
+                      max="1.5"
+                      step="0.05"
+                      value={layers.hillshadeExaggeration ?? 0.5}
+                      onChange={handleHillshadeExaggerationChange}
+                      displayValue={`${(layers.hillshadeExaggeration ?? 0.5).toFixed(2)}x`}
+                    />
+                    <div className="flex justify-between text-[10px] text-gray-400 uppercase font-medium">
+                      <span>Flat</span>
+                      <span>Dramatic</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Contour Density Control - only show if this is the contours toggle and it's active */}
+            {/* Contour Density Control */}
             {item.id === 'contours' && layers.contours && (
-              <div className="px-9 pb-2 space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-[10px] text-gray-500 uppercase">Line Interval</span>
-                  <span className="text-[10px] text-gray-500 font-mono">{layers.contourDensity ?? 50}m</span>
-                </div>
-                <input
-                  type="range"
-                  min="10"
-                  max="250"
-                  step="10"
-                  value={layers.contourDensity ?? 50}
-                  onChange={handleContourDensityChange}
-                  className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
-                />
-                <div className="flex justify-between text-[8px] text-gray-400 uppercase px-0.5">
-                  <span>Dense</span>
-                  <span>Sparse</span>
+              <div className="pl-8 pr-2 pb-2">
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-3">
+                  <div className="space-y-1">
+                    <ControlLabel className="text-[10px] uppercase text-gray-500">Line Interval</ControlLabel>
+                    <ControlSlider
+                      min="10"
+                      max="250"
+                      step="10"
+                      value={layers.contourDensity ?? 50}
+                      onChange={handleContourDensityChange}
+                      displayValue={`${layers.contourDensity ?? 50}m`}
+                    />
+                    <div className="flex justify-between text-[10px] text-gray-400 uppercase font-medium">
+                      <span>Dense</span>
+                      <span>Sparse</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
           </div>
         ))}
-        
+        </div>
+
         {/* Marker controls */}
-        <div key="marker-group" className="space-y-2">
-          <label
-            className="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
-          >
-            <input
-              type="checkbox"
-              checked={layers.marker}
-              onChange={() => toggleLayer('marker')}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <span className="text-sm text-gray-900 dark:text-gray-100 font-medium">
-              Location Marker
-            </span>
-          </label>
+        <div key="marker-group" className="space-y-4 pt-4 mt-4 border-t border-gray-100 dark:border-gray-800">
+          <ControlCheckbox
+            label="Location Marker"
+            checked={layers.marker}
+            onChange={() => toggleLayer('marker')}
+          />
 
           {layers.marker && (
-            <div className="px-9 pb-2 space-y-4">
-              {/* Marker Type Selector */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase font-semibold">
-                  <Type className="h-3 w-3" />
-                  <span>Icon Style</span>
-                </div>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {markerTypes.map(({ id, icon: Icon, label }) => (
-                    <button
-                      key={id}
-                      onClick={() => onLayersChange({ markerType: id })}
-                      className={cn(
-                        "flex flex-col items-center gap-1 py-2 px-1 rounded-md border transition-all",
-                        layers.markerType === id
-                          ? "bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-300 ring-1 ring-blue-300/50"
-                          : "bg-white border-gray-200 text-gray-600 hover:border-gray-300 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400"
-                      )}
-                    >
-                      <Icon className="h-4 w-4" />
-                      <span className="text-[9px] uppercase tracking-tighter font-medium">{label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Marker Color Control - Matching ColorControls.tsx style */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase font-semibold">
-                    <Palette className="h-3 w-3" />
-                    <span>Icon Color</span>
+            <div className="pl-8 pr-2 pb-2">
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-4">
+                {/* Marker Type Selector */}
+                <div className="space-y-2">
+                  <ControlLabel className="text-[10px] uppercase text-gray-500">Icon Style</ControlLabel>
+                  <div className="grid grid-cols-3 gap-2">
+                    {markerTypes.map(({ id, icon: Icon, label }) => {
+                      const isActive = layers.markerType === id;
+                      return (
+                        <button
+                          key={id}
+                          onClick={() => onLayersChange({ markerType: id })}
+                          className={cn(
+                            "flex flex-col items-center gap-1.5 py-2.5 px-1 rounded-lg border transition-all",
+                            isActive
+                              ? "bg-white dark:bg-gray-700 border-blue-500 text-blue-600 dark:text-blue-400 shadow-sm ring-1 ring-blue-500/20"
+                              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                          )}
+                        >
+                          <Icon className="h-4 w-4" />
+                          <span className="text-[10px] uppercase tracking-tight font-medium">{label}</span>
+                        </button>
+                      );
+                    })}
                   </div>
-                  <button
-                    onClick={() => onLayersChange({ markerColor: undefined })}
-                    className="text-[10px] text-blue-600 hover:underline font-medium"
+                </div>
+
+                {/* Marker Color Control */}
+                <div className="space-y-2 relative">
+                  <ControlLabel 
+                    className="text-[10px] uppercase text-gray-500"
+                    action={
+                      <button
+                        onClick={() => onLayersChange({ markerColor: undefined })}
+                        className="text-[10px] text-blue-600 hover:underline font-medium"
+                      >
+                        Reset
+                      </button>
+                    }
                   >
-                    Reset
-                  </button>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowMarkerColorPicker(!showMarkerColorPicker)}
-                    className={cn(
-                      'w-10 h-10 rounded border-2 transition-all shadow-sm',
-                      showMarkerColorPicker
-                        ? 'border-blue-500 ring-2 ring-blue-100 dark:ring-blue-900/30'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
-                    )}
-                    style={{ backgroundColor: effectiveMarkerColor }}
-                    aria-label="Toggle marker color picker"
-                  />
-                  <input
-                    type="text"
-                    value={effectiveMarkerColor}
-                    onChange={(e) => onLayersChange({ markerColor: e.target.value })}
-                    className={cn(
-                      'flex-1 px-3 py-2 text-sm border border-gray-200 rounded-md font-mono',
-                      'focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500',
-                      'dark:bg-gray-800 dark:border-gray-700 dark:text-white'
-                    )}
-                    placeholder={palette.primary || palette.accent || palette.text}
-                  />
-                </div>
-                
-                {showMarkerColorPicker && (
-                  <div className="mt-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
-                    <HexColorPicker
-                      color={effectiveMarkerColor}
-                      onChange={(color) => onLayersChange({ markerColor: color })}
+                    Icon Color
+                  </ControlLabel>
+                  
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowMarkerColorPicker(!showMarkerColorPicker)}
+                      className={cn(
+                        'w-9 h-9 rounded-md border shadow-sm transition-all',
+                        showMarkerColorPicker
+                          ? 'border-blue-500 ring-2 ring-blue-500/20'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                      )}
+                      style={{ backgroundColor: effectiveMarkerColor }}
+                      aria-label="Toggle marker color picker"
+                    />
+                    <ControlInput
+                      type="text"
+                      value={effectiveMarkerColor}
+                      onChange={(e) => onLayersChange({ markerColor: e.target.value })}
+                      className="font-mono"
+                      placeholder={palette.primary || palette.accent || palette.text}
                     />
                   </div>
-                )}
+                  
+                  {showMarkerColorPicker && (
+                    <div className="absolute left-0 top-full mt-2 z-50 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl animate-in fade-in zoom-in-95 duration-200">
+                      <div 
+                        className="fixed inset-0 z-[-1]" 
+                        onClick={() => setShowMarkerColorPicker(false)} 
+                      />
+                      <HexColorPicker
+                        color={effectiveMarkerColor}
+                        onChange={(color) => onLayersChange({ markerColor: color })}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
         </div>
-      </div>
+      </ControlSection>
     </div>
   );
 }

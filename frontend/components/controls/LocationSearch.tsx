@@ -5,6 +5,7 @@ import { Search } from 'lucide-react';
 import { searchLocation, nominatimResultToPosterLocation, type NominatimResult } from '@/lib/geocoding/nominatim';
 import type { PosterLocation } from '@/types/poster';
 import { cn } from '@/lib/utils';
+import { ControlInput } from '@/components/ui/control-components';
 
 interface LocationSearchProps {
   onLocationSelect: (location: PosterLocation) => void;
@@ -184,8 +185,8 @@ export function LocationSearch({ onLocationSelect, currentLocation }: LocationSe
   return (
     <div ref={rootRef} className="relative w-full">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-        <input
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
+        <ControlInput
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -197,11 +198,7 @@ export function LocationSearch({ onLocationSelect, currentLocation }: LocationSe
           aria-autocomplete="list"
           aria-expanded={isOpen}
           aria-controls="location-search-results"
-          className={cn(
-            'w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg',
-            'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-            'dark:bg-gray-800 dark:border-gray-600 dark:text-white'
-          )}
+          className="pl-10 pr-10"
         />
         {isLoading && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">

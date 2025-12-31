@@ -2,6 +2,8 @@
 
 import { PosterConfig } from '@/types/poster';
 import { cn } from '@/lib/utils';
+import { ControlSection, ControlSlider, ControlLabel, ControlRow } from '@/components/ui/control-components';
+import { Layout, Maximize, Crop, Frame } from 'lucide-react';
 
 interface FormatControlsProps {
   format: PosterConfig['format'];
@@ -13,167 +15,152 @@ const aspectRatioOptions: Array<{
   label: string;
   description?: string;
 }> = [
-  { value: '2:3', label: '2:3', description: '24×36" (standard poster)' },
-  { value: '3:4', label: '3:4', description: '18×24"' },
-  { value: '4:5', label: '4:5', description: '16×20"' },
+  { value: '2:3', label: '2:3', description: 'Standard' },
+  { value: '3:4', label: '3:4', description: 'Medium' },
+  { value: '4:5', label: '4:5', description: 'Compact' },
   { value: '1:1', label: '1:1', description: 'Square' },
-  { value: 'ISO', label: 'ISO (A-series)', description: '1:√2 ratio' },
+  { value: 'ISO', label: 'ISO', description: 'A-series' },
 ];
 
 export function FormatControls({ format, onFormatChange }: FormatControlsProps) {
   return (
     <div className="space-y-6">
-      {/* Aspect Ratio */}
-      <div className="space-y-2">
-        <label className="text-xs text-gray-600 dark:text-gray-400">
-          Aspect Ratio
-        </label>
-        <div className="grid grid-cols-2 gap-2">
-          {aspectRatioOptions.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => onFormatChange({ aspectRatio: option.value })}
-              className={cn(
-                'flex flex-col items-start p-2 text-left border rounded transition-colors',
-                format.aspectRatio === option.value
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
-                  : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
-              )}
-            >
-              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                {option.label}
-              </span>
-              {option.description && (
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {option.description}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Orientation */}
-      <div className="space-y-2">
-        <label className="text-xs text-gray-600 dark:text-gray-400">
-          Orientation
-        </label>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => onFormatChange({ orientation: 'portrait' })}
-            className={cn(
-              'p-2 border rounded transition-colors',
-              format.orientation === 'portrait'
-                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
-                : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
-            )}
-          >
-            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-              Portrait
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => onFormatChange({ orientation: 'landscape' })}
-            className={cn(
-              'p-2 border rounded transition-colors',
-              format.orientation === 'landscape'
-                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
-                : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
-            )}
-          >
-            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-              Landscape
-            </span>
-          </button>
-        </div>
-      </div>
-
-      {/* Margin */}
-      <div className="space-y-2">
-        <label className="text-xs text-gray-600 dark:text-gray-400 flex justify-between">
-          <span>Margin</span>
-          <span>{format.margin}%</span>
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="20"
-          step="0.5"
-          value={format.margin}
-          onChange={(e) => onFormatChange({ margin: parseFloat(e.target.value) })}
-          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
-        />
-      </div>
-
-      {/* Border Style */}
-      <div className="space-y-2">
-        <label className="text-xs text-gray-600 dark:text-gray-400">
-          Border Style
-        </label>
-        <div className="grid grid-cols-3 gap-2">
-          {['none', 'thin', 'thick', 'double', 'inset'].map((style) => (
-            <button
-              key={style}
-              type="button"
-              onClick={() => onFormatChange({ borderStyle: style as PosterConfig['format']['borderStyle'] })}
-              className={cn(
-                'p-2 border rounded transition-colors capitalize',
-                format.borderStyle === style
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
-                  : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
-              )}
-            >
-              <span className="text-xs font-medium text-gray-900 dark:text-gray-100">
-                {style}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Media & Texture */}
-      <div className="space-y-3 pt-6 border-t border-gray-100 dark:border-gray-800">
-        <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-          Media Texture
-        </label>
-        <div className="flex flex-wrap gap-2">
-          {['none', 'paper', 'canvas', 'grain'].map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => onFormatChange({ texture: t as any })}
-              className={cn(
-                "px-3 py-1.5 text-xs rounded-full border transition-all",
-                format.texture === t 
-                  ? "bg-blue-600 border-blue-600 text-white" 
-                  : "bg-transparent border-gray-200 text-gray-600 hover:border-gray-400 dark:border-gray-700 dark:text-gray-400"
-              )}
-            >
-              {t.charAt(0).toUpperCase() + t.slice(1)}
-            </button>
-          ))}
-        </div>
-        
-        {format.texture && format.texture !== 'none' && (
-          <div className="space-y-2 pt-2">
-            <div className="flex justify-between text-[10px] text-gray-400 uppercase">
-              <span>Texture Intensity</span>
-              <span>{format.textureIntensity || 20}%</span>
+      <ControlSection title="Dimensions">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <ControlLabel>Aspect Ratio</ControlLabel>
+            <div className="grid grid-cols-5 gap-2">
+              {aspectRatioOptions.map((option) => {
+                const isActive = format.aspectRatio === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => onFormatChange({ aspectRatio: option.value })}
+                    className={cn(
+                      'flex flex-col items-center justify-center p-2 rounded-lg border transition-all h-16',
+                      isActive
+                        ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:border-blue-400 dark:text-blue-300'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-600 dark:border-gray-700 dark:text-gray-400 dark:hover:border-gray-600'
+                    )}
+                  >
+                    <span className="text-sm font-bold">{option.label}</span>
+                    <span className="text-[10px] opacity-75">{option.description}</span>
+                  </button>
+                );
+              })}
             </div>
-            <input
-              type="range"
-              min="5"
-              max="60"
-              value={format.textureIntensity || 20}
-              onChange={(e) => onFormatChange({ textureIntensity: parseInt(e.target.value) })}
-              className="w-full h-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+          </div>
+
+          <div className="space-y-2">
+            <ControlLabel>Orientation</ControlLabel>
+            <ControlRow>
+              <button
+                type="button"
+                onClick={() => onFormatChange({ orientation: 'portrait' })}
+                className={cn(
+                  'flex items-center justify-center gap-2 p-3 border rounded-lg transition-all',
+                  format.orientation === 'portrait'
+                    ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:border-blue-400 dark:text-blue-300'
+                    : 'border-gray-200 hover:border-gray-300 text-gray-600 dark:border-gray-700 dark:text-gray-400'
+                )}
+              >
+                <Crop className="w-4 h-4 rotate-90" />
+                <span className="text-sm font-medium">Portrait</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onFormatChange({ orientation: 'landscape' })}
+                className={cn(
+                  'flex items-center justify-center gap-2 p-3 border rounded-lg transition-all',
+                  format.orientation === 'landscape'
+                    ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:border-blue-400 dark:text-blue-300'
+                    : 'border-gray-200 hover:border-gray-300 text-gray-600 dark:border-gray-700 dark:text-gray-400'
+                )}
+              >
+                <Crop className="w-4 h-4" />
+                <span className="text-sm font-medium">Landscape</span>
+              </button>
+            </ControlRow>
+          </div>
+        </div>
+      </ControlSection>
+
+      <ControlSection title="Layout">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex justify-between items-center mb-1">
+              <ControlLabel className="mb-0">Margin</ControlLabel>
+              <span className="text-xs font-mono text-gray-500">{format.margin}%</span>
+            </div>
+            <ControlSlider
+              min="0"
+              max="20"
+              step="0.5"
+              value={format.margin}
+              onChange={(e) => onFormatChange({ margin: parseFloat(e.target.value) })}
             />
           </div>
-        )}
-      </div>
+
+          <div className="space-y-2">
+            <ControlLabel>Border Style</ControlLabel>
+            <div className="grid grid-cols-5 gap-2">
+              {['none', 'thin', 'thick', 'double', 'inset'].map((style) => (
+                <button
+                  key={style}
+                  type="button"
+                  onClick={() => onFormatChange({ borderStyle: style as PosterConfig['format']['borderStyle'] })}
+                  className={cn(
+                    'p-2 text-xs font-medium capitalize border rounded-lg transition-all',
+                    format.borderStyle === style
+                      ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:border-blue-400 dark:text-blue-300'
+                      : 'border-gray-200 hover:border-gray-300 text-gray-600 dark:border-gray-700 dark:text-gray-400'
+                  )}
+                >
+                  {style}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </ControlSection>
+
+      <ControlSection title="Texture">
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            {['none', 'paper', 'canvas', 'grain'].map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => onFormatChange({ texture: t as any })}
+                className={cn(
+                  "px-4 py-2 text-xs font-medium rounded-full border transition-all",
+                  format.texture === t 
+                    ? "bg-gray-900 border-gray-900 text-white dark:bg-white dark:border-white dark:text-gray-900" 
+                    : "bg-transparent border-gray-200 text-gray-600 hover:border-gray-400 dark:border-gray-700 dark:text-gray-400"
+                )}
+              >
+                {t.charAt(0).toUpperCase() + t.slice(1)}
+              </button>
+            ))}
+          </div>
+          
+          {format.texture && format.texture !== 'none' && (
+            <div className="space-y-2 pt-2">
+              <div className="flex justify-between items-center mb-1">
+                <ControlLabel className="mb-0">Texture Intensity</ControlLabel>
+                <span className="text-xs font-mono text-gray-500">{format.textureIntensity || 20}%</span>
+              </div>
+              <ControlSlider
+                min="5"
+                max="60"
+                value={format.textureIntensity || 20}
+                onChange={(e) => onFormatChange({ textureIntensity: parseInt(e.target.value) })}
+              />
+            </div>
+          )}
+        </div>
+      </ControlSection>
     </div>
   );
 }
