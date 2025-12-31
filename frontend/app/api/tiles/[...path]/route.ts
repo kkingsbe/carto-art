@@ -30,7 +30,14 @@ export async function GET(
     
     // Construct the target URL
     const urlObj = new URL(request.url);
-    const origin = urlObj.origin;
+    // In production we may be behind a proxy/CDN, so build a public origin using forwarded headers.
+    // This is critical because MapLibre workers can fail to resolve relative URLs like "/api/tiles/...".
+    const forwardedProto = request.headers.get('x-forwarded-proto') ?? urlObj.protocol.replace(':', '');
+    const forwardedHost =
+      request.headers.get('x-forwarded-host') ??
+      request.headers.get('host') ??
+      urlObj.host;
+    const origin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : urlObj.origin;
     const searchParams = urlObj.searchParams.toString();
     const tileUrl = `${baseUrl}${remainingPath}${searchParams ? '?' + searchParams : ''}`;
     
@@ -85,8 +92,11 @@ export async function GET(
           status: 200,
           headers: {
             'Content-Type': 'application/json',
-            'Cache-Control': 'public, max-age=86400',
+            // Avoid caching rewritten TileJSON, which could preserve stale relative tile URLs in production.
+            'Cache-Control': 'no-store',
             'Access-Control-Allow-Origin': '*',
+            // Helpful for proxies/CDNs that cache by header variations
+            'Vary': 'Host, X-Forwarded-Host, X-Forwarded-Proto',
           },
         });
       } catch (e) {

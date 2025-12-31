@@ -17,6 +17,11 @@ function getBaseUrl(): string {
   return '';
 }
 
+function appendQueryParam(url: string, key: string, value: string): string {
+  const sep = url.includes('?') ? '&' : '?';
+  return `${url}${sep}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+}
+
 function joinBaseAndPath(base: string, path: string): string {
   if (!base) return path;
   // Important: don't use new URL(...).toString() for templates that include "{z}/{x}/{y}",
@@ -31,11 +36,18 @@ export function getOpenFreeMapPlanetTileJsonUrl(): string {
   const path = 'openfreemap/planet';
   const baseUrl = getBaseUrl();
   
-  if (baseUrl) {
-    return joinBaseAndPath(baseUrl, `${PROXY_BASE}/${path}`);
-  }
+  const url = baseUrl
+    ? joinBaseAndPath(baseUrl, `${PROXY_BASE}/${path}`)
+    : `${PROXY_BASE}/${path}`;
 
-  return `${PROXY_BASE}/${path}`;
+  // Cache-bust TileJSON in production so clients don't keep a stale response
+  // that contains relative tile URLs (which can break MapLibre workers).
+  const version =
+    process.env.NEXT_PUBLIC_APP_VERSION ||
+    process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ||
+    '1';
+
+  return appendQueryParam(url, 'v', version);
 }
 
 /**
