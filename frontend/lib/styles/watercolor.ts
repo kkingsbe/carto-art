@@ -311,7 +311,7 @@ const mapStyle = {
       source: 'openmaptiles',
       'source-layer': 'transportation',
       filter: ['all',
-        ['in', ['get', 'class'], ['literal', ['residential', 'living_street']]],
+        ['in', ['get', 'class'], ['literal', ['residential', 'living_street', 'unclassified', 'minor']]],
         ['>=', ['zoom'], 8]
       ],
       layout: {
@@ -323,6 +323,7 @@ const mapStyle = {
         'line-blur': 0.5,
         'line-width': [
           'interpolate', ['linear'], ['zoom'],
+          8, 0.1,
           11, 0.3,
           12, 0.5,
           13, 0.8,

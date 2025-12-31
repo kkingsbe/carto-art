@@ -171,6 +171,8 @@ export function MapPreview({
         onError={handleError}
         antialias={true}
         pixelRatio={2}
+        maxZoom={14.9}
+        minZoom={1}
       >
       {showMarker && (
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
@@ -231,6 +233,15 @@ export function MapPreview({
           <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-600" />
           <span className="text-[10px] font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
             Loading Tiles...
+          </span>
+        </div>
+      </div>
+
+      {/* Zoom Level Indicator */}
+      <div className="absolute top-4 right-4 z-30 pointer-events-none">
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm px-2 py-1 rounded-md border border-gray-200 dark:border-gray-700 shadow-sm">
+          <span className="text-[10px] font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+            Zoom: {viewState.zoom.toFixed(1)}
           </span>
         </div>
       </div>

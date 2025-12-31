@@ -311,12 +311,13 @@ const mapStyle = {
       'source-layer': 'transportation',
       filter: ['all', 
         ['in', ['get', 'class'], ['literal', ['service', 'path', 'track']]],
-        ['>=', ['zoom'], 13]
+        ['>=', ['zoom'], 11]
       ],
       paint: {
         'line-color': defaultPalette.roads.service,
         'line-width': [
           'interpolate', ['linear'], ['zoom'],
+          11, 0.1,
           13, 0.3,
           14, 0.5
         ],
@@ -328,13 +329,14 @@ const mapStyle = {
       source: 'openmaptiles',
       'source-layer': 'transportation',
       filter: ['all',
-        ['in', ['get', 'class'], ['literal', ['residential', 'living_street']]],
-        ['>=', ['zoom'], 12]
+        ['in', ['get', 'class'], ['literal', ['residential', 'living_street', 'unclassified', 'minor']]],
+        ['>=', ['zoom'], 9]
       ],
       paint: {
         'line-color': defaultPalette.roads.residential,
         'line-width': [
           'interpolate', ['linear'], ['zoom'],
+          9, 0.1,
           12, 0.4,
           13, 0.7,
           14, 1.0

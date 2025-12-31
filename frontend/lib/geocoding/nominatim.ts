@@ -229,9 +229,11 @@ function pickSubtitle(r: NominatimResult, excludeName?: string): string | undefi
   return finalSubtitle.length > 120 ? `${finalSubtitle.slice(0, 117)}...` : finalSubtitle;
 }
 
-function pickCity(r: NominatimResult): string | undefined {
+function pickCity(r: NominatimResult, excludeName?: string): string | undefined {
   const addr = r.address ?? {};
-  const city = (
+  
+  // Try to find a city/town/etc.
+  let city = (
     addr.city ||
     addr.town ||
     addr.village ||
@@ -240,17 +242,46 @@ function pickCity(r: NominatimResult): string | undefined {
     addr.county
   )?.toString();
 
+  // If we found a city, check for state initials
   if (city) {
     const stateName = addr.state || addr.province;
     if (stateName) {
       const stateInitials = STATE_INITIALS[stateName];
       if (stateInitials) {
-        return `${city}, ${stateInitials}`;
+        const fullCity = `${city}, ${stateInitials}`;
+        if (!excludeName || fullCity.toLowerCase() !== excludeName.toLowerCase()) {
+          return fullCity;
+        }
       }
     }
+    
+    // If the city name is redundant with the primary name, try to use state or country
+    if (excludeName && city.toLowerCase() === excludeName.toLowerCase()) {
+      const state = addr.state || addr.province;
+      if (state && state.toLowerCase() !== excludeName.toLowerCase()) {
+        return state;
+      }
+      const country = addr.country;
+      if (country && country.toLowerCase() !== excludeName.toLowerCase()) {
+        return country;
+      }
+      return undefined;
+    }
+    return city;
   }
 
-  return city;
+  // If no city-level info, try state or country as fallback subtitle
+  const state = addr.state || addr.province;
+  if (state && (!excludeName || state.toLowerCase() !== excludeName.toLowerCase())) {
+    return state;
+  }
+
+  const country = addr.country;
+  if (country && (!excludeName || country.toLowerCase() !== excludeName.toLowerCase())) {
+    return country;
+  }
+
+  return undefined;
 }
 
 export function nominatimResultToPosterLocation(result: NominatimResult, zoom?: number): PosterLocation | null {
@@ -284,7 +315,7 @@ export function nominatimResultToPosterLocation(result: NominatimResult, zoom?: 
 
   return {
     name: primaryName,
-    city: pickCity(result),
+    city: pickCity(result, primaryName),
     subtitle: pickSubtitle(result, primaryName),
     center: [lon, lat],
     bounds: [

@@ -29,7 +29,7 @@ export function TextOverlay({ config }: TextOverlayProps) {
   const { typography, location } = config;
 
   const titleText = location.name || 'WHERE WE MET';
-  const subtitleText = location.city || 'LONDON';
+  const subtitleText = location.city || '';
   const coordsText = formatCoordinates(location.center);
 
   const positionClasses: Record<PosterConfig['typography']['position'], string> = {

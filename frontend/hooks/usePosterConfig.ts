@@ -17,14 +17,24 @@ type PosterAction =
 function posterReducer(state: PosterConfig, action: PosterAction): PosterConfig {
   switch (action.type) {
     case 'UPDATE_LOCATION':
+      const zoom = action.payload.zoom !== undefined 
+        ? Math.min(14.9, Math.max(1, action.payload.zoom))
+        : undefined;
       return {
         ...state,
-        location: { ...state.location, ...action.payload },
+        location: { 
+          ...state.location, 
+          ...action.payload,
+          ...(zoom !== undefined ? { zoom } : {})
+        },
       };
     case 'SET_LOCATION':
       return {
         ...state,
-        location: action.payload,
+        location: {
+          ...action.payload,
+          zoom: Math.min(14.9, Math.max(1, action.payload.zoom))
+        },
       };
     case 'UPDATE_STYLE':
       return {

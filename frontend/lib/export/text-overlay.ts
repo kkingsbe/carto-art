@@ -18,7 +18,7 @@ export function drawTextOverlay(
 
   const rawTitleText = String(location.name || 'WHERE WE MET');
   const titleText = typography.titleAllCaps !== false ? rawTitleText.toUpperCase() : rawTitleText;
-  const subtitleText = String(location.city || 'LONDON').toUpperCase();
+  const subtitleText = String(location.city || '').toUpperCase();
   const coordsText = formatCoordinates(location.center);
 
   const showTitle = typography.showTitle !== false;

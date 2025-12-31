@@ -51,6 +51,7 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
   const originalWidth = map.getCanvas().width;
   const originalHeight = map.getCanvas().height;
   const originalZoom = map.getZoom();
+  const originalMaxZoom = (map as any).getMaxZoom?.();
 
   try {
     const marginPx = Math.round(exportResolution.width * (config.format.margin / 100));
@@ -58,6 +59,9 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
     const drawHeight = exportResolution.height - (marginPx * 2);
 
     // 3. APPLY HIGH-RES SCALING TO MAP
+    if (typeof (map as any).setMaxZoom === 'function') {
+      (map as any).setMaxZoom(24); // Temporarily allow higher zoom for export
+    }
     map.setZoom(originalZoom + zoomOffset);
     map.getCanvas().width = drawWidth;
     map.getCanvas().height = drawHeight;
@@ -138,6 +142,9 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
     });
   } finally {
     map.setZoom(originalZoom);
+    if (typeof (map as any).setMaxZoom === 'function' && originalMaxZoom !== undefined) {
+      (map as any).setMaxZoom(originalMaxZoom);
+    }
     map.getCanvas().width = originalWidth;
     map.getCanvas().height = originalHeight;
     map.resize();

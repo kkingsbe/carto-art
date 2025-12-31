@@ -42,7 +42,7 @@ export function TypographyControls({ config, onTypographyChange, onLocationChang
               value={config.location.city || ''}
               onChange={(e) => onLocationChange({ city: e.target.value })}
               className="w-full px-2 py-1 text-sm border border-gray-300 rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="LONDON"
+              placeholder="SUBTITLE"
             />
           </div>
         </div>

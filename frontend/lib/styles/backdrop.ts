@@ -49,7 +49,7 @@ export function calculateScrimHeight(
     return `${userHeight * 100}%`;
   }
   
-  const subtitleText = location.city || 'LONDON';
+  const subtitleText = location.city || '';
   const height = typography.titleSize * 2.5 + (subtitleText ? typography.subtitleSize * 1.5 : 0) + 6;
   
   if (isExport) {
