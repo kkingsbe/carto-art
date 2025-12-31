@@ -57,6 +57,8 @@ export const POSTER_EXAMPLES: PosterExample[] = [
         contours: true,
         contourDensity: 50,
         marker: false,
+        'labels-admin': true,
+        'labels-cities': true,
       }
     }
   },
@@ -120,6 +122,8 @@ export const POSTER_EXAMPLES: PosterExample[] = [
         marker: false,
         markerType: 'crosshair',
         roadWeight: 0.1,
+        'labels-admin': true,
+        'labels-cities': true,
       }
     }
   },
@@ -184,6 +188,8 @@ export const POSTER_EXAMPLES: PosterExample[] = [
         marker: false,
         markerType: 'crosshair',
         roadWeight: 0.2,
+        'labels-admin': true,
+        'labels-cities': true,
       }
     }
   },
@@ -248,6 +254,8 @@ export const POSTER_EXAMPLES: PosterExample[] = [
         marker: true,
         markerType: 'crosshair',
         roadWeight: 0.4,
+        'labels-admin': true,
+        'labels-cities': true,
       }
     }
   },
@@ -312,6 +320,8 @@ export const POSTER_EXAMPLES: PosterExample[] = [
         marker: false,
         markerType: 'crosshair',
         roadWeight: 0.2,
+        'labels-admin': true,
+        'labels-cities': true,
       }
     }
   },
@@ -376,6 +386,8 @@ export const POSTER_EXAMPLES: PosterExample[] = [
         marker: false,
         markerType: 'crosshair',
         roadWeight: 1,
+        'labels-admin': true,
+        'labels-cities': true,
       }
     }
   }
