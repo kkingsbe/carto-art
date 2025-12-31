@@ -132,7 +132,7 @@ export function PosterEditor() {
                 location={config.location}
                 format={config.format}
                 showMarker={config.layers.marker}
-                markerColor={config.palette.primary}
+                markerColor={config.layers.markerColor || config.palette.accent || config.palette.text}
                 onMapLoad={handleMapLoad}
                 onMove={handleMapMove}
                 layers={config.layers}

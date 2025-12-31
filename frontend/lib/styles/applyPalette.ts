@@ -2,6 +2,34 @@ import type { ColorPalette, PosterConfig, PosterStyle } from '@/types/poster';
 import { isColorDark } from '@/lib/utils';
 
 /**
+ * Helper to scale a value that might be a number or a zoom interpolation expression
+ */
+function scaleExpression(expr: any, factor: number): any {
+  if (typeof expr === 'number') return expr * factor;
+  
+  // Handle modern interpolate expression
+  if (Array.isArray(expr) && expr[0] === 'interpolate') {
+    return expr.map((val: any, i: number) => {
+      // Output values are at even indices starting from 4 (0: interpolate, 1: type, 2: input, 3: first stop input, 4: first stop output...)
+      if (i >= 4 && i % 2 === 0 && typeof val === 'number') {
+        return val * factor;
+      }
+      return val;
+    });
+  }
+  
+  // Handle legacy stops format
+  if (expr && typeof expr === 'object' && expr.stops) {
+    return {
+      ...expr,
+      stops: expr.stops.map((stop: [number, number]) => [stop[0], stop[1] * factor])
+    };
+  }
+  
+  return expr;
+}
+
+/**
  * Applies a color palette and layer visibility to a MapLibre style
  */
 export function applyPaletteToStyle(
@@ -21,10 +49,11 @@ export function applyPaletteToStyle(
     applyVisibilityToggles(updatedStyle.layers, layers, layerToggles);
   }
 
-  const labelAdjustment = layers?.labels ? 0.85 : 1.0;
+  const roadWeightMultiplier = (layers?.roadWeight ?? 1.0) * (layers?.labels ? 0.8 : 1.0);
+  const labelAdjustment = layers?.labels ? 0.7 : 1.0;
 
   updatedStyle.layers.forEach((layer: any) => {
-    updateLayerPaint(layer, palette, layers, labelAdjustment);
+    updateLayerPaint(layer, palette, layers, labelAdjustment, roadWeightMultiplier);
     updateLayerLayout(layer, layers);
   });
 
@@ -57,7 +86,13 @@ function applyVisibilityToggles(
   });
 }
 
-function updateLayerPaint(layer: any, palette: ColorPalette, layers: PosterConfig['layers'] | undefined, labelAdjustment: number) {
+function updateLayerPaint(
+  layer: any, 
+  palette: ColorPalette, 
+  layers: PosterConfig['layers'] | undefined, 
+  labelAdjustment: number,
+  roadWeightMultiplier: number
+) {
   const { id, type } = layer;
 
   // Background
@@ -136,6 +171,11 @@ function updateLayerPaint(layer: any, palette: ColorPalette, layers: PosterConfi
   // Roads & Bridges
   if (id.startsWith('road-') || id.startsWith('bridge-') || id.startsWith('tunnel-')) {
     updateRoadLayer(layer, palette, labelAdjustment);
+    
+    // Apply road weight multiplier correctly to interpolation arrays or numbers
+    if (layer.paint?.['line-width']) {
+      layer.paint['line-width'] = scaleExpression(layer.paint['line-width'], roadWeightMultiplier);
+    }
     return;
   }
 
@@ -162,8 +202,9 @@ function updateLayerPaint(layer: any, palette: ColorPalette, layers: PosterConfi
       ...layer.paint,
       'text-color': palette.text,
       'text-halo-color': palette.background,
-      'text-halo-width': 1.5,
-      'text-halo-blur': 0.5,
+      'text-halo-width': 2.5,
+      'text-halo-blur': 1.5,
+      'text-opacity': 0.9,
     };
     return;
   }
@@ -245,10 +286,29 @@ function updateRoadLayer(layer: any, palette: ColorPalette, labelAdjustment: num
 }
 
 function updateLayerLayout(layer: any, layers: PosterConfig['layers'] | undefined) {
-  if (layer.type === 'symbol' && layers?.labelMaxWidth) {
+  const { type } = layer;
+
+  if (type === 'symbol') {
+    if (layers?.labelMaxWidth) {
+      layer.layout = {
+        ...layer.layout,
+        'text-max-width': layers.labelMaxWidth,
+      };
+    }
+
+    if (layers?.labelSize && layers.labelSize !== 1.0) {
+      const existingSize = layer.layout?.['text-size'];
+      if (existingSize) {
+        layer.layout['text-size'] = scaleExpression(existingSize, layers.labelSize);
+      }
+    }
+
+    // Add standard label layout optimizations
     layer.layout = {
       ...layer.layout,
-      'text-max-width': layers.labelMaxWidth,
+      'text-padding': 10,
+      'text-allow-overlap': false,
+      'text-ignore-placement': false,
     };
   }
 }

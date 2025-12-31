@@ -1,4 +1,102 @@
-export function drawPin(
+export function drawMarker(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  color: string,
+  type: 'pin' | 'crosshair' | 'dot' | 'ring' | 'heart' | 'home' = 'crosshair'
+) {
+  switch (type) {
+    case 'pin':
+      drawPinMarker(ctx, x, y, size, color);
+      break;
+    case 'dot':
+      drawDotMarker(ctx, x, y, size, color);
+      break;
+    case 'ring':
+      drawRingMarker(ctx, x, y, size, color);
+      break;
+    case 'heart':
+      drawHeartMarker(ctx, x, y, size, color);
+      break;
+    case 'home':
+      drawHomeMarker(ctx, x, y, size, color);
+      break;
+    case 'crosshair':
+    default:
+      drawCrosshairMarker(ctx, x, y, size, color);
+      break;
+  }
+}
+
+function drawHeartMarker(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  color: string
+) {
+  ctx.save();
+  
+  const scale = (size * 0.8) / 24;
+  ctx.translate(x - 12 * scale, y - 12 * scale);
+  ctx.scale(scale, scale);
+
+  // Heart path
+  const path = new Path2D("M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z");
+
+  ctx.shadowColor = 'rgba(0,0,0,0.3)';
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetY = 2;
+
+  ctx.fillStyle = color;
+  ctx.fill(path);
+
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.stroke(path);
+
+  ctx.restore();
+}
+
+function drawHomeMarker(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  color: string
+) {
+  ctx.save();
+  
+  const scale = (size * 0.8) / 24;
+  ctx.translate(x - 12 * scale, y - 12 * scale);
+  ctx.scale(scale, scale);
+
+  // Home paths
+  const house = new Path2D("M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z");
+  const door = new Path2D("M9 22V12h6v10");
+
+  ctx.shadowColor = 'rgba(0,0,0,0.3)';
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetY = 2;
+
+  // Fill house first
+  ctx.fillStyle = color;
+  ctx.fill(house);
+
+  // Stroke both for the outline and door
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.stroke(house);
+  ctx.stroke(door);
+
+  ctx.restore();
+}
+
+function drawCrosshairMarker(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
@@ -44,6 +142,97 @@ export function drawPin(
   ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
   ctx.fill();
 
+  ctx.restore();
+}
+
+function drawPinMarker(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  color: string
+) {
+  ctx.save();
+  
+  // Apply a drop shadow
+  ctx.shadowColor = 'rgba(0,0,0,0.3)';
+  ctx.shadowBlur = Math.round(size * 0.1);
+  ctx.shadowOffsetY = Math.round(size * 0.05);
+
+  // Scaling factor from the SVG viewBox 24x28
+  const scale = size / 24;
+  
+  // Translate to center point (bottom of pin tip)
+  // The pin in SVG is centered at 12 horizontally, and its tip is around 25.7
+  ctx.translate(x - 12 * scale, y - 25.7 * scale);
+  ctx.scale(scale, scale);
+
+  const path = new Path2D("M 12 2.1 C 7.3 2.1 3.5 5.9 3.5 10.6 c 0 5.2 7 13.9 7.9 15.1 c 0.3 0.4 0.9 0.4 1.2 0 C 13.5 24.5 20.5 15.8 20.5 10.6 c 0 -4.7 -3.8 -8.5 -8.5 -8.5 z");
+
+  // Outer border
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  ctx.stroke(path);
+
+  // Fill
+  ctx.fillStyle = color;
+  ctx.fill(path);
+
+  // Inner dot
+  ctx.fillStyle = 'white';
+  ctx.beginPath();
+  ctx.arc(12, 10.5, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawDotMarker(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  color: string
+) {
+  ctx.save();
+  ctx.fillStyle = color;
+  
+  // Simple solid dot
+  ctx.beginPath();
+  ctx.arc(x, y, size * 0.25, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Optional ring around it
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = Math.max(1, size * 0.05);
+  ctx.stroke();
+  
+  ctx.restore();
+}
+
+function drawRingMarker(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  color: string
+) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(2, size * 0.1);
+  
+  ctx.beginPath();
+  ctx.arc(x, y, size * 0.35, 0, Math.PI * 2);
+  ctx.stroke();
+  
+  // Inner white border for contrast
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = Math.max(1, size * 0.02);
+  ctx.beginPath();
+  ctx.arc(x, y, size * 0.35 - (size * 0.06), 0, Math.PI * 2);
+  ctx.stroke();
+  
   ctx.restore();
 }
 

@@ -5,6 +5,7 @@ import Map, { type MapRef } from 'react-map-gl/maplibre';
 import { Loader2 } from 'lucide-react';
 import type { PosterLocation, LayerToggle, PosterConfig } from '@/types/poster';
 import { cn } from '@/lib/utils';
+import { MarkerIcon } from './MarkerIcon';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 interface MapPreviewProps {
@@ -24,7 +25,7 @@ export function MapPreview({
   location, 
   format,
   showMarker = true, 
-  markerColor = '#ef4444', 
+  markerColor, 
   onMapLoad, 
   onMove 
   , layers, layerToggles
@@ -81,80 +82,6 @@ export function MapPreview({
     });
   }, []);
 
-  useEffect(() => {
-    if (!mapRef.current || !layers || !layerToggles?.length) return;
-    const map = mapRef.current.getMap();
-    if (!map) return;
-
-    const applyLayers = () => {
-      layerToggles.forEach(toggle => {
-        const isVisible = layers[toggle.id as keyof PosterConfig['layers']];
-        const labelScale = layers.labelSize || 1;
-        const contourDensity = layers.contourDensity || 50;
-        
-        toggle.layerIds.forEach(layerId => {
-          if (!map.getLayer(layerId)) return;
-          
-          // Apply visibility
-          map.setLayoutProperty(layerId, 'visibility', isVisible ? 'visible' : 'none');
-
-          // Apply contour density filter if this is a contour layer
-          const layer = map.getLayer(layerId);
-          if (toggle.id === 'contours' && isVisible && (layer as any).sourceLayer === 'contour') {
-            const ele: any = ['to-number', ['get', 'ele'], 0];
-            const density = Number(contourDensity);
-            console.log(`Applying contour filter to ${layerId} with density: ${density}`);
-            
-            if (layerId.includes('index')) {
-              map.setFilter(layerId, ['all', ['has', 'ele'], ['==', ['%', ele, density * 5], 0]]);
-            } else if (layerId.includes('regular')) {
-              map.setFilter(layerId, [
-                'all',
-                ['has', 'ele'],
-                ['==', ['%', ele, density], 0],
-                ['!=', ['%', ele, density * 5], 0]
-              ]);
-            } else {
-              map.setFilter(layerId, ['all', ['has', 'ele'], ['==', ['%', ele, density], 0]]);
-            }
-          }
-
-          // If it's the labels toggle, also apply scale
-          if (toggle.id === 'labels' && isVisible) {
-            if (layer && layer.type === 'symbol') {
-              // We need to get the original text-size to scale it, 
-              // but MapLibre doesn't make it easy to get the *unresolved* value easily 
-              // from the layer object in a way that we can just multiply it.
-              // For now, we'll apply a base size scaled by our factor.
-              // A better approach would be to have the style use a variable, 
-              // but MapLibre doesn't support that directly in layout properties.
-              
-              // Standard sizes for our styles: base 16 at zoom 12
-              map.setLayoutProperty(layerId, 'text-size', [
-                'interpolate',
-                ['linear'],
-                ['zoom'],
-                4, 10 * labelScale,
-                12, 16 * labelScale,
-                16, 24 * labelScale
-              ]);
-            }
-          }
-        });
-      });
-    };
-
-    if (map.isStyleLoaded()) {
-      applyLayers();
-    } else {
-      map.once('styledata', applyLayers);
-    }
-
-    return () => {
-      map.off('styledata', applyLayers);
-    };
-  }, [layers, layerToggles, mapStyle]);
-
   return (
     <div className="relative w-full h-full">
         <Map
@@ -176,48 +103,11 @@ export function MapPreview({
       >
       {showMarker && (
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-          <div className="relative flex items-center justify-center" aria-hidden>
-            <span
-              className="absolute w-[1px] h-full"
-              style={{
-                backgroundColor: markerColor,
-                opacity: 0.6,
-              }}
-            />
-            <span
-              className="absolute h-[1px] w-full"
-              style={{
-                backgroundColor: markerColor,
-                opacity: 0.6,
-              }}
-            />
-            <span
-              className="absolute rounded-full"
-              style={{
-                width: 44,
-                height: 44,
-                border: `1px solid ${markerColor}`,
-                opacity: 0.35,
-              }}
-            />
-            <span
-              className="absolute rounded-full"
-              style={{
-                width: 22,
-                height: 22,
-                border: `1px solid ${markerColor}`,
-                opacity: 0.55,
-              }}
-            />
-            <span
-              className="absolute rounded-full"
-              style={{
-                width: 10,
-                height: 10,
-                backgroundColor: markerColor,
-              }}
-            />
-          </div>
+          <MarkerIcon 
+            type={layers?.markerType || 'crosshair'} 
+            color={markerColor} 
+            size={40} 
+          />
         </div>
       )}
       </Map>

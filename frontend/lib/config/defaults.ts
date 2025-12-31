@@ -58,6 +58,9 @@ export const DEFAULT_CONFIG: PosterConfig = {
     labelSize: 1,
     labelMaxWidth: 10,
     marker: true,
+    markerType: 'crosshair',
+    markerColor: undefined, // Default to palette primary
+    roadWeight: 1.0,
   },
 };
 

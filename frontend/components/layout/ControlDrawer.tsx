@@ -108,6 +108,7 @@ export function ControlDrawer({
               layers={config.layers}
               onLayersChange={updateLayers}
               availableToggles={config.style.layerToggles}
+              palette={config.palette}
             />
           </div>
         )}

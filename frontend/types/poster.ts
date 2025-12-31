@@ -112,6 +112,9 @@ export interface PosterConfig {
     labelSize: number; // New: control map label size
     labelMaxWidth: number; // New: control map label wrap width
     marker: boolean;
+    markerType?: 'pin' | 'crosshair' | 'dot' | 'ring' | 'heart' | 'home';
+    markerColor?: string;
+    roadWeight: number; // New: control road line thickness
   };
 }
 

@@ -2,7 +2,7 @@ import type MapLibreGL from 'maplibre-gl';
 import type { PosterConfig } from '@/types/poster';
 import { DEFAULT_EXPORT_RESOLUTION } from './constants';
 import { calculateTargetResolution } from './resolution';
-import { drawPin, applyTexture } from './drawing';
+import { drawMarker, applyTexture } from './drawing';
 import { drawTextOverlay } from './text-overlay';
 
 interface ExportOptions {
@@ -102,8 +102,8 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
       const markerX = marginPx + drawWidth / 2;
       const markerY = marginPx + drawHeight / 2;
       const markerSize = exportResolution.width * 0.045;
-      const markerColor = config.palette.accent || config.palette.text;
-      drawPin(exportCtx, markerX, markerY, markerSize, markerColor);
+      const markerColor = config.layers.markerColor || config.palette.accent || config.palette.text;
+      drawMarker(exportCtx, markerX, markerY, markerSize, markerColor, config.layers.markerType || 'crosshair');
     }
 
     // 6. TEXT OVERLAY
