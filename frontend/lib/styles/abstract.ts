@@ -132,19 +132,19 @@ const mapStyle = {
       type: 'vector',
       url: getOpenFreeMapPlanetTileJsonUrl(),
       minzoom: 0,
-      maxzoom: 14,
+      maxzoom: 15,
     },
     contours: {
       type: 'vector',
       url: getContourTileJsonUrl() || '',
       minzoom: 0,
-      maxzoom: 14,
+      maxzoom: 15,
     },
     population: {
       type: 'vector',
       tiles: [getPopulationTileUrl()],
       minzoom: 0,
-      maxzoom: 14,
+      maxzoom: 15,
       attribution: '<a href="https://www.kontur.io/portfolio/population-dataset/" target="_blank">Kontur Population</a>',
     },
     terrain: {

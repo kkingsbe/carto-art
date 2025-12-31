@@ -165,19 +165,19 @@ const mapStyle = {
       type: 'vector',
       url: getOpenFreeMapPlanetTileJsonUrl(),
       minzoom: 0,
-      maxzoom: 14,
+      maxzoom: 15,
     },
     contours: {
       type: 'vector',
       url: getContourTileJsonUrl() || '',
       minzoom: 0,
-      maxzoom: 14,
+      maxzoom: 15,
     },
     population: {
       type: 'vector',
       tiles: [getPopulationTileUrl()],
       minzoom: 0,
-      maxzoom: 14,
+      maxzoom: 15,
       attribution: '<a href="https://www.kontur.io/portfolio/population-dataset/" target="_blank">Kontur Population</a>',
     },
     terrain: {
@@ -245,7 +245,7 @@ const mapStyle = {
       'source-layer': 'transportation',
       filter: ['all', 
         ['in', ['get', 'class'], ['literal', ['service', 'path', 'track']]],
-        ['>=', ['zoom'], 13]
+        ['>=', ['zoom'], 10]
       ],
       layout: {
         'line-cap': 'square',
@@ -257,7 +257,8 @@ const mapStyle = {
           'interpolate', ['linear'], ['zoom'],
           12, 0.2,
           13, 0.4,
-          14, 0.6
+          14, 0.6,
+          16, 1.2
         ],
       },
     },
@@ -268,7 +269,7 @@ const mapStyle = {
       'source-layer': 'transportation',
       filter: ['all',
         ['in', ['get', 'class'], ['literal', ['residential', 'living_street']]],
-        ['>=', ['zoom'], 11]
+        ['>=', ['zoom'], 8]
       ],
       layout: {
         'line-cap': 'square',
@@ -281,7 +282,8 @@ const mapStyle = {
           11, 0.2,
           12, 0.4,
           13, 0.7,
-          14, 1.0
+          14, 1.0,
+          16, 2.0
         ],
       },
     },

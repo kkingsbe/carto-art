@@ -2,7 +2,9 @@
 
 import { useRef, useCallback, useEffect, useState } from 'react';
 import Map, { type MapRef } from 'react-map-gl/maplibre';
+import { Loader2 } from 'lucide-react';
 import type { PosterLocation, LayerToggle, PosterConfig } from '@/types/poster';
+import { cn } from '@/lib/utils';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 interface MapPreviewProps {
@@ -28,6 +30,7 @@ export function MapPreview({
   , layers, layerToggles
 }: MapPreviewProps) {
   const mapRef = useRef<MapRef>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Local viewState for smooth interaction without triggering full app re-renders on every frame
   const [viewState, setViewState] = useState({
@@ -49,6 +52,17 @@ export function MapPreview({
     if (mapRef.current && onMapLoad) {
       const map = mapRef.current.getMap();
       onMapLoad(map);
+
+      // Setup loading listeners
+      map.on('dataloading', () => setIsLoading(true));
+      map.on('idle', () => setIsLoading(false));
+      
+      // Safety timeout: if we're still "loading" after 10 seconds, clear it
+      // This prevents being stuck on "Loading Tiles" if some tiles fail silently
+      map.on('dataloading', () => {
+        const timeoutId = setTimeout(() => setIsLoading(false), 10000);
+        map.once('idle', () => clearTimeout(timeoutId));
+      });
     }
   }, [onMapLoad]);
 
@@ -156,6 +170,7 @@ export function MapPreview({
         onMoveEnd={handleMove}
         onError={handleError}
         antialias={true}
+        pixelRatio={2}
       >
       {showMarker && (
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
@@ -204,6 +219,21 @@ export function MapPreview({
         </div>
       )}
       </Map>
+
+      {/* Tile Loading Indicator */}
+      <div 
+        className={cn(
+          "absolute top-4 left-4 z-30 transition-opacity duration-300 pointer-events-none",
+          isLoading ? "opacity-100" : "opacity-0"
+        )}
+      >
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm px-2 py-1 rounded-md border border-gray-200 dark:border-gray-700 flex items-center gap-2 shadow-sm">
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-600" />
+          <span className="text-[10px] font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+            Loading Tiles...
+          </span>
+        </div>
+      </div>
 
       {/* Texture Overlay */}
       {format?.texture && format.texture !== 'none' && (

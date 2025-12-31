@@ -6,13 +6,13 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Formats coordinates into a pretty string (e.g. 37.7749° N, 122.4194° W)
+ * Formats coordinates into a pretty string (e.g. 37.77° N, 122.42° W)
  */
 export function formatCoordinates(center: [number, number]): string {
   const [lon, lat] = center;
   const latDir = lat >= 0 ? 'N' : 'S';
   const lonDir = lon >= 0 ? 'E' : 'W';
-  return `${Math.abs(lat).toFixed(4)}° ${latDir}, ${Math.abs(lon).toFixed(4)}° ${lonDir}`;
+  return `${Math.abs(lat).toFixed(2)}° ${latDir}, ${Math.abs(lon).toFixed(2)}° ${lonDir}`;
 }
 
 /**

@@ -53,11 +53,48 @@ export async function GET(
     }
 
     const data = await response.arrayBuffer();
+    const contentType = response.headers.get('Content-Type') || '';
+
+    // If this is a TileJSON request for OpenFreeMap, override the maxzoom and tiles
+    if (sourceKey === 'openfreemap' && remainingPath === 'planet' && contentType.includes('application/json')) {
+      try {
+        const text = new TextDecoder().decode(data);
+        const json = JSON.parse(text);
+        
+        // Override maxzoom to 15 to unlock high-detail tiles
+        if (json.maxzoom) {
+          json.maxzoom = 15;
+        }
+
+        // Rewrite tile URLs to go through our proxy
+        if (json.tiles && Array.isArray(json.tiles)) {
+          json.tiles = json.tiles.map((url: string) => {
+            const matches = url.match(/https:\/\/tiles\.openfreemap\.org\/(.*)/);
+            if (matches && matches[1]) {
+              return `/api/tiles/openfreemap/${matches[1]}`;
+            }
+            return url;
+          });
+        }
+
+        const modifiedData = new TextEncoder().encode(JSON.stringify(json));
+        return new NextResponse(modifiedData, {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'public, max-age=86400',
+            'Access-Control-Allow-Origin': '*',
+          },
+        });
+      } catch (e) {
+        console.error('Error overriding OpenFreeMap TileJSON:', e);
+      }
+    }
 
     return new NextResponse(data, {
       status: 200,
       headers: {
-        'Content-Type': response.headers.get('Content-Type') || 'application/x-protobuf',
+        'Content-Type': contentType || 'application/x-protobuf',
         'Cache-Control': 'public, max-age=86400',
         'Access-Control-Allow-Origin': '*',
       },
