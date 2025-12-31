@@ -7,6 +7,9 @@ import { topographicStyle } from './topographic';
 import { watercolorStyle } from './watercolor';
 import { midnightStyle } from './midnight';
 import { abstractStyle } from './abstract';
+import { atmosphericStyle } from './atmospheric';
+import { organicStyle } from './organic';
+import { retroStyle } from './retro';
 
 export const styles: PosterStyle[] = [
   minimalStyle,
@@ -17,6 +20,9 @@ export const styles: PosterStyle[] = [
   topographicStyle,
   watercolorStyle,
   abstractStyle,
+  atmosphericStyle,
+  organicStyle,
+  retroStyle,
 ];
 
 export function getStyleById(id: string): PosterStyle | undefined {
@@ -26,7 +32,3 @@ export function getStyleById(id: string): PosterStyle | undefined {
 export function getDefaultStyle(): PosterStyle {
   return minimalStyle;
 }
-
-
-
-

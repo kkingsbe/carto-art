@@ -136,7 +136,7 @@ interface ToggleProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const ControlToggle = React.forwardRef<HTMLInputElement, ToggleProps>(
-  ({ className, label, ...props }, ref) => {
+  ({ className, label, checked, ...props }, ref) => {
     return (
       <label className={cn("flex items-center gap-3 cursor-pointer group", className)}>
         <div className="relative inline-flex items-center">
@@ -144,6 +144,7 @@ export const ControlToggle = React.forwardRef<HTMLInputElement, ToggleProps>(
             type="checkbox"
             className="peer sr-only"
             ref={ref}
+            checked={checked ?? false}
             {...props}
           />
           <div className="h-5 w-9 rounded-full bg-gray-200 dark:bg-gray-700 peer-focus:ring-2 peer-focus:ring-blue-500 peer-focus:ring-offset-1 dark:peer-focus:ring-offset-gray-900 peer-checked:bg-blue-600 transition-colors" />
@@ -164,7 +165,7 @@ interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const ControlCheckbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
-  ({ className, label, description, ...props }, ref) => {
+  ({ className, label, description, checked, ...props }, ref) => {
     return (
       <label className={cn("flex items-start gap-3 p-2 -ml-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors group", className)}>
         <div className="relative flex items-center justify-center mt-0.5">
@@ -172,6 +173,7 @@ export const ControlCheckbox = React.forwardRef<HTMLInputElement, CheckboxProps>
             type="checkbox"
             className="peer h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
             ref={ref}
+            checked={checked ?? false}
             {...props}
           />
         </div>

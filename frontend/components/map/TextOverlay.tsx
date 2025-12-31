@@ -63,7 +63,7 @@ export function TextOverlay({ config }: TextOverlayProps) {
     letterSpacing: typography.titleLetterSpacing ? `${typography.titleLetterSpacing}em` : 'normal',
     textTransform: (typography.titleAllCaps !== false ? 'uppercase' : 'none') as any,
     lineHeight: 1.1,
-    textShadow: backdropType === 'gradient' ? 'none' : buildHaloTextShadow(
+    textShadow: (backdropType === 'gradient' || backdropType === 'none') ? 'none' : buildHaloTextShadow(
       config.palette.background,
       titleHalo,
       `0px ${Math.max(2, Math.round(titleHalo * 1.2))}px ${Math.max(6, Math.round(titleHalo * 4))}px rgba(0,0,0,0.14)`
@@ -78,7 +78,7 @@ export function TextOverlay({ config }: TextOverlayProps) {
     opacity: 0.9,
     letterSpacing: '0.2em',
     lineHeight: 1,
-    textShadow: backdropType === 'gradient' ? 'none' : buildHaloTextShadow(config.palette.background, subtitleHalo),
+    textShadow: (backdropType === 'gradient' || backdropType === 'none') ? 'none' : buildHaloTextShadow(config.palette.background, subtitleHalo),
   };
 
   const coordsStyle = {

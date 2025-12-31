@@ -104,6 +104,7 @@ export interface PosterConfig {
     water: boolean;
     parks: boolean;
     terrain: boolean;
+    terrainUnderWater: boolean; // New: toggle bathymetry/terrain under water
     hillshadeExaggeration: number; // New: control hillshade intensity
     contours: boolean;
     contourDensity: number; // New: control contour line density (interval)
@@ -111,6 +112,7 @@ export interface PosterConfig {
     labels: boolean;
     labelSize: number; // New: control map label size
     labelMaxWidth: number; // New: control map label wrap width
+    labelStyle?: 'standard' | 'elevated' | 'glass' | 'vintage'; // New: control map label visual style
     marker: boolean;
     markerType?: 'pin' | 'crosshair' | 'dot' | 'ring' | 'heart' | 'home';
     markerColor?: string;

@@ -34,6 +34,9 @@ export function LayerControls({ layers, onLayersChange, availableToggles, palett
     onLayersChange({ [key]: !layers[key] });
   };
 
+  const isTerrainToggleVisible = availableToggles.some(t => t.id === 'terrain');
+  const isTerrainUnderWaterToggleVisible = availableToggles.some(t => t.id === 'terrainUnderWater');
+
   const handleLabelSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onLayersChange({ labelSize: parseFloat(e.target.value) });
   };
@@ -63,7 +66,7 @@ export function LayerControls({ layers, onLayersChange, availableToggles, palett
             <div key={item.id} className="space-y-2">
             <ControlCheckbox
               label={item.name}
-              checked={layers[item.id as keyof PosterConfig['layers']] as boolean ?? false}
+              checked={Boolean(layers[item.id as keyof PosterConfig['layers']])}
               onChange={() => toggleLayer(item.id as keyof PosterConfig['layers'])}
             />
 
@@ -94,6 +97,26 @@ export function LayerControls({ layers, onLayersChange, availableToggles, palett
             {item.id === 'labels' && layers.labels && (
               <div className="pl-8 pr-2 pb-2">
                 <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-4">
+                  <div className="space-y-2">
+                    <ControlLabel className="text-[10px] uppercase text-gray-500">Label Style</ControlLabel>
+                    <div className="grid grid-cols-2 gap-2">
+                      {['standard', 'elevated', 'glass', 'vintage'].map((style) => (
+                        <button
+                          key={style}
+                          onClick={() => onLayersChange({ labelStyle: style as any })}
+                          className={cn(
+                            "py-1.5 px-2 text-[10px] uppercase font-bold rounded border transition-all",
+                            (layers.labelStyle || 'elevated') === style 
+                              ? "bg-blue-600 border-blue-600 text-white shadow-sm" 
+                              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300 dark:hover:border-gray-600"
+                          )}
+                        >
+                          {style}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="space-y-1">
                     <ControlLabel className="text-[10px] uppercase text-gray-500">Label Size</ControlLabel>
                     <ControlSlider
@@ -140,6 +163,17 @@ export function LayerControls({ layers, onLayersChange, availableToggles, palett
                       <span>Dramatic</span>
                     </div>
                   </div>
+                  
+                  {isTerrainUnderWaterToggleVisible && (
+                    <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+                      <ControlCheckbox
+                        label="Show under water"
+                        checked={Boolean(layers.terrainUnderWater)}
+                        onChange={() => toggleLayer('terrainUnderWater')}
+                        className="text-[10px] font-medium"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -174,7 +208,7 @@ export function LayerControls({ layers, onLayersChange, availableToggles, palett
         <div key="marker-group" className="space-y-4 pt-4 mt-4 border-t border-gray-100 dark:border-gray-800">
           <ControlCheckbox
             label="Location Marker"
-            checked={layers.marker}
+            checked={Boolean(layers.marker)}
             onChange={() => toggleLayer('marker')}
           />
 

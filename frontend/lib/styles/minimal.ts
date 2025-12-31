@@ -6,7 +6,7 @@ import {
   getAwsTerrariumTileUrl
 } from '@/lib/styles/tileUrl';
 import { TERRAIN_TILE_SIZE } from '@/lib/styles/config';
-import { extraPalettes } from './extra-palettes';
+import { extraMinimalPalettes } from './extra-palettes';
 
 const inkPalette: ColorPalette = {
   id: 'minimal-ink',
@@ -271,6 +271,19 @@ const mapStyle = {
       },
     },
     {
+      id: 'bathymetry-detail',
+      type: 'line',
+      source: 'contours',
+      'source-layer': 'contour',
+      filter: ['<', ['get', 'ele'], 0],
+      paint: {
+        'line-color': '#001a33',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 9, 10, 12, 30, 15, 60],
+        'line-blur': ['interpolate', ['linear'], ['zoom'], 9, 8, 12, 20, 15, 40],
+        'line-opacity': 0.1,
+      },
+    },
+    {
       id: 'waterway',
       type: 'line',
       source: 'openmaptiles',
@@ -506,26 +519,83 @@ const mapStyle = {
       },
     },
     {
-      id: 'labels-place',
+      id: 'boundaries-admin',
+      type: 'line',
+      source: 'openmaptiles',
+      'source-layer': 'boundary',
+      filter: ['all', ['==', ['get', 'admin_level'], 4], ['==', ['get', 'maritime'], 0]],
+      paint: {
+        'line-color': defaultPalette.text,
+        'line-width': 0.5,
+        'line-dasharray': [4, 4],
+        'line-opacity': 0.15,
+      },
+    },
+    {
+      id: 'labels-country',
       type: 'symbol',
       source: 'openmaptiles',
       'source-layer': 'place',
+      filter: ['==', ['get', 'class'], 'country'],
       layout: {
-        'text-field': '{name:en}',
+        'text-field': ['coalesce', ['get', 'name:en'], ['get', 'name:latin'], ['get', 'name']],
         'text-font': ['Noto Sans Regular'],
-        'text-size': {
-          stops: [
-            [4, 10],
-            [12, 16],
-          ],
-        },
+        'text-size': ['interpolate', ['linear'], ['zoom'], 2, 12, 6, 20],
         'text-transform': 'uppercase',
-        'text-letter-spacing': 0.1,
+        'text-letter-spacing': 0.3,
       },
       paint: {
         'text-color': defaultPalette.text,
         'text-halo-color': defaultPalette.background,
-        'text-halo-width': 1,
+        'text-halo-width': 2.5,
+        'text-halo-blur': 1.5,
+      },
+    },
+    {
+      id: 'labels-state',
+      type: 'symbol',
+      source: 'openmaptiles',
+      'source-layer': 'place',
+      filter: ['==', ['get', 'class'], 'state'],
+      layout: {
+        'text-field': ['coalesce', ['get', 'name:en'], ['get', 'name:latin'], ['get', 'name']],
+        'text-font': ['Noto Sans Regular'],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 3, 11, 8, 19],
+        'text-transform': 'uppercase',
+        'text-letter-spacing': 0.2,
+      },
+      paint: {
+        'text-color': defaultPalette.text,
+        'text-opacity': 0.85,
+        'text-halo-color': defaultPalette.background,
+        'text-halo-width': 2.5,
+        'text-halo-blur': 1.5,
+      },
+    },
+    {
+      id: 'labels-city',
+      type: 'symbol',
+      source: 'openmaptiles',
+      'source-layer': 'place',
+      filter: [
+        'all',
+        ['!=', ['get', 'class'], 'state'],
+        ['!=', ['get', 'class'], 'country'],
+        ['step', ['zoom'], ['<=', ['get', 'rank'], 3], 6, ['<=', ['get', 'rank'], 7], 9, true],
+      ],
+      layout: {
+        'text-field': ['coalesce', ['get', 'name:en'], ['get', 'name:latin'], ['get', 'name']],
+        'text-font': ['Noto Sans Regular'],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 4, 11, 12, 18],
+        'text-transform': 'uppercase',
+        'text-letter-spacing': 0.12,
+        'text-padding': 5,
+      },
+      paint: {
+        'text-color': defaultPalette.text,
+        'text-halo-color': defaultPalette.background,
+        'text-halo-width': 2.5,
+        'text-halo-blur': 1.5,
       },
     },
   ],
@@ -558,6 +628,11 @@ const layerToggles: LayerToggle[] = [
     layerIds: ['water', 'waterway'],
   },
   {
+    id: 'terrainUnderWater',
+    name: 'Underwater Terrain',
+    layerIds: ['bathymetry-detail'],
+  },
+  {
     id: 'parks',
     name: 'Parks',
     layerIds: ['park'],
@@ -578,9 +653,14 @@ const layerToggles: LayerToggle[] = [
     layerIds: ['population-density'],
   },
   {
-    id: 'labels',
-    name: 'Labels',
-    layerIds: ['labels-place'],
+    id: 'labels-admin',
+    name: 'State & Country Names',
+    layerIds: ['labels-country', 'labels-state', 'boundaries-admin'],
+  },
+  {
+    id: 'labels-cities',
+    name: 'City Names',
+    layerIds: ['labels-city'],
   },
 ];
 
@@ -598,7 +678,7 @@ export const minimalStyle: PosterStyle = {
     blushPalette, 
     sagePalette, 
     copperPalette,
-    ...extraPalettes
+    ...extraMinimalPalettes
   ],
   recommendedFonts: ['Inter', 'Helvetica Neue', 'Outfit', 'DM Sans'],
   layerToggles: layerToggles,

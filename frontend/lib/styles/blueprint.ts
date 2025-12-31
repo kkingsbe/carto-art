@@ -215,7 +215,6 @@ const mapStyle = {
       paint: {
         'fill-color': defaultPalette.water,
         'fill-opacity': 0.7,
-        'fill-outline-color': defaultPalette.waterLine || defaultPalette.water,
       },
     },
     {
@@ -236,7 +235,6 @@ const mapStyle = {
       paint: {
         'fill-color': defaultPalette.buildings || defaultPalette.primary,
         'fill-opacity': 0.2,
-        'fill-outline-color': '#4A6A8A',
       },
     },
     {
@@ -434,24 +432,78 @@ const mapStyle = {
       },
     },
     {
-      id: 'labels-place',
+      id: 'boundaries-admin',
+      type: 'line',
+      source: 'openmaptiles',
+      'source-layer': 'boundary',
+      filter: ['all', ['==', ['get', 'admin_level'], 4], ['==', ['get', 'maritime'], 0]],
+      paint: {
+        'line-color': defaultPalette.text,
+        'line-width': 0.5,
+        'line-dasharray': [4, 4],
+        'line-opacity': 0.15,
+      },
+    },
+    {
+      id: 'labels-country',
       type: 'symbol',
       source: 'openmaptiles',
       'source-layer': 'place',
+      filter: ['==', ['get', 'class'], 'country'],
       layout: {
-        'text-field': '{name:en}',
+        'text-field': ['coalesce', ['get', 'name:en'], ['get', 'name:latin'], ['get', 'name']],
         'text-font': ['Noto Sans Regular'],
-        'text-size': {
-          stops: [
-            [4, 10],
-            [12, 14],
-          ],
-        },
+        'text-size': ['interpolate', ['linear'], ['zoom'], 2, 10, 6, 16],
+        'text-transform': 'uppercase',
+        'text-letter-spacing': 0.3,
       },
       paint: {
         'text-color': defaultPalette.text,
-        'text-halo-color': defaultPalette.background,
-        'text-halo-width': 1,
+        'text-halo-width': 0,
+        'text-halo-blur': 0,
+      },
+    },
+    {
+      id: 'labels-state',
+      type: 'symbol',
+      source: 'openmaptiles',
+      'source-layer': 'place',
+      filter: ['==', ['get', 'class'], 'state'],
+      layout: {
+        'text-field': ['coalesce', ['get', 'name:en'], ['get', 'name:latin'], ['get', 'name']],
+        'text-font': ['Noto Sans Regular'],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 3, 9, 8, 14],
+        'text-transform': 'uppercase',
+        'text-letter-spacing': 0.15,
+      },
+      paint: {
+        'text-color': defaultPalette.text,
+        'text-opacity': 0.8,
+        'text-halo-width': 0,
+        'text-halo-blur': 0,
+      },
+    },
+    {
+      id: 'labels-city',
+      type: 'symbol',
+      source: 'openmaptiles',
+      'source-layer': 'place',
+      filter: [
+        'all',
+        ['!=', ['get', 'class'], 'state'],
+        ['!=', ['get', 'class'], 'country'],
+        ['step', ['zoom'], ['<=', ['get', 'rank'], 3], 6, ['<=', ['get', 'rank'], 7], 9, true],
+      ],
+      layout: {
+        'text-field': ['coalesce', ['get', 'name:en'], ['get', 'name:latin'], ['get', 'name']],
+        'text-font': ['Noto Sans Regular'],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 4, 8, 12, 12],
+        'text-padding': 5,
+      },
+      paint: {
+        'text-color': defaultPalette.text,
+        'text-halo-width': 0,
+        'text-halo-blur': 0,
       },
     },
   ],
@@ -482,6 +534,11 @@ const layerToggles: LayerToggle[] = [
     layerIds: ['water'],
   },
   {
+    id: 'terrainUnderWater',
+    name: 'Underwater Terrain',
+    layerIds: ['bathymetry-detail'],
+  },
+  {
     id: 'parks',
     name: 'Parks',
     layerIds: ['park'],
@@ -502,9 +559,14 @@ const layerToggles: LayerToggle[] = [
     layerIds: ['population-density'],
   },
   {
-    id: 'labels',
-    name: 'Labels',
-    layerIds: ['labels-place'],
+    id: 'labels-admin',
+    name: 'State & Country Names',
+    layerIds: ['labels-country', 'labels-state', 'boundaries-admin'],
+  },
+  {
+    id: 'labels-cities',
+    name: 'City Names',
+    layerIds: ['labels-city'],
   },
 ];
 

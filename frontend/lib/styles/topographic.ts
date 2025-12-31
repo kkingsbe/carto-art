@@ -207,25 +207,37 @@ const mapStyle = {
       },
     },
     {
-      id: 'hillshade',
-      type: 'hillshade',
-      source: 'terrain',
-      paint: {
-        'hillshade-shadow-color': '#5C4830',
-        'hillshade-highlight-color': '#FFFFFF',
-        'hillshade-accent-color': '#5C4830',
-        'hillshade-exaggeration': 0.15,
-      },
-    },
-    {
       id: 'water',
       type: 'fill',
       source: 'openmaptiles',
       'source-layer': 'water',
       paint: {
         'fill-color': defaultPalette.water,
-        'fill-opacity': 0.8,
-        'fill-outline-color': defaultPalette.waterLine || defaultPalette.water,
+        'fill-opacity': 1.0,
+      },
+    },
+    ...[10, 50, 200, 1000, 3000, 5000].map(depth => ({
+      id: `bathymetry-volumetric-${depth}`,
+      type: 'line',
+      source: 'contours',
+      'source-layer': 'contour',
+      filter: ['<=', ['get', 'ele'], -depth],
+      paint: {
+        'line-color': '#001a33',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 9, 40, 12, 100, 15, 200],
+        'line-blur': ['interpolate', ['linear'], ['zoom'], 9, 30, 12, 80, 15, 150],
+        'line-opacity': 0.05
+      }
+    })),
+    {
+      id: 'hillshade',
+      type: 'hillshade',
+      source: 'terrain',
+      paint: {
+        'hillshade-shadow-color': '#000000',
+        'hillshade-highlight-color': '#FFFFFF',
+        'hillshade-accent-color': '#000000',
+        'hillshade-exaggeration': 0.15,
       },
     },
     {
@@ -448,24 +460,81 @@ const mapStyle = {
       },
     },
     {
-      id: 'labels-place',
+      id: 'boundaries-admin',
+      type: 'line',
+      source: 'openmaptiles',
+      'source-layer': 'boundary',
+      filter: ['all', ['==', ['get', 'admin_level'], 4], ['==', ['get', 'maritime'], 0]],
+      paint: {
+        'line-color': defaultPalette.text,
+        'line-width': 0.5,
+        'line-dasharray': [4, 4],
+        'line-opacity': 0.15,
+      },
+    },
+    {
+      id: 'labels-country',
       type: 'symbol',
       source: 'openmaptiles',
       'source-layer': 'place',
+      filter: ['==', ['get', 'class'], 'country'],
       layout: {
-        'text-field': '{name:en}',
+        'text-field': ['coalesce', ['get', 'name:en'], ['get', 'name:latin'], ['get', 'name']],
         'text-font': ['Noto Sans Regular'],
-        'text-size': {
-          stops: [
-            [4, 10],
-            [12, 16],
-          ],
-        },
+        'text-size': ['interpolate', ['linear'], ['zoom'], 2, 10, 6, 18],
+        'text-transform': 'uppercase',
+        'text-letter-spacing': 0.3,
       },
       paint: {
         'text-color': defaultPalette.text,
         'text-halo-color': defaultPalette.background,
-        'text-halo-width': 1,
+        'text-halo-width': 2.5,
+        'text-halo-blur': 1.0,
+      },
+    },
+    {
+      id: 'labels-state',
+      type: 'symbol',
+      source: 'openmaptiles',
+      'source-layer': 'place',
+      filter: ['==', ['get', 'class'], 'state'],
+      layout: {
+        'text-field': ['coalesce', ['get', 'name:en'], ['get', 'name:latin'], ['get', 'name']],
+        'text-font': ['Noto Sans Regular'],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 3, 9, 8, 16],
+        'text-transform': 'uppercase',
+        'text-letter-spacing': 0.15,
+      },
+      paint: {
+        'text-color': defaultPalette.text,
+        'text-opacity': 0.8,
+        'text-halo-color': defaultPalette.background,
+        'text-halo-width': 2.5,
+        'text-halo-blur': 1.0,
+      },
+    },
+    {
+      id: 'labels-city',
+      type: 'symbol',
+      source: 'openmaptiles',
+      'source-layer': 'place',
+      filter: [
+        'all',
+        ['!=', ['get', 'class'], 'state'],
+        ['!=', ['get', 'class'], 'country'],
+        ['step', ['zoom'], ['<=', ['get', 'rank'], 3], 6, ['<=', ['get', 'rank'], 7], 9, true],
+      ],
+      layout: {
+        'text-field': ['coalesce', ['get', 'name:en'], ['get', 'name:latin'], ['get', 'name']],
+        'text-font': ['Noto Sans Regular'],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 4, 8, 12, 14],
+        'text-padding': 5,
+      },
+      paint: {
+        'text-color': defaultPalette.text,
+        'text-halo-color': defaultPalette.background,
+        'text-halo-width': 1.5,
+        'text-halo-blur': 0.5,
       },
     },
   ],
@@ -488,7 +557,19 @@ const layerToggles: LayerToggle[] = [
   {
     id: 'water',
     name: 'Water',
-    layerIds: ['water', 'waterway'],
+    layerIds: [
+      'water', 
+      'waterway'
+    ],
+  },
+  {
+    id: 'terrainUnderWater',
+    name: 'Underwater Terrain',
+    layerIds: [
+      'bathymetry-gradient', 
+      'bathymetry-detail',
+      ...[10, 50, 200, 1000, 3000, 5000].map(d => `bathymetry-volumetric-${d}`)
+    ],
   },
   {
     id: 'parks',
@@ -511,9 +592,14 @@ const layerToggles: LayerToggle[] = [
     layerIds: ['population-density'],
   },
   {
-    id: 'labels',
-    name: 'Labels',
-    layerIds: ['labels-place'],
+    id: 'labels-admin',
+    name: 'State & Country Names',
+    layerIds: ['labels-country', 'labels-state', 'boundaries-admin'],
+  },
+  {
+    id: 'labels-cities',
+    name: 'City Names',
+    layerIds: ['labels-city'],
   },
 ];
 

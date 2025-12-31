@@ -314,6 +314,70 @@ export const POSTER_EXAMPLES: PosterExample[] = [
         roadWeight: 0.2,
       }
     }
+  },
+  {
+    id: 'organic-north-america',
+    name: 'Organic North America',
+    description: 'A vibrant "Organic" style view of the North American continent with coral tones.',
+    config: {
+      ...DEFAULT_CONFIG,
+      location: {
+        name: '4636 5th Street South',
+        city: 'North America',
+        subtitle: 'Barcroft, Arlington, Virginia, United States',
+        center: [-92.02849409103771, 37.28707785941644] as [number, number],
+        bounds: [[-77.1130377, 38.862957], [-77.1128569, 38.8630805]] as [[number, number], [number, number]],
+        zoom: 1.2854311188678398,
+      },
+      style: getStyle('organic'),
+      palette: getStyle('organic').palettes.find(p => p.id === 'organic-coral-reef') || getStyle('organic').defaultPalette,
+      typography: {
+        ...DEFAULT_CONFIG.typography,
+        titleFont: 'Outfit',
+        titleSize: 5,
+        titleWeight: 800,
+        titleLetterSpacing: 0.08,
+        titleAllCaps: true,
+        subtitleFont: 'Outfit',
+        subtitleSize: 4.8,
+        showTitle: false,
+        showSubtitle: true,
+        showCoordinates: false,
+        position: 'bottom',
+        textBackdrop: 'gradient',
+        backdropHeight: 26,
+        backdropAlpha: 1,
+        backdropSharpness: 52,
+        maxWidth: 80,
+      },
+      format: {
+        ...DEFAULT_CONFIG.format,
+        aspectRatio: '2:3',
+        orientation: 'portrait',
+        margin: 5,
+        borderStyle: 'thick',
+        texture: 'none',
+        textureIntensity: 20,
+      },
+      layers: {
+        ...DEFAULT_CONFIG.layers,
+        streets: true,
+        buildings: false,
+        water: true,
+        parks: true,
+        terrain: true,
+        hillshadeExaggeration: 0.5,
+        contours: false,
+        contourDensity: 50,
+        population: false,
+        labels: false,
+        labelSize: 1,
+        labelMaxWidth: 10,
+        marker: false,
+        markerType: 'crosshair',
+        roadWeight: 1,
+      }
+    }
   }
 ];
 

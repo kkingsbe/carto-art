@@ -1,9 +1,9 @@
 'use client';
 
-import { Map as MapIcon, Palette, Layout, Sparkles, FolderHeart } from 'lucide-react';
+import { Map as MapIcon, Type, Layout, FolderHeart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type Tab = 'examples' | 'map' | 'design' | 'format' | 'saved';
+export type Tab = 'library' | 'map' | 'text' | 'frame';
 
 interface TabNavigationProps {
   activeTab: Tab;
@@ -57,11 +57,10 @@ export function TabNavigation({
       </div>
       
       <div className="flex md:flex-col flex-1 md:flex-none md:w-full md:space-y-1">
-        <TabButton id="examples" icon={Sparkles} label="Presets" />
+        <TabButton id="library" icon={FolderHeart} label="Library" />
         <TabButton id="map" icon={MapIcon} label="Map" />
-        <TabButton id="design" icon={Palette} label="Design" />
-        <TabButton id="format" icon={Layout} label="Format" />
-        <TabButton id="saved" icon={FolderHeart} label="Library" />
+        <TabButton id="text" icon={Type} label="Text" />
+        <TabButton id="frame" icon={Layout} label="Frame" />
       </div>
     </nav>
   );

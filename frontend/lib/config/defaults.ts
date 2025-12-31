@@ -51,6 +51,7 @@ export const DEFAULT_CONFIG: PosterConfig = {
     water: true,
     parks: true,
     terrain: true,
+    terrainUnderWater: true,
     hillshadeExaggeration: 0.5,
     contours: false,
     contourDensity: 50,
@@ -58,6 +59,7 @@ export const DEFAULT_CONFIG: PosterConfig = {
     labels: false,
     labelSize: 1,
     labelMaxWidth: 10,
+    labelStyle: 'elevated',
     marker: true,
     markerType: 'crosshair',
     markerColor: undefined, // Default to palette primary

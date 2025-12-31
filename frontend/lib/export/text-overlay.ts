@@ -137,7 +137,7 @@ export function drawTextOverlay(
       fontFamily: typography.titleFont,
       haloColor: palette.background,
       textColor: palette.text,
-      showHalo: backdropType !== 'gradient'
+      showHalo: backdropType !== 'gradient' && backdropType !== 'none'
     });
   }
 
@@ -171,7 +171,7 @@ export function drawTextOverlay(
       fontFamily: typography.subtitleFont,
       haloColor: palette.background,
       textColor: palette.text,
-      showHalo: backdropType !== 'gradient'
+      showHalo: backdropType !== 'gradient' && backdropType !== 'none'
     });
   }
 
@@ -183,7 +183,7 @@ export function drawTextOverlay(
       fontFamily: typography.subtitleFont,
       haloColor: palette.background,
       textColor: palette.text,
-      showHalo: backdropType !== 'gradient'
+      showHalo: backdropType !== 'gradient' && backdropType !== 'none'
     });
   }
 }

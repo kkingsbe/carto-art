@@ -2,6 +2,7 @@
 
 import { Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useState } from 'react';
 import { LocationSearch } from '@/components/controls/LocationSearch';
 import { StyleSelector } from '@/components/controls/StyleSelector';
 import { ColorControls } from '@/components/controls/ColorControls';
@@ -48,6 +49,8 @@ export function ControlDrawer({
   deleteProject,
   renameProject,
 }: ControlDrawerProps) {
+  const [libraryTab, setLibraryTab] = useState<'examples' | 'saved'>('examples');
+
   return (
     <aside className={cn(
       "fixed inset-x-0 bottom-16 md:relative md:bottom-auto md:w-80 bg-white dark:bg-gray-800 border-t md:border-t-0 md:border-r border-gray-200 dark:border-gray-700 overflow-y-auto flex flex-col z-50 transition-all duration-300 ease-in-out shadow-2xl md:shadow-none",
@@ -64,11 +67,49 @@ export function ControlDrawer({
           </button>
         </div>
 
-        {activeTab === 'examples' && (
-          <ExamplesGallery
-            onSelect={setConfig}
-            currentConfig={config}
-          />
+        {activeTab === 'library' && (
+          <div className="space-y-6">
+            <div className="flex p-1 bg-gray-100 dark:bg-gray-700/50 rounded-lg">
+              <button
+                onClick={() => setLibraryTab('examples')}
+                className={cn(
+                  "flex-1 py-1.5 text-xs font-medium rounded-md transition-all",
+                  libraryTab === 'examples'
+                    ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                )}
+              >
+                Examples
+              </button>
+              <button
+                onClick={() => setLibraryTab('saved')}
+                className={cn(
+                  "flex-1 py-1.5 text-xs font-medium rounded-md transition-all",
+                  libraryTab === 'saved'
+                    ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                )}
+              >
+                Saved
+              </button>
+            </div>
+
+            {libraryTab === 'examples' ? (
+              <ExamplesGallery
+                onSelect={setConfig}
+                currentConfig={config}
+              />
+            ) : (
+              <SavedProjects
+                projects={savedProjects}
+                currentConfig={config}
+                onSave={saveProject}
+                onLoad={setConfig}
+                onDelete={deleteProject}
+                onRename={renameProject}
+              />
+            )}
+          </div>
         )}
 
         {activeTab === 'map' && (
@@ -78,9 +119,21 @@ export function ControlDrawer({
                 onLocationSelect={updateLocation}
                 currentLocation={config.location}
               />
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg text-sm text-blue-800 dark:text-blue-200">
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg text-xs text-blue-800 dark:text-blue-200">
                 <p>Tip: Drag the map to fine-tune the position.</p>
               </div>
+            </div>
+
+            <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+              <StyleSelector
+                selectedStyleId={config.style.id}
+                onStyleSelect={updateStyle}
+              />
+              <ColorControls
+                palette={config.palette}
+                presets={config.style.palettes}
+                onPaletteChange={updatePalette}
+              />
             </div>
 
             <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-700">
@@ -94,48 +147,23 @@ export function ControlDrawer({
           </div>
         )}
 
-        {activeTab === 'design' && (
+        {activeTab === 'text' && (
           <div className="space-y-8">
-            <div className="space-y-4">
-              <StyleSelector
-                selectedStyleId={config.style.id}
-                onStyleSelect={updateStyle}
-              />
-              <ColorControls
-                palette={config.palette}
-                presets={config.style.palettes}
-                onPaletteChange={updatePalette}
-              />
-            </div>
-
-            <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-              <TypographyControls
-                config={config}
-                onTypographyChange={updateTypography}
-                onLocationChange={updateLocation}
-              />
-            </div>
+            <TypographyControls
+              config={config}
+              onTypographyChange={updateTypography}
+              onLocationChange={updateLocation}
+            />
           </div>
         )}
 
-        {activeTab === 'format' && (
+        {activeTab === 'frame' && (
           <div className="space-y-6">
             <FormatControls
               format={config.format}
               onFormatChange={updateFormat}
             />
           </div>
-        )}
-
-        {activeTab === 'saved' && (
-          <SavedProjects
-            projects={savedProjects}
-            currentConfig={config}
-            onSave={saveProject}
-            onLoad={setConfig}
-            onDelete={deleteProject}
-            onRename={renameProject}
-          />
         )}
       </div>
     </aside>

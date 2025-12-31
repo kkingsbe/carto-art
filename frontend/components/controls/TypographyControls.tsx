@@ -186,7 +186,7 @@ export function TypographyControls({ config, onTypographyChange, onLocationChang
           />
           <ControlCheckbox
             label="ALL CAPS"
-            checked={typography.titleAllCaps}
+            checked={Boolean(typography.titleAllCaps)}
             onChange={(e) => onTypographyChange({ titleAllCaps: e.target.checked })}
           />
           <ControlCheckbox

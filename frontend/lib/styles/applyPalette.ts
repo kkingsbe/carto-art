@@ -45,8 +45,22 @@ export function applyPaletteToStyle(
 
   handleContourSource(updatedStyle);
   
+  // Ensure water layers always come after hillshade to hide terrain under water
+  reorderLayersForWater(updatedStyle.layers);
+  
   if (layers && layerToggles) {
     applyVisibilityToggles(updatedStyle.layers, layers, layerToggles);
+  } else if (layers) {
+    // Even without layerToggles, we should still handle terrainUnderWater for bathymetry layers
+    updatedStyle.layers.forEach((layer: any) => {
+      if (layer.id.includes('bathymetry')) {
+        if (!layer.layout) {
+          layer.layout = {};
+        }
+        const terrainUnderWaterEnabled = layers.terrainUnderWater ?? true;
+        layer.layout.visibility = terrainUnderWaterEnabled ? 'visible' : 'none';
+      }
+    });
   }
 
   const roadWeightMultiplier = (layers?.roadWeight ?? 1.0) * (layers?.labels ? 0.8 : 1.0);
@@ -63,9 +77,36 @@ export function applyPaletteToStyle(
 function handleContourSource(style: any) {
   const contourSource = style.sources?.contours;
   if (!contourSource || !contourSource.url || contourSource.url === '') {
+    // Filter out contour-related layers, including bathymetry layers that use the contours source
     style.layers = style.layers.filter((layer: any) => 
-      layer.id !== 'contours' && !layer.id.includes('contour')
+      layer.id !== 'contours' && 
+      !layer.id.includes('contour') &&
+      !layer.id.includes('bathymetry')
     );
+  }
+}
+
+function reorderLayersForWater(layers: any[]) {
+  // Find indices of hillshade and water layers
+  const hillshadeIndex = layers.findIndex((layer: any) => layer.id === 'hillshade' && layer.type === 'hillshade');
+  const waterIndices: number[] = [];
+  
+  layers.forEach((layer: any, index: number) => {
+    if (layer.id === 'water' && layer.type === 'fill') {
+      waterIndices.push(index);
+    }
+  });
+  
+  // If hillshade exists and comes after any water layer, we need to reorder
+  if (hillshadeIndex !== -1 && waterIndices.length > 0) {
+    const firstWaterIndex = waterIndices[0];
+    
+    // If hillshade comes after water, move it before water
+    if (hillshadeIndex > firstWaterIndex) {
+      const hillshadeLayer = layers[hillshadeIndex];
+      layers.splice(hillshadeIndex, 1); // Remove hillshade from its current position
+      layers.splice(firstWaterIndex, 0, hillshadeLayer); // Insert it before the first water layer
+    }
   }
 }
 
@@ -75,13 +116,52 @@ function applyVisibilityToggles(
   layerToggles: PosterStyle['layerToggles']
 ) {
   styleLayers.forEach((layer) => {
+    // Initialize layout if it doesn't exist
+    if (!layer.layout) {
+      layer.layout = {};
+    }
+
+    // Special handling for bathymetry/terrain under water
+    if (layer.id.includes('bathymetry')) {
+      // If terrainUnderWater is disabled or undefined, hide the layer and skip further processing
+      const terrainUnderWaterEnabled = configLayers.terrainUnderWater ?? true; // Default to true if undefined
+      if (!terrainUnderWaterEnabled) {
+        layer.layout.visibility = 'none';
+        return; // Early return - don't process this layer further
+      }
+      // If enabled, set to visible initially (may be overridden by toggle check below)
+      layer.layout.visibility = 'visible';
+    }
+
     const toggle = layerToggles.find(t => t.layerIds.includes(layer.id));
     if (toggle) {
-      const isVisible = configLayers[toggle.id as keyof PosterConfig['layers']];
-      layer.layout = {
-        ...layer.layout,
-        visibility: isVisible ? 'visible' : 'none'
-      };
+      const toggleValue = configLayers[toggle.id as keyof PosterConfig['layers']];
+      const isVisible = Boolean(toggleValue);
+      
+      // For bathymetry layers, we already set visibility above based on terrainUnderWater
+      // Only override if this is a different toggle (not terrainUnderWater) that's disabled
+      if (layer.id.includes('bathymetry')) {
+        // If this is the terrainUnderWater toggle itself, we've already handled it above
+        // If this is a different toggle (shouldn't happen now, but handle it), respect it
+        if (toggle.id !== 'terrainUnderWater' && !isVisible) {
+          layer.layout.visibility = 'none';
+        }
+        // Otherwise, keep the visibility we set above (visible if terrainUnderWater is enabled)
+      } else {
+        // For non-bathymetry layers, use the toggle's visibility
+        layer.layout.visibility = isVisible ? 'visible' : 'none';
+      }
+    } else if (!layer.id.includes('bathymetry')) {
+      // For layers not in any toggle and not bathymetry, ensure visibility is set
+      // (default to visible if not specified)
+      if (layer.layout.visibility === undefined) {
+        layer.layout.visibility = 'visible';
+      }
+    } else {
+      // Bathymetry layer not in any toggle (shouldn't happen, but handle it)
+      // If terrainUnderWater is enabled, show it; otherwise hide it
+      const terrainUnderWaterEnabled = configLayers.terrainUnderWater ?? true;
+      layer.layout.visibility = terrainUnderWaterEnabled ? 'visible' : 'none';
     }
   });
 }
@@ -130,7 +210,43 @@ function updateLayerPaint(
 
   // Water
   if (id === 'water' && type === 'fill') {
-    layer.paint = { ...layer.paint, 'fill-color': palette.water };
+    // Always ensure water is fully opaque to hide hillshade underneath
+    // When terrainUnderWater is disabled, we definitely want full opacity
+    // When enabled, we can allow some transparency if the style wants it
+    const terrainUnderWaterEnabled = layers?.terrainUnderWater ?? true;
+    const baseOpacity = layer.paint?.['fill-opacity'] ?? 1;
+    // If terrainUnderWater is disabled, force full opacity to hide hillshade
+    // Otherwise, use the style's opacity (but ensure it's at least 0.95 to mostly hide hillshade)
+    const waterOpacity = terrainUnderWaterEnabled 
+      ? Math.max(baseOpacity, 0.95) // Allow slight transparency only when underwater terrain is enabled
+      : 1.0; // Full opacity when disabled to completely hide hillshade
+    
+    layer.paint = { 
+      ...layer.paint, 
+      'fill-color': palette.water,
+      'fill-opacity': waterOpacity
+    };
+    return;
+  }
+
+  // Bathymetry Gradient / Detail
+  if (id === 'bathymetry-gradient' || id.includes('bathymetry-detail')) {
+    const isDark = isColorDark(palette.background);
+    const depthColor = isDark ? '#FFFFFF' : '#001a33';
+    layer.paint = {
+      ...layer.paint,
+      'line-color': depthColor,
+      'line-opacity': isDark ? 0.05 : 0.1,
+    };
+    return;
+  }
+
+  // Shoreline & Water Glow
+  if (id === 'shoreline-glow' || id.includes('water-glow')) {
+    layer.paint = {
+      ...layer.paint,
+      'line-opacity': 0,
+    };
     return;
   }
 
@@ -201,9 +317,8 @@ function updateLayerPaint(
     layer.paint = {
       ...layer.paint,
       'text-color': palette.text,
-      'text-halo-color': palette.background,
-      'text-halo-width': 2.5,
-      'text-halo-blur': 1.5,
+      'text-halo-width': 0,
+      'text-halo-blur': 0,
       'text-opacity': 0.9,
     };
     return;
