@@ -59,6 +59,7 @@ export default function RootLayout({
           {`
             (function() {
               function applyKofiStyles() {
+                const isMobile = window.innerWidth <= 768;
                 const style = document.createElement('style');
                 style.id = 'kofi-position-style';
                 style.textContent = \`
@@ -77,17 +78,39 @@ export default function RootLayout({
                     left: unset !important;
                     right: 16px !important;
                   }
+                  @media (max-width: 768px) {
+                    .floatingchat-container-wrap,
+                    [class*="floatingchat"],
+                    [class*="floating-chat"],
+                    .floating-chat-kofi-popup-iframe,
+                    [class*="floating-chat"][class*="popup"],
+                    [class*="floating-chat"][class*="iframe"],
+                    [id*="floating-chat"],
+                    iframe[src*="ko-fi.com"],
+                    div[class*="kofi"],
+                    div[id*="kofi"] {
+                      display: none !important;
+                      visibility: hidden !important;
+                    }
+                  }
                 \`;
                 if (!document.getElementById('kofi-position-style')) {
                   document.head.appendChild(style);
+                } else {
+                  document.getElementById('kofi-position-style').textContent = style.textContent;
                 }
                 
                 // Directly apply styles to any existing elements
                 const elements = document.querySelectorAll('[class*="floating"], [id*="floating"], iframe[src*="ko-fi"], div[class*="kofi"]');
                 elements.forEach(function(el) {
                   if (el instanceof HTMLElement) {
-                    el.style.left = 'unset';
-                    el.style.right = '16px';
+                    if (isMobile) {
+                      el.style.display = 'none';
+                      el.style.visibility = 'hidden';
+                    } else {
+                      el.style.left = 'unset';
+                      el.style.right = '16px';
+                    }
                   }
                 });
               }
@@ -103,6 +126,11 @@ export default function RootLayout({
               observer.observe(document.body, {
                 childList: true,
                 subtree: true
+              });
+              
+              // Reapply styles on window resize (e.g., device rotation)
+              window.addEventListener('resize', function() {
+                applyKofiStyles();
               });
               
               function initKofi() {

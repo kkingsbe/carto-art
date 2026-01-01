@@ -160,3 +160,20 @@ div[id*="kofi"] {
   left: unset !important;
   right: 16px !important;
 }
+
+/* Hide Ko-fi widget on mobile devices */
+@media (max-width: 768px) {
+  .floatingchat-container-wrap,
+  [class*="floatingchat"],
+  [class*="floating-chat"],
+  .floating-chat-kofi-popup-iframe,
+  [class*="floating-chat"][class*="popup"],
+  [class*="floating-chat"][class*="iframe"],
+  [id*="floating-chat"],
+  iframe[src*="ko-fi.com"],
+  div[class*="kofi"],
+  div[id*="kofi"] {
+    display: none !important;
+    visibility: hidden !important;
+  }
+}
