@@ -124,7 +124,10 @@ export function KofiTipModal({ isOpen, onClose }: KofiTipModalProps) {
         {/* Ko-fi Iframe Container */}
         <div
           className={cn(
-            "flex-1 overflow-auto overscroll-contain",
+            "flex-1",
+            // Mobile: no overflow on container, let iframe handle scrolling
+            // Desktop: allow overflow for scrolling
+            isMobile ? "overflow-hidden" : "overflow-auto overscroll-contain",
             // Mobile: minimal padding, smoother scrolling, prevent pull-to-refresh
             isMobile ? "p-2 touch-pan-y" : "p-6"
           )}
@@ -135,7 +138,9 @@ export function KofiTipModal({ isOpen, onClose }: KofiTipModalProps) {
               "overflow-hidden border border-gray-200/50 dark:border-gray-700/50",
               "bg-gray-50/50 dark:bg-gray-900/50",
               // Mobile: minimal border radius, desktop: rounded
-              isMobile ? "rounded-lg" : "rounded-xl"
+              isMobile ? "rounded-lg" : "rounded-xl",
+              // Mobile: make container fill available height
+              isMobile ? "h-full" : undefined
             )}
           >
             <iframe
@@ -146,9 +151,9 @@ export function KofiTipModal({ isOpen, onClose }: KofiTipModalProps) {
                 width: '100%',
                 background: 'transparent',
                 // Responsive height: adjust based on screen size
-                // On mobile, use calc to account for header and padding
+                // On mobile, fill the container height (which fills flex-1 space)
                 height: isMobile 
-                  ? `min(600px, calc(100dvh - 80px))` 
+                  ? '100%' 
                   : '712px',
                 minHeight: isMobile ? '500px' : '600px',
                 display: 'block',

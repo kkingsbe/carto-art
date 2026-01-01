@@ -161,18 +161,10 @@ div[id*="kofi"] {
   right: 16px !important;
 }
 
-/* Hide Ko-fi widget on mobile devices */
+/* Hide Ko-fi floating button on mobile devices (but keep modal accessible) */
 @media (max-width: 768px) {
   .floatingchat-container-wrap,
-  [class*="floatingchat"],
-  [class*="floating-chat"],
-  .floating-chat-kofi-popup-iframe,
-  [class*="floating-chat"][class*="popup"],
-  [class*="floating-chat"][class*="iframe"],
-  [id*="floating-chat"],
-  iframe[src*="ko-fi.com"],
-  div[class*="kofi"],
-  div[id*="kofi"] {
+  [class*="floatingchat"]:not([class*="popup"]):not([class*="iframe"]) {
     display: none !important;
     visibility: hidden !important;
   }

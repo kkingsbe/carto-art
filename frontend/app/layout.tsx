@@ -80,15 +80,7 @@ export default function RootLayout({
                   }
                   @media (max-width: 768px) {
                     .floatingchat-container-wrap,
-                    [class*="floatingchat"],
-                    [class*="floating-chat"],
-                    .floating-chat-kofi-popup-iframe,
-                    [class*="floating-chat"][class*="popup"],
-                    [class*="floating-chat"][class*="iframe"],
-                    [id*="floating-chat"],
-                    iframe[src*="ko-fi.com"],
-                    div[class*="kofi"],
-                    div[id*="kofi"] {
+                    [class*="floatingchat"]:not([class*="popup"]):not([class*="iframe"]) {
                       display: none !important;
                       visibility: hidden !important;
                     }
@@ -100,17 +92,26 @@ export default function RootLayout({
                   document.getElementById('kofi-position-style').textContent = style.textContent;
                 }
                 
-                // Directly apply styles to any existing elements
-                const elements = document.querySelectorAll('[class*="floating"], [id*="floating"], iframe[src*="ko-fi"], div[class*="kofi"]');
-                elements.forEach(function(el) {
-                  if (el instanceof HTMLElement) {
-                    if (isMobile) {
-                      el.style.display = 'none';
-                      el.style.visibility = 'hidden';
-                    } else {
-                      el.style.left = 'unset';
-                      el.style.right = '16px';
-                    }
+                // Apply positioning styles to button container
+                const buttonContainer = document.querySelector('.floatingchat-container-wrap');
+                if (buttonContainer && buttonContainer instanceof HTMLElement) {
+                  if (isMobile) {
+                    // Hide only the button container on mobile
+                    buttonContainer.style.display = 'none';
+                    buttonContainer.style.visibility = 'hidden';
+                  } else {
+                    // Position button on right side
+                    buttonContainer.style.left = 'unset';
+                    buttonContainer.style.right = '16px';
+                  }
+                }
+                
+                // Apply positioning to popup/iframe (but don't hide on mobile)
+                const popupElements = document.querySelectorAll('.floating-chat-kofi-popup-iframe, [class*="floating-chat"][class*="popup"], [class*="floating-chat"][class*="iframe"]');
+                popupElements.forEach(function(el) {
+                  if (el instanceof HTMLElement && !isMobile) {
+                    el.style.left = 'unset';
+                    el.style.right = '16px';
                   }
                 });
               }
