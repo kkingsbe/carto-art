@@ -266,8 +266,13 @@ function updateLayerPaint(
     return;
   }
 
-  // Shoreline & Water Glow
-  if (id === 'shoreline-glow' || id.includes('water-glow')) {
+  // Disable any water outline/border/casing layers that create halos
+  // This catches layers from the base tile data that we don't explicitly create
+  if (type === 'line' && 
+      (id.includes('water-outline') || 
+       id.includes('water-border') || 
+       id.includes('water-casing') ||
+       (id.includes('water-line') && id !== 'waterway'))) {
     layer.paint = {
       ...layer.paint,
       'line-opacity': 0,
