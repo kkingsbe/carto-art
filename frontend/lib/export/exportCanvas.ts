@@ -5,6 +5,7 @@ import { calculateTargetResolution } from './resolution';
 import { drawMarker, applyTexture, drawCompassRose } from './drawing';
 import { drawTextOverlay } from './text-overlay';
 import { logger } from '@/lib/logger';
+import { createError } from '@/lib/errors/ServerActionError';
 
 interface ExportOptions {
   map: MapLibreGL.Map;
@@ -84,7 +85,7 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
     exportCanvas.height = exportResolution.height;
     const exportCtx = exportCanvas.getContext('2d');
     
-    if (!exportCtx) throw new Error('Could not create export canvas context');
+    if (!exportCtx) throw createError.internalError('Could not create export canvas context');
 
     // Background
     exportCtx.fillStyle = config.palette.background;

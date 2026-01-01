@@ -28,7 +28,6 @@ interface ControlDrawerProps {
   updateLayers: (layers: Partial<PosterConfig['layers']>) => void;
   setConfig: (config: PosterConfig) => void;
   savedProjects: SavedProject[];
-  saveProject: (name: string, config: PosterConfig, thumbnailBlob?: Blob) => Promise<void>;
   deleteProject: (id: string) => Promise<void>;
   renameProject: (id: string, name: string) => Promise<void>;
   currentMapId: string | null;
@@ -55,7 +54,6 @@ export function ControlDrawer({
   updateLayers,
   setConfig,
   savedProjects,
-  saveProject,
   deleteProject,
   renameProject,
   currentMapId,
@@ -117,8 +115,6 @@ export function ControlDrawer({
             ) : (
               <SavedProjects
                 projects={savedProjects}
-                currentConfig={config}
-                onSave={saveProject}
                 onLoad={onLoadProject}
                 onDelete={deleteProject}
                 onRename={renameProject}

@@ -14,6 +14,7 @@
     "@supabase/supabase-js": "^2.89.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "isomorphic-dompurify": "^2.35.0",
     "lru-cache": "^11.0.1",
     "lucide-react": "^0.562.0",
     "lz-string": "^1.5.0",
@@ -24,7 +25,9 @@
     "react-dom": "19.2.3",
     "react-map-gl": "^7.1.0",
     "react-masonry-css": "^1.0.16",
-    "tailwind-merge": "^3.4.0"
+    "sharp": "^0.34.5",
+    "tailwind-merge": "^3.4.0",
+    "zod": "^4.3.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -2,6 +2,12 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { createError } from '@/lib/errors/ServerActionError';
+import { logger } from '@/lib/logger';
+import { COMMENT_MIN_LENGTH, COMMENT_MAX_LENGTH } from '@/lib/constants/limits';
+import { checkRateLimit } from '@/lib/middleware/rateLimit';
+import { RATE_LIMITS } from '@/lib/constants/limits';
+import { normalizeComment, sanitizeText } from '@/lib/utils/sanitize';
 
 export interface Comment {
   id: string;
@@ -29,7 +35,34 @@ export async function addComment(mapId: string, content: string) {
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    throw new Error('You must be signed in to comment');
+    throw createError.authRequired('You must be signed in to comment');
+  }
+
+  // Check rate limit
+  const rateLimit = await checkRateLimit(
+    user.id,
+    'comment',
+    RATE_LIMITS.COMMENTS_PER_MINUTE,
+    60 * 1000 // 1 minute window
+  );
+  if (!rateLimit.allowed) {
+    throw createError.rateLimitExceeded(
+      `Rate limit exceeded. Please try again in ${rateLimit.retryAfter} seconds.`
+    );
+  }
+
+  // Normalize and sanitize comment content
+  const normalizedContent = normalizeComment(content);
+  const sanitizedContent = sanitizeText(normalizedContent);
+  
+  // Validate comment content
+  if (sanitizedContent.length < COMMENT_MIN_LENGTH) {
+    throw createError.validationError('Comment cannot be empty');
+  }
+  if (sanitizedContent.length > COMMENT_MAX_LENGTH) {
+    throw createError.validationError(
+      `Comment must be ${COMMENT_MAX_LENGTH} characters or less`
+    );
   }
 
   // Verify map is published
@@ -39,8 +72,13 @@ export async function addComment(mapId: string, content: string) {
     .eq('id', mapId)
     .single();
 
-  if (mapError || !(map as any)?.is_published) {
-    throw new Error('Can only comment on published maps');
+  if (mapError) {
+    logger.error('Failed to verify map for comment:', { error: mapError, mapId });
+    throw createError.databaseError(`Failed to verify map: ${mapError.message}`);
+  }
+
+  if (!(map as any)?.is_published) {
+    throw createError.permissionDenied('Can only comment on published maps');
   }
 
   const { error } = await supabase
@@ -48,13 +86,15 @@ export async function addComment(mapId: string, content: string) {
     .insert({
       user_id: user.id,
       map_id: mapId,
-      content: content.trim(),
+      content: sanitizedContent,
     } as any);
 
   if (error) {
-    throw new Error(`Failed to add comment: ${error.message}`);
+    logger.error('Failed to add comment:', { error, mapId, userId: user.id });
+    throw createError.databaseError(`Failed to add comment: ${error.message}`);
   }
 
+  logger.info('Comment added successfully', { mapId, userId: user.id });
   revalidatePath(`/map/${mapId}`);
 }
 
@@ -78,7 +118,8 @@ export async function getComments(mapId: string): Promise<Comment[]> {
     .order('created_at', { ascending: true });
 
   if (error) {
-    throw new Error(`Failed to fetch comments: ${error.message}`);
+    logger.error('Failed to fetch comments:', { error, mapId });
+    throw createError.databaseError(`Failed to fetch comments: ${error.message}`);
   }
 
   return (data || []).map((comment: any) => ({
@@ -108,7 +149,7 @@ export async function deleteComment(commentId: string) {
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    throw new Error('You must be signed in to delete comments');
+    throw createError.authRequired('You must be signed in to delete comments');
   }
 
   // Get comment to find map_id for revalidation
@@ -126,10 +167,12 @@ export async function deleteComment(commentId: string) {
     .eq('user_id', user.id); // RLS will handle this, but double-check
 
   if (error) {
-    throw new Error(`Failed to delete comment: ${error.message}`);
+    logger.error('Failed to delete comment:', { error, commentId, userId: user.id });
+    throw createError.databaseError(`Failed to delete comment: ${error.message}`);
   }
 
   if (comment) {
+    logger.info('Comment deleted successfully', { commentId, mapId: (comment as any).map_id, userId: user.id });
     revalidatePath(`/map/${(comment as any).map_id}`);
   }
 }

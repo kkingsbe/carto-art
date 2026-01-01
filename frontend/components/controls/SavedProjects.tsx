@@ -1,13 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Save, Trash2, FolderOpen, Clock, Edit2, Check, X } from 'lucide-react';
-import type { PosterConfig, SavedProject } from '@/types/poster';
+import { Trash2, FolderOpen, Clock, Edit2, Check, X } from 'lucide-react';
+import type { SavedProject } from '@/types/poster';
 
 interface SavedProjectsProps {
   projects: SavedProject[];
-  currentConfig: PosterConfig;
-  onSave: (name: string, config: PosterConfig, thumbnailBlob?: Blob) => Promise<void>;
   onLoad: (project: SavedProject) => void;
   onDelete: (id: string) => Promise<void>;
   onRename: (id: string, name: string) => Promise<void>;
@@ -15,35 +13,15 @@ interface SavedProjectsProps {
 
 export function SavedProjects({
   projects,
-  currentConfig,
-  onSave,
   onLoad,
   onDelete,
   onRename
 }: SavedProjectsProps) {
-  const [newName, setNewName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
-  const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newName.trim() || saving) return;
-
-    setSaving(true);
-    setError(null);
-    try {
-      await onSave(newName.trim(), currentConfig);
-      setNewName('');
-    } catch (err: any) {
-      setError(err.message || 'Failed to save project. Please try again.');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleRename = async (id: string) => {
     if (!editName.trim() || renamingId === id) return;
@@ -80,58 +58,35 @@ export function SavedProjects({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Save Current Work</h3>
-        {error && (
-          <div className="p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-            <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
-          </div>
-        )}
-        <form onSubmit={handleSave} className="flex gap-2">
-          <input
-            type="text"
-            value={newName}
-            onChange={(e) => {
-              setNewName(e.target.value);
-              setError(null);
-            }}
-            placeholder="Project name..."
-            className="flex-1 px-3 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-            disabled={saving}
-          />
-          <button
-            type="submit"
-            disabled={!newName.trim() || saving}
-            className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-md transition-colors flex items-center gap-2"
-          >
-            {saving ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span className="text-xs">Saving...</span>
-              </>
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
-          </button>
-        </form>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">
+          Saved Projects
+        </h3>
+        <span className="text-xs text-gray-500 dark:text-gray-400">
+          {projects.length}
+        </span>
       </div>
+      
+      {error && (
+        <div className="p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+          <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+        </div>
+      )}
 
-      <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Library ({projects.length})</h3>
-        
-        {projects.length === 0 ? (
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            <FolderOpen className="w-8 h-8 mx-auto mb-2 opacity-20" />
-            <p className="text-sm">No saved projects yet.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {projects.map((project) => (
-              <div 
-                key={project.id}
-                className="group p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-100 dark:border-gray-800 hover:border-blue-200 dark:hover:border-blue-900/50 transition-all"
-              >
+      {projects.length === 0 ? (
+        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+          <FolderOpen className="w-12 h-12 mx-auto mb-3 opacity-20" />
+          <p className="text-sm font-medium mb-1">No saved projects yet</p>
+          <p className="text-xs opacity-75">Use the Save button in the header to save your work</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {projects.map((project) => (
+            <div 
+              key={project.id}
+              className="group p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-100 dark:border-gray-800 hover:border-blue-200 dark:hover:border-blue-900/50 transition-all"
+            >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     {editingId === project.id ? (
@@ -206,12 +161,11 @@ export function SavedProjects({
                   className="w-full mt-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded transition-colors"
                 >
                   Load Project
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

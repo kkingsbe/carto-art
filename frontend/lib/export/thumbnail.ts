@@ -1,6 +1,7 @@
 import type MapLibreGL from 'maplibre-gl';
 import type { PosterConfig } from '@/types/poster';
 import { exportMapToPNG } from './exportCanvas';
+import { THUMBNAIL_MAX_DIMENSION, THUMBNAIL_QUALITY, THUMBNAIL_DPI } from '@/lib/constants/limits';
 
 /**
  * Generate a thumbnail blob from a map instance
@@ -21,7 +22,7 @@ export async function generateThumbnail(
     ? 1
     : 210/297; // ISO A4
 
-  const maxDimension = 800;
+  const maxDimension = THUMBNAIL_MAX_DIMENSION;
   let width: number;
   let height: number;
 
@@ -40,7 +41,7 @@ export async function generateThumbnail(
     resolution: {
       width,
       height,
-      dpi: 72,
+      dpi: THUMBNAIL_DPI,
       name: 'thumbnail',
     },
   });
@@ -76,7 +77,7 @@ async function convertToWebP(pngBlob: Blob): Promise<Blob> {
           }
         },
         'image/webp',
-        0.85 // Quality
+        THUMBNAIL_QUALITY
       );
     };
     img.onerror = () => reject(new Error('Failed to load image'));

@@ -1,4 +1,5 @@
 import type { PosterLocation } from '@/types/poster';
+import { createError } from '@/lib/errors/ServerActionError';
 
 export interface NominatimResult {
   display_name: string;
@@ -46,7 +47,7 @@ export async function searchLocation(
     }
 
     const baseMsg = `Geocoding error ${resp.status}`;
-    throw new Error(errorDetail ? `${baseMsg}: ${errorDetail}` : `${baseMsg} (no details available)`);
+    throw createError.internalError(errorDetail ? `${baseMsg}: ${errorDetail}` : `${baseMsg} (no details available)`);
   }
 
   const data = await resp.json();
@@ -75,7 +76,7 @@ export async function reverseGeocode(
       // ignore
     }
     const baseMsg = `Reverse geocoding error ${resp.status}`;
-    throw new Error(errorDetail ? `${baseMsg}: ${errorDetail}` : `${baseMsg}`);
+    throw createError.internalError(errorDetail ? `${baseMsg}: ${errorDetail}` : `${baseMsg}`);
   }
 
   const data = await resp.json();

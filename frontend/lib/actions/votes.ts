@@ -2,6 +2,10 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { createError } from '@/lib/errors/ServerActionError';
+import { logger } from '@/lib/logger';
+import { checkRateLimit } from '@/lib/middleware/rateLimit';
+import { RATE_LIMITS } from '@/lib/constants/limits';
 
 /**
  * Vote on a map (+1 or -1)
@@ -15,7 +19,25 @@ export async function voteOnMap(mapId: string, value: 1 | -1) {
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    throw new Error('You must be signed in to vote');
+    throw createError.authRequired('You must be signed in to vote');
+  }
+
+  // Check rate limit
+  const rateLimit = await checkRateLimit(
+    user.id,
+    'vote',
+    RATE_LIMITS.VOTES_PER_MINUTE,
+    60 * 1000 // 1 minute window
+  );
+  if (!rateLimit.allowed) {
+    throw createError.rateLimitExceeded(
+      `Rate limit exceeded. Please try again in ${rateLimit.retryAfter} seconds.`
+    );
+  }
+
+  // Validate vote value
+  if (value !== 1 && value !== -1) {
+    throw createError.validationError('Vote value must be 1 or -1');
   }
 
   // Upsert vote (insert or update)
@@ -34,9 +56,11 @@ export async function voteOnMap(mapId: string, value: 1 | -1) {
     );
 
   if (error) {
-    throw new Error(`Failed to vote: ${error.message}`);
+    logger.error('Failed to vote:', { error, mapId, userId: user.id, value });
+    throw createError.databaseError(`Failed to vote: ${error.message}`);
   }
 
+  logger.info('Vote recorded successfully', { mapId, userId: user.id, value });
   revalidatePath(`/map/${mapId}`);
   revalidatePath('/feed');
 }
@@ -63,6 +87,7 @@ export async function getUserVote(mapId: string): Promise<number | null> {
     .single();
 
   if (error || !data) {
+    // Not an error - user just hasn't voted yet
     return null;
   }
 
@@ -81,7 +106,7 @@ export async function removeVote(mapId: string) {
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    throw new Error('You must be signed in to remove votes');
+    throw createError.authRequired('You must be signed in to remove votes');
   }
 
   const { error } = await (supabase as any)
@@ -91,9 +116,11 @@ export async function removeVote(mapId: string) {
     .eq('map_id', mapId);
 
   if (error) {
-    throw new Error(`Failed to remove vote: ${error.message}`);
+    logger.error('Failed to remove vote:', { error, mapId, userId: user.id });
+    throw createError.databaseError(`Failed to remove vote: ${error.message}`);
   }
 
+  logger.info('Vote removed successfully', { mapId, userId: user.id });
   revalidatePath(`/map/${mapId}`);
   revalidatePath('/feed');
 }

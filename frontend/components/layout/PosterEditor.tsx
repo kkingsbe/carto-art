@@ -1,13 +1,15 @@
 'use client';
 
 import { useMemo, useCallback, useState, useEffect, useRef } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { usePosterConfig } from '@/hooks/usePosterConfig';
 import { useSavedProjects } from '@/hooks/useSavedProjects';
 import { useMapExport } from '@/hooks/useMapExport';
-import { Maximize, Plus, Minus, Undo2, Redo2 } from 'lucide-react';
+import { Maximize, Plus, Minus, Undo2, Redo2, RotateCcw } from 'lucide-react';
 import { MapPreview } from '@/components/map/MapPreview';
 import { TextOverlay } from '@/components/map/TextOverlay';
 import { ExportButton } from '@/components/controls/ExportButton';
+import { SaveButton } from '@/components/controls/SaveButton';
 import { applyPaletteToStyle } from '@/lib/styles/applyPalette';
 import { throttle, cn } from '@/lib/utils';
 import { THROTTLE } from '@/lib/constants';
@@ -22,8 +24,11 @@ import { getMapById } from '@/lib/actions/maps';
 import { isConfigEqual, cloneConfig } from '@/lib/utils/configComparison';
 import type { SavedProject, PosterConfig } from '@/types/poster';
 import { generateThumbnail } from '@/lib/export/thumbnail';
+import { DEFAULT_CONFIG } from '@/lib/config/defaults';
 
 export function PosterEditor() {
+  const router = useRouter();
+  const pathname = usePathname();
   const [activeTab, setActiveTab] = useState<Tab>('location');
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
 
@@ -128,6 +133,11 @@ export function PosterEditor() {
     await handleLoadProject(savedProject);
   }, [saveProject, handleLoadProject, isAuthenticated]);
 
+  // Wrapper for SaveButton that passes current config
+  const handleSaveClick = useCallback(async (name: string) => {
+    await handleSaveProject(name, config);
+  }, [handleSaveProject, config]);
+
   // Handle publish success - refetch map status to get latest published state
   const handlePublishSuccess = useCallback(async () => {
     if (!currentMapId || !isAuthenticated) return;
@@ -181,6 +191,21 @@ export function PosterEditor() {
     throttledUpdateLocation(center, zoom);
   }, [throttledUpdateLocation]);
 
+  // Handle reset - clears saved map state and resets to default config
+  const handleReset = useCallback(() => {
+    // Clear saved map state
+    setCurrentMapId(null);
+    setCurrentMapName(null);
+    setOriginalConfig(null);
+    setCurrentMapStatus(null);
+
+    // Reset config to default
+    setConfig(DEFAULT_CONFIG);
+
+    // Clear URL state parameter by navigating to clean URL
+    router.replace(pathname, { scroll: false });
+  }, [setConfig, router, pathname]);
+
   // Keyboard shortcuts for undo/redo
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -207,6 +232,20 @@ export function PosterEditor() {
           <span className="font-bold text-gray-900 dark:text-white">CartoArt</span>
         </Link>
         <div className="flex items-center gap-2">
+          <SaveButton
+            onSave={handleSaveClick}
+            currentMapName={currentMapName}
+            hasUnsavedChanges={currentMapStatus?.hasUnsavedChanges}
+            isAuthenticated={isAuthenticated}
+            disabled={isExporting}
+          />
+          <button
+            onClick={handleReset}
+            className="p-2 rounded-md transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700"
+            title={currentMapId ? "Exit saved map and start new" : "Reset to default"}
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
           <ExportButton onExport={handleExport} isExporting={isExporting} />
         </div>
       </div>
@@ -231,7 +270,6 @@ export function PosterEditor() {
         updateLayers={updateLayers}
         setConfig={setConfig}
         savedProjects={projects}
-        saveProject={handleSaveProject}
         deleteProject={deleteProject}
         renameProject={renameProject}
         currentMapId={currentMapId}
@@ -275,7 +313,21 @@ export function PosterEditor() {
             >
               <Redo2 className="w-4 h-4" />
             </button>
+            <button
+              onClick={handleReset}
+              className="p-2 rounded-md transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700"
+              title={currentMapId ? "Exit saved map and start new" : "Reset to default"}
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
           </div>
+          <SaveButton
+            onSave={handleSaveClick}
+            currentMapName={currentMapName}
+            hasUnsavedChanges={currentMapStatus?.hasUnsavedChanges}
+            isAuthenticated={isAuthenticated}
+            disabled={isExporting}
+          />
           <ExportButton onExport={handleExport} isExporting={isExporting} />
         </div>
 

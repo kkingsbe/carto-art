@@ -133,6 +133,29 @@ export interface Database {
           updated_at?: string;
         };
       };
+      rate_limits: {
+        Row: {
+          user_id: string;
+          action_type: string;
+          request_timestamps: Json;
+          window_start: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          action_type: string;
+          request_timestamps?: Json;
+          window_start?: string;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          action_type?: string;
+          request_timestamps?: Json;
+          window_start?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;

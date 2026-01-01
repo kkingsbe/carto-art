@@ -132,6 +132,69 @@ export function AccountPanel({
 
   return (
     <div className="space-y-6">
+      {/* Quick Actions - Prominent section at top when editing a map */}
+      {currentMapId && currentMapStatus && user && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">
+            Quick Actions
+          </h3>
+
+          <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200 dark:border-blue-800 shadow-sm">
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  Current Map
+                </p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                  {currentMapName}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                {currentMapStatus.isPublished && (
+                  <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded">
+                    Published
+                  </span>
+                )}
+                {currentMapStatus.hasUnsavedChanges && (
+                  <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 text-xs font-medium rounded">
+                    Unsaved Changes
+                  </span>
+                )}
+              </div>
+
+              {currentMapStatus.isPublished ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-center gap-2 bg-white dark:bg-gray-800"
+                  onClick={handleUnpublish}
+                >
+                  <EyeOff className="w-4 h-4" />
+                  Unpublish from Feed
+                </Button>
+              ) : (
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="w-full justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => setShowPublishModal(true)}
+                >
+                  <Upload className="w-4 h-4" />
+                  Publish to Feed
+                </Button>
+              )}
+
+              {currentMapStatus.hasUnsavedChanges && !currentMapStatus.isPublished && (
+                <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
+                  💡 Publishing will share the last saved version. Save your changes first!
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Account Status */}
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">
@@ -162,69 +225,6 @@ export function AccountPanel({
           </div>
         )}
       </div>
-
-      {/* Current Map Status - Only show if editing a saved map */}
-      {currentMapId && currentMapStatus && user && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">
-            Current Map
-          </h3>
-
-          <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700">
-            <div className="space-y-3">
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                  Editing
-                </p>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {currentMapName}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 flex-wrap">
-                {currentMapStatus.isPublished && (
-                  <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded">
-                    Published
-                  </span>
-                )}
-                {currentMapStatus.hasUnsavedChanges && (
-                  <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 text-xs font-medium rounded">
-                    Unsaved Changes
-                  </span>
-                )}
-              </div>
-
-              {currentMapStatus.isPublished ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start gap-3"
-                  onClick={handleUnpublish}
-                >
-                  <EyeOff className="w-4 h-4" />
-                  Unpublish from Feed
-                </Button>
-              ) : (
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="w-full justify-start gap-3"
-                  onClick={() => setShowPublishModal(true)}
-                >
-                  <Upload className="w-4 h-4" />
-                  Publish to Feed
-                </Button>
-              )}
-
-              {currentMapStatus.hasUnsavedChanges && !currentMapStatus.isPublished && (
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Note: Publishing will share the last saved version
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Action Buttons */}
       <div className="space-y-2">

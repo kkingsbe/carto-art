@@ -5,6 +5,13 @@ import { serializeMapConfig, deserializeMapConfig } from '@/lib/supabase/maps';
 import type { PosterConfig } from '@/types/poster';
 import type { Database } from '@/types/database';
 import { revalidatePath } from 'next/cache';
+import { createError } from '@/lib/errors/ServerActionError';
+import { logger } from '@/lib/logger';
+import { validatePosterConfig, PosterConfigSchema } from '@/lib/validation/posterConfig';
+import { checkRateLimit } from '@/lib/middleware/rateLimit';
+import { RATE_LIMITS } from '@/lib/constants/limits';
+import { z } from 'zod';
+import { sanitizeText } from '@/lib/utils/sanitize';
 
 export interface SavedMap {
   id: string;
@@ -21,7 +28,8 @@ export interface SavedMap {
 }
 
 // Alias for backward compatibility
-export type MapConfig = any; // JSONB representation of PosterConfig
+// JSONB representation of PosterConfig - inferred from Zod schema
+export type MapConfig = z.infer<typeof PosterConfigSchema>;
 
 /**
  * Save a new map to the database
@@ -35,7 +43,34 @@ export async function saveMap(config: PosterConfig, title: string) {
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    throw new Error('You must be signed in to save maps');
+    throw createError.authRequired('You must be signed in to save maps');
+  }
+
+  // Ensure location name is set (required for validation)
+  if (!config.location.name || config.location.name.trim().length === 0) {
+    // Generate a default name from coordinates if name is missing
+    const [lng, lat] = config.location.center;
+    config = {
+      ...config,
+      location: {
+        ...config.location,
+        name: `Location at ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+      },
+    };
+  }
+
+  // Validate config before saving
+  try {
+    validatePosterConfig(config);
+  } catch (error: any) {
+    logger.error('Invalid poster config:', error);
+    throw createError.validationError(`Invalid map configuration: ${error.message}`);
+  }
+
+  // Sanitize and validate title
+  title = sanitizeText(title);
+  if (!title || title.length === 0) {
+    throw createError.validationError('Map title is required');
   }
 
   const serializedConfig = serializeMapConfig(config);
@@ -77,7 +112,38 @@ export async function saveMapWithThumbnail(
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    throw new Error('You must be signed in to save maps');
+    throw createError.authRequired('You must be signed in to save maps');
+  }
+
+  // Ensure location name is set (required for validation)
+  if (!config.location.name || config.location.name.trim().length === 0) {
+    // Generate a default name from coordinates if name is missing
+    const [lng, lat] = config.location.center;
+    config = {
+      ...config,
+      location: {
+        ...config.location,
+        name: `Location at ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+      },
+    };
+  }
+
+  // Validate config before saving
+  try {
+    validatePosterConfig(config);
+  } catch (error: any) {
+    logger.error('Invalid poster config:', error);
+    throw createError.validationError(`Invalid map configuration: ${error.message}`);
+  }
+
+  // Sanitize and validate title
+  title = sanitizeText(title);
+  if (!title || title.length === 0) {
+    throw createError.validationError('Map title is required');
+  }
+
+  if (!thumbnailUrl || thumbnailUrl.trim().length === 0) {
+    throw createError.validationError('Thumbnail URL is required');
   }
 
   const serializedConfig = serializeMapConfig(config);
@@ -97,7 +163,8 @@ export async function saveMapWithThumbnail(
     .single();
 
   if (error) {
-    throw new Error(`Failed to save map: ${error.message}`);
+    logger.error('Failed to save map with thumbnail:', { error, userId: user.id });
+    throw createError.databaseError(`Failed to save map: ${error.message}`);
   }
 
   revalidatePath('/profile');
@@ -120,7 +187,36 @@ export async function updateMap(
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    throw new Error('You must be signed in to update maps');
+    throw createError.authRequired('You must be signed in to update maps');
+  }
+
+  // Ensure location name is set (required for validation)
+  if (!config.location.name || config.location.name.trim().length === 0) {
+    // Generate a default name from coordinates if name is missing
+    const [lng, lat] = config.location.center;
+    config = {
+      ...config,
+      location: {
+        ...config.location,
+        name: `Location at ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+      },
+    };
+  }
+
+  // Validate config before updating
+  try {
+    validatePosterConfig(config);
+  } catch (error: any) {
+    logger.error('Invalid poster config:', error);
+    throw createError.validationError(`Invalid map configuration: ${error.message}`);
+  }
+
+  // Sanitize title if provided
+  if (title !== undefined) {
+    title = sanitizeText(title);
+    if (!title || title.length === 0) {
+      throw createError.validationError('Map title cannot be empty');
+    }
   }
 
   const serializedConfig = serializeMapConfig(config);
@@ -142,9 +238,15 @@ export async function updateMap(
     .single();
 
   if (error) {
-    throw new Error(`Failed to update map: ${error.message}`);
+    logger.error('Failed to update map:', { error, mapId: id, userId: user.id });
+    throw createError.databaseError(`Failed to update map: ${error.message}`);
   }
 
+  if (!data) {
+    throw createError.notFound('Map');
+  }
+
+  logger.info('Map updated successfully', { mapId: id, userId: user.id });
   revalidatePath('/profile');
   revalidatePath(`/map/${id}`);
   return data as SavedMap;
@@ -165,7 +267,11 @@ export async function updateMapThumbnail(
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    throw new Error('You must be signed in to update maps');
+    throw createError.authRequired('You must be signed in to update maps');
+  }
+
+  if (!thumbnailUrl || thumbnailUrl.trim().length === 0) {
+    throw createError.validationError('Thumbnail URL is required');
   }
 
   const updateData: Database['public']['Tables']['maps']['Update'] = {
@@ -182,9 +288,15 @@ export async function updateMapThumbnail(
     .single();
 
   if (error) {
-    throw new Error(`Failed to update thumbnail: ${error.message}`);
+    logger.error('Failed to update thumbnail:', { error, mapId: id, userId: user.id });
+    throw createError.databaseError(`Failed to update thumbnail: ${error.message}`);
   }
 
+  if (!data) {
+    throw createError.notFound('Map');
+  }
+
+  logger.info('Thumbnail updated successfully', { mapId: id, userId: user.id });
   revalidatePath('/profile');
   revalidatePath(`/map/${id}`);
   return data as SavedMap;
@@ -202,7 +314,7 @@ export async function deleteMap(id: string) {
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    throw new Error('You must be signed in to delete maps');
+    throw createError.authRequired('You must be signed in to delete maps');
   }
 
   const { error } = await supabase
@@ -212,16 +324,25 @@ export async function deleteMap(id: string) {
     .eq('user_id', user.id); // Ensure user owns the map
 
   if (error) {
-    throw new Error(`Failed to delete map: ${error.message}`);
+    logger.error('Failed to delete map:', { error, mapId: id, userId: user.id });
+    throw createError.databaseError(`Failed to delete map: ${error.message}`);
   }
 
+  logger.info('Map deleted successfully', { mapId: id, userId: user.id });
   revalidatePath('/profile');
 }
 
 /**
  * Publish a map (make it visible to everyone)
+ * @param id - Map ID
+ * @param subtitle - Optional subtitle
+ * @param thumbnailUrl - Optional thumbnail URL (if provided, will be set in same operation)
  */
-export async function publishMap(id: string, subtitle?: string) {
+export async function publishMap(
+  id: string,
+  subtitle?: string,
+  thumbnailUrl?: string
+) {
   const supabase = await createClient();
   
   const {
@@ -230,7 +351,20 @@ export async function publishMap(id: string, subtitle?: string) {
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    throw new Error('You must be signed in to publish maps');
+    throw createError.authRequired('You must be signed in to publish maps');
+  }
+
+  // Check rate limit
+  const rateLimit = await checkRateLimit(
+    user.id,
+    'publish',
+    RATE_LIMITS.PUBLISH_PER_HOUR,
+    60 * 60 * 1000 // 1 hour window
+  );
+  if (!rateLimit.allowed) {
+    throw createError.rateLimitExceeded(
+      `Rate limit exceeded. Please try again in ${rateLimit.retryAfter} seconds.`
+    );
   }
 
   const updateData: Database['public']['Tables']['maps']['Update'] = {
@@ -240,7 +374,12 @@ export async function publishMap(id: string, subtitle?: string) {
   };
 
   if (subtitle !== undefined) {
-    updateData.subtitle = subtitle;
+    updateData.subtitle = sanitizeText(subtitle);
+  }
+
+  // Include thumbnail URL in the same update operation to avoid race condition
+  if (thumbnailUrl !== undefined) {
+    updateData.thumbnail_url = thumbnailUrl;
   }
 
   const { data, error } = await (supabase as any)
@@ -252,9 +391,15 @@ export async function publishMap(id: string, subtitle?: string) {
     .single();
 
   if (error) {
-    throw new Error(`Failed to publish map: ${error.message}`);
+    logger.error('Failed to publish map:', { error, mapId: id, userId: user.id });
+    throw createError.databaseError(`Failed to publish map: ${error.message}`);
   }
 
+  if (!data) {
+    throw createError.notFound('Map');
+  }
+
+  logger.info('Map published successfully', { mapId: id, userId: user.id, hasThumbnail: !!thumbnailUrl });
   revalidatePath('/profile');
   revalidatePath('/feed');
   revalidatePath(`/map/${id}`);
@@ -273,7 +418,7 @@ export async function unpublishMap(id: string) {
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    throw new Error('You must be signed in to unpublish maps');
+    throw createError.authRequired('You must be signed in to unpublish maps');
   }
 
   const updateData: Database['public']['Tables']['maps']['Update'] = {
@@ -290,9 +435,15 @@ export async function unpublishMap(id: string) {
     .single();
 
   if (error) {
-    throw new Error(`Failed to unpublish map: ${error.message}`);
+    logger.error('Failed to unpublish map:', { error, mapId: id, userId: user.id });
+    throw createError.databaseError(`Failed to unpublish map: ${error.message}`);
   }
 
+  if (!data) {
+    throw createError.notFound('Map');
+  }
+
+  logger.info('Map unpublished successfully', { mapId: id, userId: user.id });
   revalidatePath('/profile');
   revalidatePath('/feed');
   revalidatePath(`/map/${id}`);
@@ -321,7 +472,8 @@ export async function getUserMaps(): Promise<SavedMap[]> {
     .order('updated_at', { ascending: false });
 
   if (error) {
-    throw new Error(`Failed to fetch maps: ${error.message}`);
+    logger.error('Failed to fetch user maps:', { error, userId: user.id });
+    throw createError.databaseError(`Failed to fetch maps: ${error.message}`);
   }
 
   return ((data || []) as any[]).map((map: any) => ({
@@ -350,7 +502,8 @@ export async function getMapById(id: string): Promise<SavedMap | null> {
     if (error.code === 'PGRST116') {
       return null; // Not found
     }
-    throw new Error(`Failed to fetch map: ${error.message}`);
+    logger.error('Failed to fetch map:', { error, mapId: id });
+    throw createError.databaseError(`Failed to fetch map: ${error.message}`);
   }
 
   const mapData = data as any;

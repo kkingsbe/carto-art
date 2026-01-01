@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SPACEPORTS_CACHE } from '@/lib/constants';
 import { logger } from '@/lib/logger';
+import { createError } from '@/lib/errors/ServerActionError';
 
 export const runtime = 'nodejs';
 
@@ -86,7 +87,7 @@ async function fetchPageWithRetry(url: string, retries = 3): Promise<LaunchLibra
           await new Promise(resolve => setTimeout(resolve, backoffMs));
           continue;
         }
-        throw new Error(`Launch Library API returned ${response.status}: ${response.statusText}`);
+        throw createError.internalError(`Launch Library API returned ${response.status}: ${response.statusText}`);
       }
 
       return await response.json();
@@ -101,7 +102,7 @@ async function fetchPageWithRetry(url: string, retries = 3): Promise<LaunchLibra
       throw error;
     }
   }
-  throw new Error('All retry attempts failed');
+  throw createError.internalError('All retry attempts failed');
 }
 
 /**
