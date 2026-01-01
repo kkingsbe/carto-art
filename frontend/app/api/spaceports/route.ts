@@ -66,15 +66,12 @@ interface GeoJSONResponse {
 }
 
 /**
- * Fetches all pads from Launch Library 2 API with pagination support
+ * Fetches a single page with retry logic
  */
-async function fetchAllPads(): Promise<LaunchLibraryPad[]> {
-  const allPads: LaunchLibraryPad[] = [];
-  let nextUrl: string | null = `${LAUNCH_LIBRARY_API_BASE}?limit=${MAX_RESULTS_PER_PAGE}&format=json`;
-
-  while (nextUrl) {
+async function fetchPageWithRetry(url: string, retries = 3): Promise<LaunchLibraryResponse> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      const response = await fetch(nextUrl, {
+      const response = await fetch(url, {
         headers: {
           'Accept': 'application/json',
         },
@@ -82,10 +79,52 @@ async function fetchAllPads(): Promise<LaunchLibraryPad[]> {
       });
 
       if (!response.ok) {
+        // Retry on 5xx errors, but not 4xx errors
+        if (response.status >= 500 && attempt < retries) {
+          const backoffMs = Math.pow(2, attempt - 1) * 1000; // Exponential backoff: 1s, 2s, 4s
+          logger.warn(`API returned ${response.status}, retrying in ${backoffMs}ms (attempt ${attempt}/${retries})`);
+          await new Promise(resolve => setTimeout(resolve, backoffMs));
+          continue;
+        }
         throw new Error(`Launch Library API returned ${response.status}: ${response.statusText}`);
       }
 
-      const data: LaunchLibraryResponse = await response.json();
+      return await response.json();
+    } catch (error) {
+      // Retry on network errors
+      if (attempt < retries && (error instanceof TypeError || (error as any).code === 'ECONNREFUSED')) {
+        const backoffMs = Math.pow(2, attempt - 1) * 1000;
+        logger.warn(`Network error, retrying in ${backoffMs}ms (attempt ${attempt}/${retries}):`, error);
+        await new Promise(resolve => setTimeout(resolve, backoffMs));
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error('All retry attempts failed');
+}
+
+/**
+ * Fetches all pads from Launch Library 2 API with pagination support
+ */
+async function fetchAllPads(): Promise<LaunchLibraryPad[]> {
+  const allPads: LaunchLibraryPad[] = [];
+  let nextUrl: string | null = `${LAUNCH_LIBRARY_API_BASE}?limit=${MAX_RESULTS_PER_PAGE}&format=json`;
+  const MAX_PAGES = 10; // Safety limit: max 1000 pads (10 pages * 100 per page)
+  let pageCount = 0;
+  const seenUrls = new Set<string>(); // Track seen URLs to detect loops
+
+  while (nextUrl && pageCount < MAX_PAGES) {
+    // Safety check: detect infinite loops
+    if (seenUrls.has(nextUrl)) {
+      logger.warn(`Infinite loop detected in pagination: URL ${nextUrl} already fetched`);
+      break;
+    }
+    seenUrls.add(nextUrl);
+    pageCount++;
+
+    try {
+      const data = await fetchPageWithRetry(nextUrl);
       
       // Filter out pads with invalid coordinates
       const validPads = data.results.filter(
@@ -110,6 +149,10 @@ async function fetchAllPads(): Promise<LaunchLibraryPad[]> {
       logger.error('Error fetching pads from Launch Library API:', error);
       throw error;
     }
+  }
+
+  if (pageCount >= MAX_PAGES) {
+    logger.warn(`Reached maximum page limit (${MAX_PAGES}) while fetching spaceports. More data may be available.`);
   }
 
   return allPads;
@@ -200,6 +243,7 @@ export async function GET(request: NextRequest) {
         headers: {
           'Content-Type': 'application/geo+json',
           'Cache-Control': 'public, max-age=300', // Short cache for stale data
+          'X-Data-Freshness': 'stale', // Indicate this is stale/fallback data
         },
       });
     }

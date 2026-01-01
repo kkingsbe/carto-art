@@ -7,12 +7,18 @@ import {
 } from './tileUrl';
 import { TERRAIN_TILE_SIZE } from './config';
 
+export interface BaseSourcesOptions {
+  includeSpaceports?: boolean;
+}
+
 /**
  * Returns the base sources configuration shared across all map styles.
  * Centralizes tile source URLs to avoid duplication across style files.
  */
-export function getBaseSources() {
-  return {
+export function getBaseSources(options: BaseSourcesOptions = {}) {
+  const { includeSpaceports = false } = options;
+  
+  const sources: any = {
     openmaptiles: {
       type: 'vector',
       url: getOpenFreeMapPlanetTileJsonUrl(),
@@ -39,10 +45,16 @@ export function getBaseSources() {
       encoding: 'terrarium',
       maxzoom: 14,
     },
-    spaceports: {
+  };
+
+  // Conditionally add spaceports source only when needed
+  if (includeSpaceports) {
+    sources.spaceports = {
       type: 'geojson',
       data: getSpaceportsGeoJsonUrl(),
-    },
-  };
+    };
+  }
+
+  return sources;
 }
 

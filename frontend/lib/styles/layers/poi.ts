@@ -132,17 +132,19 @@ export function createPOILayers(
 
   // Conditionally add spaceport layers
   if (includeSpaceports) {
-    // Default spaceport label filter - can be overridden
-    const defaultSpaceportFilter = ['==', ['get', 'class'], 'spaceport'];
+    // Note: Custom filters can override, but default is to show all pads
+    // (all GeoJSON features are spaceports by definition)
     
-    // Debug logging for spaceport layer creation
-    console.log('🚀 [SPACEPORT LAYER] Creating spaceport layers:', {
-      usingCustomFilter: !!spaceportLabelFilter,
-      labelFilter: spaceportLabelFilter || 'all (default)',
-      labelSource: 'spaceports (GeoJSON from Launch Library API)',
-      spaceportOpacity,
-      spaceportColor: spaceportColor || 'using palette.accent'
-    });
+    // Debug logging for spaceport layer creation (development only)
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+      console.log('🚀 [SPACEPORT LAYER] Creating spaceport layers:', {
+        usingCustomFilter: !!spaceportLabelFilter,
+        labelFilter: spaceportLabelFilter || 'all (default)',
+        labelSource: 'spaceports (GeoJSON from Launch Library API)',
+        spaceportOpacity,
+        spaceportColor: spaceportColor || 'using palette.accent'
+      });
+    }
     
     const spaceportAreaLayer = {
       id: 'spaceport-area',
@@ -162,7 +164,8 @@ export function createPOILayers(
     // Custom filters can still filter by properties if provided (e.g., by active status)
     // If no custom filter is provided, show all pads (no filter means all features shown)
     
-    const spaceportLabelLayer: any = {
+    // Type inference works here; explicit 'any' removed for better type safety
+    const spaceportLabelLayer = {
       id: 'spaceport-label',
       type: 'symbol',
       source: 'spaceports',  // Changed to use GeoJSON source from Launch Library API
@@ -186,23 +189,25 @@ export function createPOILayers(
       },
     };
     
-    // Debug: Log the actual layer definitions
-    console.log('🚀 [SPACEPORT LAYER] Layer definitions:', {
-      spaceportArea: {
-        id: spaceportAreaLayer.id,
-        sourceLayer: spaceportAreaLayer['source-layer'],
-        filter: spaceportAreaLayer.filter,
-        paint: spaceportAreaLayer.paint
-      },
-      spaceportLabel: {
-        id: spaceportLabelLayer.id,
-        source: spaceportLabelLayer.source,
-        filter: spaceportLabelLayer.filter,
-        minzoom: spaceportLabelLayer.minzoom,
-        textField: spaceportLabelLayer.layout['text-field'],
-        layoutKeys: Object.keys(spaceportLabelLayer.layout)
-      }
-    });
+    // Debug: Log the actual layer definitions (development only)
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+      console.log('🚀 [SPACEPORT LAYER] Layer definitions:', {
+        spaceportArea: {
+          id: spaceportAreaLayer.id,
+          sourceLayer: spaceportAreaLayer['source-layer'],
+          filter: spaceportAreaLayer.filter,
+          paint: spaceportAreaLayer.paint
+        },
+        spaceportLabel: {
+          id: spaceportLabelLayer.id,
+          source: spaceportLabelLayer.source,
+          filter: spaceportLabelLayer.filter,
+          minzoom: spaceportLabelLayer.minzoom,
+          textField: spaceportLabelLayer.layout['text-field'],
+          layoutKeys: Object.keys(spaceportLabelLayer.layout)
+        }
+      });
+    }
     
     layers.push(spaceportAreaLayer, spaceportLabelLayer);
   }

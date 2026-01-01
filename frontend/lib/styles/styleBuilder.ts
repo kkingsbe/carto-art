@@ -147,15 +147,17 @@ export function buildStyle(options: StyleBuildOptions): PosterStyle {
   // 11. POI layers (aeroway, spaceports, POIs)
   const poiLayers = createPOILayers(defaultPalette, poiOptions);
   
-  // Debug: Log spaceport layer inclusion
-  const spaceportLayers = poiLayers.filter(l => l.id === 'spaceport-area' || l.id === 'spaceport-label');
-  if (spaceportLayers.length > 0) {
-    console.log('🚀 [SPACEPORT STYLE] Including spaceport layers in style:', {
-      includeSpaceports: poiOptions.includeSpaceports,
-      spaceportLayerCount: spaceportLayers.length,
-      spaceportLayerIds: spaceportLayers.map(l => l.id),
-      totalPOILayerCount: poiLayers.length
-    });
+  // Debug: Log spaceport layer inclusion (development only)
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+    const spaceportLayers = poiLayers.filter(l => l.id === 'spaceport-area' || l.id === 'spaceport-label');
+    if (spaceportLayers.length > 0) {
+      console.log('🚀 [SPACEPORT STYLE] Including spaceport layers in style:', {
+        includeSpaceports: poiOptions.includeSpaceports,
+        spaceportLayerCount: spaceportLayers.length,
+        spaceportLayerIds: spaceportLayers.map(l => l.id),
+        totalPOILayerCount: poiLayers.length
+      });
+    }
   }
   
   layers.push(...poiLayers);
@@ -173,7 +175,7 @@ export function buildStyle(options: StyleBuildOptions): PosterStyle {
     metadata: {
       'mapbox:autocomposite': false,
     },
-    sources: getBaseSources(),
+    sources: getBaseSources({ includeSpaceports: poiOptions.includeSpaceports }),
     glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
     layers,
   };
