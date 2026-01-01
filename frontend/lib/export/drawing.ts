@@ -348,3 +348,78 @@ export function applyTexture(
     ctx.restore();
   }
 }
+
+export function drawCompassRose(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  borderOuterRadius: number,
+  color: string,
+  lineWidth: number,
+  fontSize: number
+) {
+  ctx.save();
+  
+  // Position well outside the border edge with spacing
+  const spacing = fontSize * 0.6; // Spacing between border and compass
+  const compassRadius = borderOuterRadius + spacing;
+  const tickLength = fontSize * 0.4; // Length of tick marks
+  const longTickLength = fontSize * 0.8; // Longer ticks for cardinal directions
+  
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = lineWidth;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `bold ${fontSize}px sans-serif`;
+  ctx.globalAlpha = 0.8;
+  
+  // Draw 32 points (8 cardinal/intercardinal + 24 intermediate)
+  const directions = [
+    { angle: 0, label: 'N', isCardinal: true },
+    { angle: 45, label: 'NE', isCardinal: false },
+    { angle: 90, label: 'E', isCardinal: true },
+    { angle: 135, label: 'SE', isCardinal: false },
+    { angle: 180, label: 'S', isCardinal: true },
+    { angle: 225, label: 'SW', isCardinal: false },
+    { angle: 270, label: 'W', isCardinal: true },
+    { angle: 315, label: 'NW', isCardinal: false },
+  ];
+  
+  // Draw intermediate ticks (every 11.25 degrees for 32 points)
+  for (let i = 0; i < 32; i++) {
+    const angle = (i * 11.25 - 90) * (Math.PI / 180); // -90 to align N at top
+    const isCardinalOrIntercardinal = (i % 4 === 0);
+    const tickLen = isCardinalOrIntercardinal ? longTickLength : tickLength;
+    
+    const x1 = centerX + Math.cos(angle) * compassRadius;
+    const y1 = centerY + Math.sin(angle) * compassRadius;
+    const x2 = centerX + Math.cos(angle) * (compassRadius - tickLen);
+    const y2 = centerY + Math.sin(angle) * (compassRadius - tickLen);
+    
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+  
+  // Draw labels for cardinal and intercardinal directions
+  const labelRadius = compassRadius + fontSize * 0.8;
+  directions.forEach(({ angle, label, isCardinal }) => {
+    const rad = (angle - 90) * (Math.PI / 180); // -90 to align N at top
+    const labelX = centerX + Math.cos(rad) * labelRadius;
+    const labelY = centerY + Math.sin(rad) * labelRadius;
+    
+    ctx.globalAlpha = isCardinal ? 1.0 : 0.7;
+    
+    // Draw text with slight halo for visibility
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(1, fontSize * 0.15);
+    ctx.strokeText(label, labelX, labelY);
+    
+    ctx.fillStyle = color;
+    ctx.fillText(label, labelX, labelY);
+  });
+  
+  ctx.restore();
+}

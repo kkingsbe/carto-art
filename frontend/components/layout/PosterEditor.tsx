@@ -202,6 +202,90 @@ export function PosterEditor() {
                     borderRadius: (config.format.maskShape || 'rectangular') === 'circular' ? '50%' : '0',
                   }}
                 />
+                
+                {/* Compass Rose Preview (SVG) */}
+                {(config.format.maskShape || 'rectangular') === 'circular' && config.format.compassRose && (
+                  <svg 
+                    className="absolute inset-0 w-full h-full"
+                    style={{ pointerEvents: 'none' }}
+                    viewBox="0 0 100 100"
+                  >
+                    <g
+                      stroke={config.palette.accent || config.palette.text}
+                      fill={config.palette.accent || config.palette.text}
+                      strokeWidth="0.15"
+                      opacity="0.8"
+                    >
+                      {/* Draw 8 main directions */}
+                      {[
+                        { angle: 0, label: 'N' },
+                        { angle: 45, label: 'NE' },
+                        { angle: 90, label: 'E' },
+                        { angle: 135, label: 'SE' },
+                        { angle: 180, label: 'S' },
+                        { angle: 225, label: 'SW' },
+                        { angle: 270, label: 'W' },
+                        { angle: 315, label: 'NW' },
+                      ].map(({ angle, label }) => {
+                        const rad = ((angle - 90) * Math.PI) / 180;
+                        const centerX = 50;
+                        const centerY = 50;
+                        // The border div extends nearly to the edges of the viewBox
+                        // Account for border width - border can be 0.5cqw to 1.5cqw, which in viewBox terms is roughly 0.5-1.5
+                        const borderOuterRadius = 49; // Close to edge of 100x100 viewBox, accounting for border
+                        const spacing = 3; // Spacing between border and compass elements
+                        const compassRadius = borderOuterRadius + spacing; // Position ticks outside border
+                        const tickLen = label === 'N' || label === 'S' || label === 'E' || label === 'W' ? 3 : 1.5;
+                        
+                        const x1 = centerX + Math.cos(rad) * compassRadius;
+                        const y1 = centerY + Math.sin(rad) * compassRadius;
+                        const x2 = centerX + Math.cos(rad) * (compassRadius - tickLen);
+                        const y2 = centerY + Math.sin(rad) * (compassRadius - tickLen);
+                        
+                        // Position labels further out from the ticks
+                        const labelRadius = compassRadius + 3;
+                        const labelX = centerX + Math.cos(rad) * labelRadius;
+                        const labelY = centerY + Math.sin(rad) * labelRadius;
+                        
+                        return (
+                          <g key={angle}>
+                            <line x1={x1} y1={y1} x2={x2} y2={y2} />
+                            <text
+                              x={labelX}
+                              y={labelY}
+                              fontSize="2"
+                              fontWeight="bold"
+                              textAnchor="middle"
+                              dominantBaseline="middle"
+                              opacity={label === 'N' || label === 'S' || label === 'E' || label === 'W' ? 1 : 0.7}
+                            >
+                              {label}
+                            </text>
+                          </g>
+                        );
+                      })}
+                      
+                      {/* Draw intermediate ticks */}
+                      {Array.from({ length: 24 }, (_, i) => {
+                        if (i % 3 === 0) return null; // Skip positions where we have main directions
+                        const angle = (i * 15 - 90) * (Math.PI / 180);
+                        const centerX = 50;
+                        const centerY = 50;
+                        const borderOuterRadius = 49;
+                        const spacing = 3;
+                        const compassRadius = borderOuterRadius + spacing;
+                        const tickLen = 1;
+                        
+                        const x1 = centerX + Math.cos(angle) * compassRadius;
+                        const y1 = centerY + Math.sin(angle) * compassRadius;
+                        const x2 = centerX + Math.cos(angle) * (compassRadius - tickLen);
+                        const y2 = centerY + Math.sin(angle) * (compassRadius - tickLen);
+                        
+                        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} opacity="0.6" />;
+                      })}
+                    </g>
+                  </svg>
+                )}
               </div>
             )}
           </div>

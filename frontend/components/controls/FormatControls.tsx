@@ -3,6 +3,7 @@
 import { PosterConfig } from '@/types/poster';
 import { cn } from '@/lib/utils';
 import { ControlSection, ControlSlider, ControlLabel, ControlRow } from '@/components/ui/control-components';
+import { Tooltip } from '@/components/ui/tooltip';
 import { Layout, Maximize, Crop, Frame } from 'lucide-react';
 
 interface FormatControlsProps {
@@ -23,6 +24,17 @@ const aspectRatioOptions: Array<{
 ];
 
 export function FormatControls({ format, onFormatChange }: FormatControlsProps) {
+  const isSquareAspectRatio = format.aspectRatio === '1:1';
+
+  const handleAspectRatioChange = (newAspectRatio: PosterConfig['format']['aspectRatio']) => {
+    // Auto-reset maskShape to rectangular if changing away from square while circular is active
+    if (format.maskShape === 'circular' && newAspectRatio !== '1:1') {
+      onFormatChange({ aspectRatio: newAspectRatio, maskShape: 'rectangular' });
+    } else {
+      onFormatChange({ aspectRatio: newAspectRatio });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <ControlSection title="Dimensions">
@@ -36,7 +48,7 @@ export function FormatControls({ format, onFormatChange }: FormatControlsProps) 
                   <button
                     key={option.value}
                     type="button"
-                    onClick={() => onFormatChange({ aspectRatio: option.value })}
+                    onClick={() => handleAspectRatioChange(option.value)}
                     className={cn(
                       'flex flex-col items-center justify-center p-2 rounded-lg border transition-all h-16',
                       isActive
@@ -118,20 +130,47 @@ export function FormatControls({ format, onFormatChange }: FormatControlsProps) 
                 <Frame className="w-4 h-4" />
                 <span className="text-sm font-medium">Rectangular</span>
               </button>
-              <button
-                type="button"
-                onClick={() => onFormatChange({ maskShape: 'circular' })}
-                className={cn(
-                  'flex items-center justify-center gap-2 p-3 border rounded-lg transition-all',
-                  format.maskShape === 'circular'
-                    ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:border-blue-400 dark:text-blue-300'
-                    : 'border-gray-200 hover:border-gray-300 text-gray-600 dark:border-gray-700 dark:text-gray-400'
-                )}
+              <Tooltip
+                content="Circular mask is only available for square (1:1) aspect ratio"
+                disabled={isSquareAspectRatio}
               >
-                <div className="w-4 h-4 rounded-full border-2 border-current" />
-                <span className="text-sm font-medium">Circular</span>
-              </button>
+                <button
+                  type="button"
+                  disabled={!isSquareAspectRatio}
+                  onClick={() => onFormatChange({ maskShape: 'circular' })}
+                  className={cn(
+                    'flex items-center justify-center gap-2 p-3 border rounded-lg transition-all',
+                    format.maskShape === 'circular'
+                      ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:border-blue-400 dark:text-blue-300'
+                      : 'border-gray-200 hover:border-gray-300 text-gray-600 dark:border-gray-700 dark:text-gray-400',
+                    !isSquareAspectRatio && 'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-200 dark:disabled:hover:border-gray-700'
+                  )}
+                >
+                  <div className="w-4 h-4 rounded-full border-2 border-current" />
+                  <span className="text-sm font-medium">Circular</span>
+                </button>
+              </Tooltip>
             </ControlRow>
+            
+            {/* Compass Rose Toggle - Only show when circular mask is selected */}
+            {format.maskShape === 'circular' && (
+              <ControlRow>
+                <ControlLabel>Compass Rose</ControlLabel>
+                <button
+                  type="button"
+                  onClick={() => onFormatChange({ compassRose: !format.compassRose })}
+                  className={cn(
+                    'flex items-center gap-2 px-3 py-2 border rounded-lg transition-all text-sm font-medium',
+                    format.compassRose
+                      ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:border-blue-400 dark:text-blue-300'
+                      : 'border-gray-200 hover:border-gray-300 text-gray-600 dark:border-gray-700 dark:text-gray-400'
+                  )}
+                >
+                  <span>{format.compassRose ? '✓' : ''}</span>
+                  <span>Show Compass Rose</span>
+                </button>
+              </ControlRow>
+            )}
           </div>
 
           <div className="space-y-2">

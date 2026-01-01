@@ -2,7 +2,7 @@ import type MapLibreGL from 'maplibre-gl';
 import type { PosterConfig } from '@/types/poster';
 import { DEFAULT_EXPORT_RESOLUTION } from './constants';
 import { calculateTargetResolution } from './resolution';
-import { drawMarker, applyTexture } from './drawing';
+import { drawMarker, applyTexture, drawCompassRose } from './drawing';
 import { drawTextOverlay } from './text-overlay';
 
 interface ExportOptions {
@@ -153,6 +153,35 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
           exportCtx.beginPath();
           exportCtx.arc(centerX, centerY, radius, 0, Math.PI * 2);
           exportCtx.stroke();
+        }
+        
+        // Draw compass rose if enabled and mask is circular
+        if (config.format.compassRose) {
+          const compassColor = config.palette.accent || config.palette.text;
+          const compassLineWidth = Math.max(1, exportResolution.width * 0.002);
+          const compassFontSize = exportResolution.width * 0.018;
+          
+          // Calculate the outer edge of the border
+          let borderOuterRadius = radius;
+          if (borderStyle === 'thin') {
+            borderOuterRadius = radius + (exportResolution.width * 0.005) / 2;
+          } else if (borderStyle === 'thick') {
+            borderOuterRadius = radius + (exportResolution.width * 0.015) / 2;
+          } else if (borderStyle === 'inset') {
+            borderOuterRadius = (radius - exportResolution.width * 0.02) + (exportResolution.width * 0.005) / 2;
+          } else {
+            borderOuterRadius = radius + (exportResolution.width * 0.005) / 2;
+          }
+          
+          drawCompassRose(
+            exportCtx,
+            centerX,
+            centerY,
+            borderOuterRadius,
+            compassColor,
+            compassLineWidth,
+            compassFontSize
+          );
         }
       } else {
         if (borderStyle === 'thin') {
