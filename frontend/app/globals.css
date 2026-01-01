@@ -162,3 +162,22 @@ div[id*="kofi"] {
     visibility: hidden !important;
   }
 }
+
+/* Masonry grid layout for feed - react-masonry-css */
+.my-masonry-grid {
+  display: flex;
+  margin-left: -1.5rem; /* gutter size offset */
+  width: auto;
+}
+
+.my-masonry-grid_column {
+  padding-left: 1.5rem; /* gutter size */
+  background-clip: padding-box;
+  /* Let react-masonry-css control column widths based on breakpoints */
+}
+
+/* Style the items - ensure they don't constrain width */
+.my-masonry-grid_column > div {
+  margin-bottom: 1.5rem;
+  break-inside: avoid; /* Prevent items from breaking across columns */
+}

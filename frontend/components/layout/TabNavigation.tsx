@@ -1,9 +1,10 @@
 'use client';
 
-import { Map as MapIcon, Type, Layout, Sparkles, Palette } from 'lucide-react';
+import { Map as MapIcon, Type, Layout, Sparkles, Palette, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
-export type Tab = 'library' | 'location' | 'style' | 'text' | 'frame';
+export type Tab = 'library' | 'location' | 'style' | 'text' | 'frame' | 'account';
 
 interface TabNavigationProps {
   activeTab: Tab;
@@ -53,7 +54,7 @@ export function TabNavigation({
   return (
     <nav className="fixed bottom-0 left-0 right-0 h-16 md:relative md:h-full md:w-20 bg-white dark:bg-gray-800 border-t md:border-t-0 md:border-r border-gray-200 dark:border-gray-700 flex md:flex-col items-center z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] md:shadow-sm pb-safe md:pb-0">
       <div className="hidden md:flex h-16 items-center justify-center w-full border-b border-gray-100 dark:border-gray-700 mb-2">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 shadow-lg" />
+        <Link href="/" className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 shadow-lg" />
       </div>
       
       <div className="flex md:flex-col flex-1 md:flex-none md:w-full md:space-y-1">
@@ -62,6 +63,15 @@ export function TabNavigation({
         <TabButton id="style" icon={Palette} label="Style" />
         <TabButton id="text" icon={Type} label="Text" />
         <TabButton id="frame" icon={Layout} label="Frame" />
+        {/* Account tab on mobile - shows in bottom nav with others */}
+        <div className="md:hidden flex-1">
+          <TabButton id="account" icon={User} label="Account" />
+        </div>
+      </div>
+
+      {/* Account tab on desktop - shows at bottom of sidenav */}
+      <div className="hidden md:flex md:flex-col md:w-full md:space-y-1 md:mt-auto md:mb-2 md:border-t md:border-gray-200 dark:md:border-gray-700 md:pt-2">
+        <TabButton id="account" icon={User} label="Account" />
       </div>
     </nav>
   );

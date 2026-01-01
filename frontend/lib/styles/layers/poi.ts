@@ -135,17 +135,6 @@ export function createPOILayers(
     // Note: Custom filters can override, but default is to show all pads
     // (all GeoJSON features are spaceports by definition)
     
-    // Debug logging for spaceport layer creation (development only)
-    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-      console.log('🚀 [SPACEPORT LAYER] Creating spaceport layers:', {
-        usingCustomFilter: !!spaceportLabelFilter,
-        labelFilter: spaceportLabelFilter || 'all (default)',
-        labelSource: 'spaceports (GeoJSON from Launch Library API)',
-        spaceportOpacity,
-        spaceportColor: spaceportColor || 'using palette.accent'
-      });
-    }
-    
     const spaceportAreaLayer = {
       id: 'spaceport-area',
       type: 'fill',
@@ -191,26 +180,6 @@ export function createPOILayers(
         'text-halo-blur': 0.5,
       },
     };
-    
-    // Debug: Log the actual layer definitions (development only)
-    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-      console.log('🚀 [SPACEPORT LAYER] Layer definitions:', {
-        spaceportArea: {
-          id: spaceportAreaLayer.id,
-          sourceLayer: spaceportAreaLayer['source-layer'],
-          filter: spaceportAreaLayer.filter,
-          paint: spaceportAreaLayer.paint
-        },
-        spaceportLabel: {
-          id: spaceportLabelLayer.id,
-          source: spaceportLabelLayer.source,
-          filter: spaceportLabelLayer.filter,
-          minzoom: spaceportLabelLayer.minzoom,
-          textField: spaceportLabelLayer.layout['text-field'],
-          layoutKeys: Object.keys(spaceportLabelLayer.layout)
-        }
-      });
-    }
     
     layers.push(spaceportAreaLayer, spaceportLabelLayer);
   }

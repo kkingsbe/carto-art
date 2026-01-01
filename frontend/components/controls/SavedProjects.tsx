@@ -7,10 +7,10 @@ import type { PosterConfig, SavedProject } from '@/types/poster';
 interface SavedProjectsProps {
   projects: SavedProject[];
   currentConfig: PosterConfig;
-  onSave: (name: string, config: PosterConfig) => void;
-  onLoad: (config: PosterConfig) => void;
-  onDelete: (id: string) => void;
-  onRename: (id: string, name: string) => void;
+  onSave: (name: string, config: PosterConfig, thumbnailBlob?: Blob) => Promise<void>;
+  onLoad: (project: SavedProject) => void;
+  onDelete: (id: string) => Promise<void>;
+  onRename: (id: string, name: string) => Promise<void>;
 }
 
 export function SavedProjects({
@@ -24,19 +24,53 @@ export function SavedProjects({
   const [newName, setNewName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newName.trim()) {
-      onSave(newName.trim(), currentConfig);
+    if (!newName.trim() || saving) return;
+
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave(newName.trim(), currentConfig);
       setNewName('');
+    } catch (err: any) {
+      setError(err.message || 'Failed to save project. Please try again.');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleRename = (id: string) => {
-    if (editName.trim()) {
-      onRename(id, editName.trim());
+  const handleRename = async (id: string) => {
+    if (!editName.trim() || renamingId === id) return;
+
+    setRenamingId(id);
+    setError(null);
+    try {
+      await onRename(id, editName.trim());
       setEditingId(null);
+    } catch (err: any) {
+      setError(err.message || 'Failed to rename project. Please try again.');
+    } finally {
+      setRenamingId(null);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this project?') || deletingId === id) return;
+
+    setDeletingId(id);
+    setError(null);
+    try {
+      await onDelete(id);
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete project. Please try again.');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -49,20 +83,36 @@ export function SavedProjects({
     <div className="space-y-6">
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Save Current Work</h3>
+        {error && (
+          <div className="p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+            <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+          </div>
+        )}
         <form onSubmit={handleSave} className="flex gap-2">
           <input
             type="text"
             value={newName}
-            onChange={(e) => setNewName(e.target.value)}
+            onChange={(e) => {
+              setNewName(e.target.value);
+              setError(null);
+            }}
             placeholder="Project name..."
-            className="flex-1 px-3 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-3 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            disabled={saving}
           />
           <button
             type="submit"
-            disabled={!newName.trim()}
-            className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-md transition-colors"
+            disabled={!newName.trim() || saving}
+            className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-md transition-colors flex items-center gap-2"
           >
-            <Save className="w-4 h-4" />
+            {saving ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs">Saving...</span>
+              </>
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
           </button>
         </form>
       </div>
@@ -92,12 +142,28 @@ export function SavedProjects({
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleRename(project.id)}
-                          className="flex-1 px-2 py-1 text-sm bg-white dark:bg-gray-800 border border-blue-500 rounded focus:outline-none"
+                          className="flex-1 px-2 py-1 text-sm bg-white dark:bg-gray-800 border border-blue-500 rounded focus:outline-none disabled:opacity-50"
+                          disabled={renamingId === project.id}
                         />
-                        <button onClick={() => handleRename(project.id)} className="p-1 text-green-600 hover:text-green-700 transition-colors">
-                          <Check className="w-4 h-4" />
+                        <button 
+                          onClick={() => handleRename(project.id)} 
+                          className="p-1 text-green-600 hover:text-green-700 transition-colors disabled:opacity-50"
+                          disabled={renamingId === project.id}
+                        >
+                          {renamingId === project.id ? (
+                            <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Check className="w-4 h-4" />
+                          )}
                         </button>
-                        <button onClick={() => setEditingId(null)} className="p-1 text-red-600 hover:text-red-700 transition-colors">
+                        <button 
+                          onClick={() => {
+                            setEditingId(null);
+                            setError(null);
+                          }} 
+                          className="p-1 text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
+                          disabled={renamingId === project.id}
+                        >
                           <X className="w-4 h-4" />
                         </button>
                       </div>
@@ -121,17 +187,22 @@ export function SavedProjects({
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => onDelete(project.id)}
-                      className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
+                      onClick={() => handleDelete(project.id)}
+                      className="p-1.5 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
                       title="Delete"
+                      disabled={deletingId === project.id}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      {deletingId === project.id ? (
+                        <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
                 </div>
                 
                 <button
-                  onClick={() => onLoad(project.config)}
+                  onClick={() => onLoad(project)}
                   className="w-full mt-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded transition-colors"
                 >
                   Load Project

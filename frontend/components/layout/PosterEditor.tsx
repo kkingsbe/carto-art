@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useCallback, useState, useEffect } from 'react';
+import { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import { usePosterConfig } from '@/hooks/usePosterConfig';
 import { useSavedProjects } from '@/hooks/useSavedProjects';
 import { useMapExport } from '@/hooks/useMapExport';
@@ -16,7 +16,12 @@ import { TabNavigation, type Tab } from './TabNavigation';
 import { ControlDrawer } from './ControlDrawer';
 import { ErrorToastContainer } from '@/components/ui/ErrorToast';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
+import Link from 'next/link';
 import type MapLibreGL from 'maplibre-gl';
+import { getMapById } from '@/lib/actions/maps';
+import { isConfigEqual, cloneConfig } from '@/lib/utils/configComparison';
+import type { SavedProject, PosterConfig } from '@/types/poster';
+import { generateThumbnail } from '@/lib/export/thumbnail';
 
 export function PosterEditor() {
   const [activeTab, setActiveTab] = useState<Tab>('location');
@@ -37,16 +42,30 @@ export function PosterEditor() {
     canRedo,
   } = usePosterConfig();
   
-  const { 
-    projects, 
-    saveProject, 
-    deleteProject, 
-    renameProject 
+  const {
+    projects,
+    saveProject,
+    deleteProject,
+    renameProject,
+    isAuthenticated
   } = useSavedProjects();
 
   const { errors, handleError, clearError } = useErrorHandler();
-  
+
+  // Track currently loaded saved map
+  const [currentMapId, setCurrentMapId] = useState<string | null>(null);
+  const [currentMapName, setCurrentMapName] = useState<string | null>(null);
+  const [originalConfig, setOriginalConfig] = useState<PosterConfig | null>(null);
+  const [currentMapStatus, setCurrentMapStatus] = useState<{
+    isSaved: boolean;
+    isPublished: boolean;
+    hasUnsavedChanges: boolean;
+  } | null>(null);
+
   const { isExporting, exportToPNG, setMapRef, fitToLocation, zoomIn, zoomOut } = useMapExport(config);
+
+  // Keep a reference to the map instance for thumbnail generation
+  const mapInstanceRef = useRef<MapLibreGL.Map | null>(null);
   
   // Wrap exportToPNG to handle errors
   const handleExport = useCallback(async () => {
@@ -56,6 +75,80 @@ export function PosterEditor() {
       handleError(error);
     }
   }, [exportToPNG, handleError]);
+
+  // Handle loading a saved project
+  const handleLoadProject = useCallback(async (project: SavedProject) => {
+    setConfig(project.config);
+    setCurrentMapId(project.id);
+    setCurrentMapName(project.name);
+    setOriginalConfig(cloneConfig(project.config));
+
+    // Fetch full metadata if authenticated
+    if (isAuthenticated) {
+      try {
+        const fullMap = await getMapById(project.id);
+        if (fullMap) {
+          setCurrentMapStatus({
+            isSaved: true,
+            isPublished: fullMap.is_published,
+            hasUnsavedChanges: false
+          });
+          return;
+        }
+      } catch (error) {
+        console.error('Failed to fetch map metadata:', error);
+      }
+    }
+
+    // Fallback
+    setCurrentMapStatus({
+      isSaved: true,
+      isPublished: false,
+      hasUnsavedChanges: false
+    });
+  }, [setConfig, isAuthenticated]);
+
+  // Handle saving a project (wraps saveProject to track currentMapId)
+  const handleSaveProject = useCallback(async (name: string, posterConfig: PosterConfig) => {
+    // Generate thumbnail if map is available and user is authenticated
+    let thumbnailBlob: Blob | undefined;
+    if (mapInstanceRef.current && isAuthenticated) {
+      try {
+        thumbnailBlob = await generateThumbnail(mapInstanceRef.current, posterConfig);
+      } catch (error) {
+        console.error('Failed to generate thumbnail:', error);
+        // Continue without thumbnail
+      }
+    }
+
+    // Save the project and get the saved project back
+    const savedProject = await saveProject(name, posterConfig, thumbnailBlob);
+
+    // Automatically load the saved project
+    await handleLoadProject(savedProject);
+  }, [saveProject, handleLoadProject, isAuthenticated]);
+
+  // Handle publish success - refetch map status to get latest published state
+  const handlePublishSuccess = useCallback(async () => {
+    if (!currentMapId || !isAuthenticated) return;
+
+    try {
+      const fullMap = await getMapById(currentMapId);
+      if (fullMap) {
+        setCurrentMapStatus(prev => prev ? { ...prev, isPublished: fullMap.is_published } : null);
+      }
+    } catch (error) {
+      console.error('Failed to refresh map status:', error);
+    }
+  }, [currentMapId, isAuthenticated]);
+
+  // Detect unsaved changes
+  useEffect(() => {
+    if (currentMapId && originalConfig) {
+      const hasChanges = !isConfigEqual(config, originalConfig);
+      setCurrentMapStatus(prev => prev ? { ...prev, hasUnsavedChanges: hasChanges } : null);
+    }
+  }, [config, originalConfig, currentMapId]);
 
   const numericRatio = useMemo(() => {
     return getNumericRatio(config.format.aspectRatio, config.format.orientation);
@@ -73,6 +166,7 @@ export function PosterEditor() {
 
   const handleMapLoad = (map: MapLibreGL.Map) => {
     setMapRef(map);
+    mapInstanceRef.current = map;
   };
 
   // Throttle the location update to prevent excessive style re-renders
@@ -108,11 +202,13 @@ export function PosterEditor() {
       <ErrorToastContainer errors={errors} onDismiss={clearError} />
       {/* Mobile Header */}
       <div className="md:hidden h-14 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 z-40 shadow-sm">
-        <div className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 shadow-lg" />
           <span className="font-bold text-gray-900 dark:text-white">CartoArt</span>
+        </Link>
+        <div className="flex items-center gap-2">
+          <ExportButton onExport={handleExport} isExporting={isExporting} />
         </div>
-        <ExportButton onExport={handleExport} isExporting={isExporting} />
       </div>
 
       <TabNavigation 
@@ -122,7 +218,7 @@ export function PosterEditor() {
         onToggleDrawer={setIsDrawerOpen}
       />
 
-      <ControlDrawer 
+      <ControlDrawer
         activeTab={activeTab}
         isDrawerOpen={isDrawerOpen}
         setIsDrawerOpen={setIsDrawerOpen}
@@ -135,9 +231,14 @@ export function PosterEditor() {
         updateLayers={updateLayers}
         setConfig={setConfig}
         savedProjects={projects}
-        saveProject={saveProject}
+        saveProject={handleSaveProject}
         deleteProject={deleteProject}
         renameProject={renameProject}
+        currentMapId={currentMapId}
+        currentMapName={currentMapName}
+        currentMapStatus={currentMapStatus}
+        onLoadProject={handleLoadProject}
+        onPublishSuccess={handlePublishSuccess}
       />
 
       {/* Main Content */}

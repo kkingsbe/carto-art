@@ -6,7 +6,8 @@
       "Bash(for file in midnight.ts atmospheric.ts watercolor.ts organic.ts abstract.ts)",
       "Bash(do grep -n \"const layerToggles\" \"C:\\\\Users\\\\Kyle\\\\Documents\\\\code\\\\carto-art\\\\frontend\\\\lib\\\\styles$file\")",
       "Bash(echo:*)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(npm run build:*)"
     ]
   }
 }

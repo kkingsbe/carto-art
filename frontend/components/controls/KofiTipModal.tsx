@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { X, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface KofiTipModalProps {
@@ -165,6 +165,31 @@ export function KofiTipModal({ isOpen, onClose }: KofiTipModalProps) {
               scrolling="yes"
             />
           </div>
+        </div>
+
+        {/* Footer with Discord Button */}
+        <div
+          className={cn(
+            "flex-shrink-0 border-t border-gray-200/50 dark:border-gray-700/50",
+            "bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm",
+            isMobile ? "px-4 py-4" : "px-6 py-4"
+          )}
+        >
+          <button
+            onClick={() => window.open('https://discord.gg/UVKEfcfZVc', '_blank', 'noopener,noreferrer')}
+            className={cn(
+              "w-full flex items-center justify-center gap-2",
+              "px-4 py-2.5 rounded-lg font-medium",
+              "bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600",
+              "text-white transition-colors duration-200",
+              "focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:ring-offset-2",
+              "touch-manipulation",
+              isMobile ? "text-sm" : "text-base"
+            )}
+          >
+            <MessageCircle className={cn(isMobile ? "w-4 h-4" : "w-5 h-5")} />
+            Join Our Discord
+          </button>
         </div>
       </div>
     </div>

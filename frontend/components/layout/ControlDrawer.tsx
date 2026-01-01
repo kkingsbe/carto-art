@@ -11,6 +11,7 @@ import { LayerControls } from '@/components/controls/LayerControls';
 import { FormatControls } from '@/components/controls/FormatControls';
 import { ExamplesGallery } from '@/components/controls/ExamplesGallery';
 import { SavedProjects } from '@/components/controls/SavedProjects';
+import { AccountPanel } from '@/components/controls/AccountPanel';
 import type { Tab } from './TabNavigation';
 import type { PosterConfig, PosterLocation, PosterStyle, ColorPalette, SavedProject } from '@/types/poster';
 
@@ -27,9 +28,18 @@ interface ControlDrawerProps {
   updateLayers: (layers: Partial<PosterConfig['layers']>) => void;
   setConfig: (config: PosterConfig) => void;
   savedProjects: SavedProject[];
-  saveProject: (name: string, config: PosterConfig) => void;
-  deleteProject: (id: string) => void;
-  renameProject: (id: string, name: string) => void;
+  saveProject: (name: string, config: PosterConfig, thumbnailBlob?: Blob) => Promise<void>;
+  deleteProject: (id: string) => Promise<void>;
+  renameProject: (id: string, name: string) => Promise<void>;
+  currentMapId: string | null;
+  currentMapName: string | null;
+  currentMapStatus: {
+    isSaved: boolean;
+    isPublished: boolean;
+    hasUnsavedChanges: boolean;
+  } | null;
+  onLoadProject: (project: SavedProject) => void;
+  onPublishSuccess: () => void;
 }
 
 export function ControlDrawer({
@@ -48,6 +58,11 @@ export function ControlDrawer({
   saveProject,
   deleteProject,
   renameProject,
+  currentMapId,
+  currentMapName,
+  currentMapStatus,
+  onLoadProject,
+  onPublishSuccess,
 }: ControlDrawerProps) {
   const [libraryTab, setLibraryTab] = useState<'examples' | 'saved'>('examples');
 
@@ -104,7 +119,7 @@ export function ControlDrawer({
                 projects={savedProjects}
                 currentConfig={config}
                 onSave={saveProject}
-                onLoad={setConfig}
+                onLoad={onLoadProject}
                 onDelete={deleteProject}
                 onRename={renameProject}
               />
@@ -195,6 +210,17 @@ export function ControlDrawer({
                 onFormatChange={updateFormat}
               />
             </div>
+          </div>
+        )}
+
+        {activeTab === 'account' && (
+          <div className="space-y-6">
+            <AccountPanel
+              currentMapId={currentMapId}
+              currentMapName={currentMapName}
+              currentMapStatus={currentMapStatus}
+              onPublishSuccess={onPublishSuccess}
+            />
           </div>
         )}
       </div>
