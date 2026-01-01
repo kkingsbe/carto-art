@@ -113,6 +113,8 @@ export interface PosterConfig {
     labelSize: number; // New: control map label size
     labelMaxWidth: number; // New: control map label wrap width
     labelStyle?: 'standard' | 'elevated' | 'glass' | 'vintage'; // New: control map label visual style
+    'labels-admin'?: boolean; // Toggle for state & country names
+    'labels-cities'?: boolean; // Toggle for city names
     marker: boolean;
     markerType?: 'pin' | 'crosshair' | 'dot' | 'ring' | 'heart' | 'home';
     markerColor?: string;
