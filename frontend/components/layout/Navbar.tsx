@@ -1,0 +1,77 @@
+"use client";
+
+import Link from 'next/link';
+import Image from 'next/image';
+import { usePathname } from 'next/navigation';
+import { AuthButton } from '@/components/auth/AuthButton';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/control-components';
+import { Plus } from 'lucide-react';
+
+export function Navbar() {
+    const pathname = usePathname();
+
+    const navLinks = [
+        { href: '/', label: 'Home' },
+        { href: '/gallery', label: 'Gallery' },
+    ];
+
+    return (
+        <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/50">
+            <div className="container flex h-16 items-center justify-between px-4 sm:px-6">
+                <div className="flex items-center gap-8 md:gap-12">
+                    <Link href="/" className="flex items-center space-x-2.5 group">
+                        <div className="relative h-8 w-8 transition-transform duration-300 group-hover:scale-105">
+                            <Image
+                                src="/logo.svg"
+                                alt="Carto-Art Logo"
+                                fill
+                                className="object-contain dark:invert"
+                                priority
+                            />
+                        </div>
+                        <span className="text-lg font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+                            CartoArt
+                        </span>
+                    </Link>
+                    <div className="hidden md:flex items-center gap-8">
+                        {navLinks.map((link) => {
+                            const isActive = pathname === link.href;
+                            return (
+                                <Link
+                                    key={link.href}
+                                    href={link.href}
+                                    className={cn(
+                                        "relative py-1 text-sm font-medium transition-all duration-200 hover:text-foreground group",
+                                        isActive ? "text-foreground" : "text-foreground/60"
+                                    )}
+                                >
+                                    {link.label}
+                                    <span className={cn(
+                                        "absolute -bottom-1 left-0 h-0.5 w-full bg-blue-500 rounded-full transition-all duration-300 origin-left",
+                                        isActive ? "scale-x-100 opacity-100" : "scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-50"
+                                    )} />
+                                </Link>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                    <Link href="/">
+                        <Button
+                            className="h-9 px-3 sm:px-4 gap-2 shadow-sm shadow-blue-500/10 hover:shadow-blue-500/20 active:scale-[0.98] transition-all"
+                        >
+                            <Plus className="h-4 w-4" />
+                            <span className="hidden xs:inline">Create Map</span>
+                        </Button>
+                    </Link>
+
+                    <div className="flex items-center pl-2 border-l border-border/50">
+                        <AuthButton />
+                    </div>
+                </div>
+            </div>
+        </nav>
+    );
+}

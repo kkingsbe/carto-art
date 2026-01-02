@@ -4,6 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { KofiWidget } from "@/components/third-party/KofiWidget";
+import { Navbar } from "@/components/layout/Navbar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -51,7 +52,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex flex-col overflow-hidden`}
       >
         {process.env.NEXT_PUBLIC_GA_ID && (
           <>
@@ -71,7 +72,10 @@ export default function RootLayout({
           </>
         )}
         <KofiWidget />
-        {children}
+        <Navbar />
+        <main className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden">
+          {children}
+        </main>
       </body>
     </html>
   );

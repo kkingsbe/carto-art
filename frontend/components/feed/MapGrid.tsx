@@ -8,7 +8,7 @@ interface MapGridProps {
   maps: FeedMap[];
 }
 
-const breakpointColumnsObj = {
+export const breakpointColumnsObj = {
   default: 5,        // 1920px+
   1920: 5,
   1440: 4,           // 1440px+
@@ -45,4 +45,3 @@ export function MapGrid({ maps }: MapGridProps) {
     </div>
   );
 }
-

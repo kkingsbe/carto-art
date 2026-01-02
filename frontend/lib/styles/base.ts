@@ -49,10 +49,13 @@ export function getBaseSources(options: BaseSourcesOptions = {}) {
 
   // Conditionally add spaceports source only when needed
   if (includeSpaceports) {
+    const spaceportsUrl = getSpaceportsGeoJsonUrl();
+    console.log('[DEBUG getBaseSources] Spaceports URL:', spaceportsUrl);
     sources.spaceports = {
       type: 'geojson',
-      data: getSpaceportsGeoJsonUrl(),
+      data: spaceportsUrl,
     };
+    console.log('[DEBUG getBaseSources] Sources object:', JSON.stringify(sources, null, 2));
   }
 
   return sources;

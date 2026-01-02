@@ -43,7 +43,7 @@ export function MapDetailView({ map, comments: initialComments, userVote, isOwne
   }, [map.config.style.mapStyle, map.config.palette, map.config.layers, map.config.style.layerToggles]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex-1 bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link href="/feed" className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-6">
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -62,11 +62,11 @@ export function MapDetailView({ map, comments: initialComments, userVote, isOwne
                   {map.subtitle}
                 </p>
               )}
-              
+
               <div className="mb-6 flex items-center justify-center">
-                <div 
+                <div
                   className="relative shadow-2xl bg-white flex flex-col transition-all duration-300 ease-in-out ring-1 ring-black/5 w-full max-w-2xl"
-                  style={{ 
+                  style={{
                     aspectRatio: getAspectRatioCSS(map.config.format.aspectRatio, map.config.format.orientation),
                     backgroundColor: map.config.palette.background,
                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
@@ -74,7 +74,7 @@ export function MapDetailView({ map, comments: initialComments, userVote, isOwne
                   }}
                 >
                   {/* The Map Window */}
-                  <div 
+                  <div
                     className="absolute overflow-hidden min-h-0 min-w-0"
                     style={{
                       top: `${map.config.format.margin}cqw`,
@@ -94,13 +94,13 @@ export function MapDetailView({ map, comments: initialComments, userVote, isOwne
                       layerToggles={map.config.style.layerToggles}
                     />
                   </div>
-                  
+
                   {/* Text Overlay */}
                   <TextOverlay config={map.config} />
 
                   {/* Border Overlay - Now drawn AFTER TextOverlay to stay on top of gradients */}
                   {map.config.format.borderStyle !== 'none' && (
-                    <div 
+                    <div
                       className="absolute pointer-events-none z-30"
                       style={{
                         top: `${map.config.format.margin}cqw`,
@@ -110,22 +110,21 @@ export function MapDetailView({ map, comments: initialComments, userVote, isOwne
                         padding: map.config.format.borderStyle === 'inset' ? '2cqw' : '0',
                       }}
                     >
-                      <div 
+                      <div
                         className="w-full h-full"
                         style={{
-                          border: `${
-                            map.config.format.borderStyle === 'thick' ? '1.5cqw' : '0.5cqw'
-                          } solid ${map.config.palette.accent || map.config.palette.text}`,
+                          border: `${map.config.format.borderStyle === 'thick' ? '1.5cqw' : '0.5cqw'
+                            } solid ${map.config.palette.accent || map.config.palette.text}`,
                           borderRadius: (map.config.format.maskShape || 'rectangular') === 'circular' ? '50%' : '0',
                         }}
                       />
-                      
+
                       {/* Compass Rose Preview (SVG) */}
                       {(map.config.format.maskShape || 'rectangular') === 'circular' && map.config.format.compassRose && (
-                        <svg 
+                        <svg
                           className="absolute"
-                          style={{ 
-                            pointerEvents: 'none', 
+                          style={{
+                            pointerEvents: 'none',
                             overflow: 'visible',
                             top: '-4cqw',
                             left: '-4cqw',
@@ -163,17 +162,17 @@ export function MapDetailView({ map, comments: initialComments, userVote, isOwne
                               // Ticks start at the border edge and extend outward
                               const tickStartRadius = borderOuterRadius;
                               const tickEndRadius = borderOuterRadius + tickLen;
-                              
+
                               const x1 = centerX + Math.cos(rad) * tickStartRadius;
                               const y1 = centerY + Math.sin(rad) * tickStartRadius;
                               const x2 = centerX + Math.cos(rad) * tickEndRadius;
                               const y2 = centerY + Math.sin(rad) * tickEndRadius;
-                              
+
                               // Position labels further out from the border
                               const labelRadius = borderOuterRadius + tickLen + 1.0;
                               const labelX = centerX + Math.cos(rad) * labelRadius;
                               const labelY = centerY + Math.sin(rad) * labelRadius;
-                              
+
                               return (
                                 <g key={angle}>
                                   <line x1={x1} y1={y1} x2={x2} y2={y2} />
@@ -191,7 +190,7 @@ export function MapDetailView({ map, comments: initialComments, userVote, isOwne
                                 </g>
                               );
                             })}
-                            
+
                             {/* Draw intermediate ticks */}
                             {Array.from({ length: 24 }, (_, i) => {
                               if (i % 3 === 0) return null; // Skip positions where we have main directions
@@ -203,12 +202,12 @@ export function MapDetailView({ map, comments: initialComments, userVote, isOwne
                               // Ticks start at the border edge and extend outward
                               const tickStartRadius = borderOuterRadius;
                               const tickEndRadius = borderOuterRadius + tickLen;
-                              
+
                               const x1 = centerX + Math.cos(angle) * tickStartRadius;
                               const y1 = centerY + Math.sin(angle) * tickStartRadius;
                               const x2 = centerX + Math.cos(angle) * tickEndRadius;
                               const y2 = centerY + Math.sin(angle) * tickEndRadius;
-                              
+
                               return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} opacity="0.6" />;
                             })}
                           </g>
@@ -223,7 +222,7 @@ export function MapDetailView({ map, comments: initialComments, userVote, isOwne
                 <div className="flex items-center gap-4">
                   <VoteButtons mapId={map.id} initialVote={userVote} initialScore={map.vote_score} />
                 </div>
-                
+
                 {isOwner && (
                   <Link href="/profile">
                     <Button variant="outline" size="sm">
@@ -242,11 +241,11 @@ export function MapDetailView({ map, comments: initialComments, userVote, isOwne
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                 Comments ({comments.length})
               </h2>
-              
+
               <CommentForm mapId={map.id} onCommentAdded={handleCommentAdded} />
-              
+
               <div className="mt-6">
-                <CommentList 
+                <CommentList
                   comments={comments}
                   onCommentDeleted={handleCommentDeleted}
                 />

@@ -20,6 +20,7 @@ export interface Database {
           username: string;
           display_name: string | null;
           avatar_url: string | null;
+          featured_map_ids: string[] | null;
           created_at: string;
           updated_at: string;
         };
@@ -28,6 +29,7 @@ export interface Database {
           username: string;
           display_name?: string | null;
           avatar_url?: string | null;
+          featured_map_ids?: string[] | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -36,6 +38,7 @@ export interface Database {
           username?: string;
           display_name?: string | null;
           avatar_url?: string | null;
+          featured_map_ids?: string[] | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -50,6 +53,7 @@ export interface Database {
           is_published: boolean;
           thumbnail_url: string | null;
           vote_score: number;
+          view_count: number;
           published_at: string | null;
           created_at: string;
           updated_at: string;
@@ -63,6 +67,7 @@ export interface Database {
           is_published?: boolean;
           thumbnail_url?: string | null;
           vote_score?: number;
+          view_count?: number;
           published_at?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -76,6 +81,7 @@ export interface Database {
           is_published?: boolean;
           thumbnail_url?: string | null;
           vote_score?: number;
+          view_count?: number;
           published_at?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -154,6 +160,23 @@ export interface Database {
           request_timestamps?: Json;
           window_start?: string;
           updated_at?: string;
+        };
+      };
+      follows: {
+        Row: {
+          follower_id: string;
+          following_id: string;
+          created_at: string;
+        };
+        Insert: {
+          follower_id: string;
+          following_id: string;
+          created_at?: string;
+        };
+        Update: {
+          follower_id?: string;
+          following_id?: string;
+          created_at?: string;
         };
       };
     };

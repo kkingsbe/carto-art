@@ -29,6 +29,7 @@
     "react-map-gl": "^7.1.0",
     "react-masonry-css": "^1.0.16",
     "sharp": "^0.34.5",
+    "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "zod": "^4.3.4"
   },

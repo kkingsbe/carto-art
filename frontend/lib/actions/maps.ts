@@ -25,6 +25,7 @@ export interface SavedMap {
   created_at: string;
   updated_at: string;
   user_id: string;
+  view_count?: number;
 }
 
 // Alias for backward compatibility
@@ -307,7 +308,7 @@ export async function updateMapThumbnail(
  */
 export async function deleteMap(id: string) {
   const supabase = await createClient();
-  
+
   const {
     data: { user },
     error: authError,
@@ -344,7 +345,7 @@ export async function publishMap(
   thumbnailUrl?: string
 ) {
   const supabase = await createClient();
-  
+
   const {
     data: { user },
     error: authError,
@@ -411,7 +412,7 @@ export async function publishMap(
  */
 export async function unpublishMap(id: string) {
   const supabase = await createClient();
-  
+
   const {
     data: { user },
     error: authError,
@@ -455,7 +456,7 @@ export async function unpublishMap(id: string) {
  */
 export async function getUserMaps(): Promise<SavedMap[]> {
   const supabase = await createClient();
-  
+
   const {
     data: { user },
     error: authError,
@@ -487,7 +488,7 @@ export async function getUserMaps(): Promise<SavedMap[]> {
  */
 export async function getMapById(id: string): Promise<SavedMap | null> {
   const supabase = await createClient();
-  
+
   const {
     data: { user },
   } = await supabase.auth.getUser();

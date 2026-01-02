@@ -117,17 +117,17 @@ export function getPopulationTileUrl(): string {
 
 /**
  * Returns the URL for spaceports GeoJSON data from Launch Library 2 API.
+ * Always uses a relative path to avoid CORS issues in Web Workers.
  */
 export function getSpaceportsGeoJsonUrl(): string {
-  const path = 'api/spaceports';
-  const baseUrl = getBaseUrl();
-  
-  if (baseUrl) {
-    return joinBaseAndPath(baseUrl, path);
-  }
-  
-  // Fallback to relative path if no base URL is available
-  return `/${path}`;
+  // Use relative path - MapLibre will resolve this relative to the current origin
+  // This avoids issues with process.env being inlined at build time with production URLs
+  const url = '/api/spaceports';
+  console.log('[DEBUG getSpaceportsGeoJsonUrl] Returning URL:', url);
+  console.log('[DEBUG getSpaceportsGeoJsonUrl] NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL);
+  console.log('[DEBUG getSpaceportsGeoJsonUrl] window.location.origin:', typeof window !== 'undefined' ? window.location?.origin : 'N/A');
+  console.log('[DEBUG getSpaceportsGeoJsonUrl] self.location.origin:', typeof self !== 'undefined' ? self.location?.origin : 'N/A');
+  return url;
 }
 
 
