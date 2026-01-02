@@ -62,7 +62,7 @@ export async function voteOnMap(mapId: string, value: 1 | -1) {
 
   logger.info('Vote recorded successfully', { mapId, userId: user.id, value });
   revalidatePath(`/map/${mapId}`);
-  revalidatePath('/feed');
+  revalidatePath('/gallery');
 }
 
 /**
@@ -122,6 +122,6 @@ export async function removeVote(mapId: string) {
 
   logger.info('Vote removed successfully', { mapId, userId: user.id });
   revalidatePath(`/map/${mapId}`);
-  revalidatePath('/feed');
+  revalidatePath('/gallery');
 }
 

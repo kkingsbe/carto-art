@@ -5,11 +5,11 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { AuthButton } from '@/components/auth/AuthButton';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/control-components';
-import { Plus } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 export function Navbar() {
     const pathname = usePathname();
+    const isMapDetailPage = pathname?.startsWith('/map/');
 
     const navLinks = [
         { href: '/', label: 'Home' },
@@ -35,6 +35,18 @@ export function Navbar() {
                         </span>
                     </Link>
                     <div className="hidden md:flex items-center gap-8">
+                        {isMapDetailPage && (
+                            <Link
+                                href="/gallery"
+                                className={cn(
+                                    "relative py-1 text-sm font-medium transition-all duration-200 hover:text-foreground group inline-flex items-center gap-1.5",
+                                    "text-foreground/60"
+                                )}
+                            >
+                                <ArrowLeft className="w-3.5 h-3.5" />
+                                Back to Gallery
+                            </Link>
+                        )}
                         {navLinks.map((link) => {
                             const isActive = pathname === link.href;
                             return (
@@ -58,13 +70,18 @@ export function Navbar() {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <Link href="/">
-                        <Button
-                            className="h-9 px-3 sm:px-4 gap-2 shadow-sm shadow-blue-500/10 hover:shadow-blue-500/20 active:scale-[0.98] transition-all"
-                        >
-                            <Plus className="h-4 w-4" />
-                            <span className="hidden xs:inline">Create Map</span>
-                        </Button>
+                    <Link
+                        href="/editor"
+                        className={cn(
+                            "relative py-1 text-sm font-medium transition-all duration-200 hover:text-foreground group",
+                            pathname === "/editor" ? "text-foreground" : "text-foreground/60"
+                        )}
+                    >
+                        Editor
+                        <span className={cn(
+                            "absolute -bottom-1 left-0 h-0.5 w-full bg-blue-500 rounded-full transition-all duration-300 origin-left",
+                            pathname === "/editor" ? "scale-x-100 opacity-100" : "scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-50"
+                        )} />
                     </Link>
 
                     <div className="flex items-center pl-2 border-l border-border/50">

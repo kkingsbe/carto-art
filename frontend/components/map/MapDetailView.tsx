@@ -10,7 +10,7 @@ import { VoteButtons } from '@/components/voting/VoteButtons';
 import { CommentList } from '@/components/comments/CommentList';
 import { CommentForm } from '@/components/comments/CommentForm';
 import { Button } from '@/components/ui/control-components';
-import { ArrowLeft, Edit, EyeOff } from 'lucide-react';
+import { Edit, EyeOff } from 'lucide-react';
 import type { SavedMap } from '@/lib/actions/maps';
 import type { Comment } from '@/lib/actions/comments';
 
@@ -45,11 +45,6 @@ export function MapDetailView({ map, comments: initialComments, userVote, isOwne
   return (
     <div className="flex-1 bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Link href="/feed" className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-6">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Feed
-        </Link>
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Map Preview */}
           <div className="space-y-4">
