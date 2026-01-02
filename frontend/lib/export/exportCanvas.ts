@@ -193,7 +193,16 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
           exportCtx.strokeRect(marginPx, marginPx, drawWidth, drawHeight);
         } else if (borderStyle === 'inset') {
           const inset = exportResolution.width * 0.02;
+          exportCtx.lineWidth = exportResolution.width * 0.005;
           exportCtx.strokeRect(marginPx + inset, marginPx + inset, drawWidth - (inset * 2), drawHeight - (inset * 2));
+        } else if (borderStyle === 'double') {
+          // Double border: draw two rectangles
+          const doubleGap = exportResolution.width * 0.01;
+          exportCtx.lineWidth = exportResolution.width * 0.005;
+          // Outer border
+          exportCtx.strokeRect(marginPx, marginPx, drawWidth, drawHeight);
+          // Inner border
+          exportCtx.strokeRect(marginPx + doubleGap, marginPx + doubleGap, drawWidth - (doubleGap * 2), drawHeight - (doubleGap * 2));
         }
       }
       exportCtx.restore();

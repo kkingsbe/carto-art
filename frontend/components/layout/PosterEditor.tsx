@@ -10,6 +10,7 @@ import { MapPreview } from '@/components/map/MapPreview';
 import { TextOverlay } from '@/components/map/TextOverlay';
 import { ExportButton } from '@/components/controls/ExportButton';
 import { SaveButton } from '@/components/controls/SaveButton';
+import { SaveCopyButton } from '@/components/controls/SaveCopyButton';
 import { applyPaletteToStyle } from '@/lib/styles/applyPalette';
 import { throttle, cn } from '@/lib/utils';
 import { THROTTLE } from '@/lib/constants';
@@ -138,6 +139,36 @@ export function PosterEditor() {
     await handleSaveProject(name, config);
   }, [handleSaveProject, config]);
 
+  // Handle save a copy - always creates a NEW project and switches to it
+  const handleSaveCopy = useCallback(async (name: string) => {
+    // Generate thumbnail if map is available and user is authenticated
+    let thumbnailBlob: Blob | undefined;
+    if (mapInstanceRef.current && isAuthenticated) {
+      try {
+        thumbnailBlob = await generateThumbnail(mapInstanceRef.current, config);
+      } catch (error) {
+        console.error('Failed to generate thumbnail:', error);
+        // Continue without thumbnail
+      }
+    }
+
+    // Always create NEW project (never update existing)
+    const savedProject = await saveProject(name, config, thumbnailBlob);
+
+    // Switch to the newly created copy
+    setCurrentMapId(savedProject.id);
+    setCurrentMapName(savedProject.name);
+    setOriginalConfig(cloneConfig(savedProject.config));
+    setCurrentMapStatus({
+      isSaved: true,
+      isPublished: false,
+      hasUnsavedChanges: false
+    });
+
+    // Update URL to reflect new map
+    router.replace(`/?map=${savedProject.id}`, { scroll: false });
+  }, [saveProject, config, isAuthenticated, router]);
+
   // Handle publish success - refetch map status to get latest published state
   const handlePublishSuccess = useCallback(async () => {
     if (!currentMapId || !isAuthenticated) return;
@@ -239,6 +270,12 @@ export function PosterEditor() {
             isAuthenticated={isAuthenticated}
             disabled={isExporting}
           />
+          <SaveCopyButton
+            onSave={handleSaveCopy}
+            currentMapName={currentMapName}
+            isAuthenticated={isAuthenticated}
+            disabled={isExporting}
+          />
           <button
             onClick={handleReset}
             className="p-2 rounded-md transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700"
@@ -325,6 +362,12 @@ export function PosterEditor() {
             onSave={handleSaveClick}
             currentMapName={currentMapName}
             hasUnsavedChanges={currentMapStatus?.hasUnsavedChanges}
+            isAuthenticated={isAuthenticated}
+            disabled={isExporting}
+          />
+          <SaveCopyButton
+            onSave={handleSaveCopy}
+            currentMapName={currentMapName}
             isAuthenticated={isAuthenticated}
             disabled={isExporting}
           />
