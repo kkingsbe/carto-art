@@ -12,7 +12,7 @@ import { RATE_LIMITS } from '@/lib/constants/limits';
  */
 export async function voteOnMap(mapId: string, value: 1 | -1) {
   const supabase = await createClient();
-  
+
   const {
     data: { user },
     error: authError,
@@ -40,8 +40,8 @@ export async function voteOnMap(mapId: string, value: 1 | -1) {
     throw createError.validationError('Vote value must be 1 or -1');
   }
 
-  // Upsert vote (insert or update)
-  const { error } = await (supabase as any)
+  // Perform atomic upsert - this will fire the appropriate INSERT or UPDATE trigger
+  const { error: upsertError } = await (supabase as any)
     .from('votes')
     .upsert(
       {
@@ -52,12 +52,13 @@ export async function voteOnMap(mapId: string, value: 1 | -1) {
       },
       {
         onConflict: 'user_id,map_id',
+        ignoreDuplicates: false,
       }
     );
 
-  if (error) {
-    logger.error('Failed to vote:', { error, mapId, userId: user.id, value });
-    throw createError.databaseError(`Failed to vote: ${error.message}`);
+  if (upsertError) {
+    logger.error('Failed to record vote:', { error: upsertError, mapId, userId: user.id, value });
+    throw createError.databaseError(`Failed to vote: ${upsertError.message}`);
   }
 
   logger.info('Vote recorded successfully', { mapId, userId: user.id, value });
@@ -70,7 +71,7 @@ export async function voteOnMap(mapId: string, value: 1 | -1) {
  */
 export async function getUserVote(mapId: string): Promise<number | null> {
   const supabase = await createClient();
-  
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -99,7 +100,7 @@ export async function getUserVote(mapId: string): Promise<number | null> {
  */
 export async function removeVote(mapId: string) {
   const supabase = await createClient();
-  
+
   const {
     data: { user },
     error: authError,

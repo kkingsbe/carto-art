@@ -19,14 +19,22 @@ interface ExportOptions {
 }
 
 export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
-  const { map, config, resolution = DEFAULT_EXPORT_RESOLUTION } = options;
+  const { map, config, resolution } = options;
 
   // 1. CALCULATE ACTUAL RESOLUTION
-  const exportResolution = calculateTargetResolution(
-    resolution,
-    config.format.aspectRatio,
-    config.format.orientation
-  );
+  // If resolution is already provided with width/height, use it.
+  // Otherwise calculate it from the base resolution (or default).
+  let exportResolution: { width: number; height: number; dpi: number; name: string };
+
+  if (resolution && 'width' in resolution) {
+    exportResolution = resolution;
+  } else {
+    exportResolution = calculateTargetResolution(
+      (resolution as any) || DEFAULT_EXPORT_RESOLUTION,
+      config.format.aspectRatio,
+      config.format.orientation
+    );
+  }
 
   // Wait for fonts
   try {
@@ -44,14 +52,16 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
   const posterElement = container.closest('[style*="aspect-ratio"]');
   const rect = (posterElement || container).getBoundingClientRect();
   const logicalWidth = rect.width;
-  
-  const exportScale = exportResolution.width / logicalWidth;
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio : 1;
-  const featureScale = exportResolution.width / (logicalWidth * dpr);
-  const zoomOffset = Math.log2(featureScale);
 
-  const originalWidth = map.getCanvas().width;
-  const originalHeight = map.getCanvas().height;
+  if (!logicalWidth) {
+    throw new Error('Map container has no width, cannot export');
+  }
+
+  const exportScale = exportResolution.width / logicalWidth;
+  const zoomOffset = Math.log2(exportScale);
+
+  const originalWidth = container.clientWidth;
+  const originalHeight = container.clientHeight;
   const originalZoom = map.getZoom();
   const originalMaxZoom = (map as any).getMaxZoom?.();
 
@@ -64,16 +74,23 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
     if (typeof (map as any).setMaxZoom === 'function') {
       (map as any).setMaxZoom(24); // Temporarily allow higher zoom for export
     }
+
+    // Mock container dimensions so map.resize() picks up the target export size
+    // This is the key fix for the "failed to invert matrix" error.
+    // MapLibre's internal projection matrix depends on the container size.
+    Object.defineProperty(container, 'clientWidth', { configurable: true, value: drawWidth });
+    Object.defineProperty(container, 'clientHeight', { configurable: true, value: drawHeight });
+
+    // Update map size to match target resolution
+    map.resize();
+
+    // update zoom to match the new resolution while keeping the same geographic bounds
     map.setZoom(originalZoom + zoomOffset);
-    map.getCanvas().width = drawWidth;
-    map.getCanvas().height = drawHeight;
-    
+
     map.jumpTo({
       center: config.location.center,
       zoom: originalZoom + zoomOffset
     });
-
-    map.resize();
 
     await new Promise<void>(resolve => {
       map.once('idle', resolve);
@@ -84,7 +101,7 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
     exportCanvas.width = exportResolution.width;
     exportCanvas.height = exportResolution.height;
     const exportCtx = exportCanvas.getContext('2d');
-    
+
     if (!exportCtx) throw createError.internalError('Could not create export canvas context');
 
     // Background
@@ -123,16 +140,14 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
     if (config.format.borderStyle !== 'none') {
       exportCtx.save();
       exportCtx.strokeStyle = config.palette.accent || config.palette.text;
-      exportCtx.lineWidth = exportResolution.width * 0.005;
-      
+
       const { borderStyle } = config.format;
-      const maskShape = config.format.maskShape || 'rectangular';
-      
+
       if (maskShape === 'circular') {
         const radius = Math.min(drawWidth, drawHeight) / 2;
         const centerX = marginPx + drawWidth / 2;
         const centerY = marginPx + drawHeight / 2;
-        
+
         if (borderStyle === 'thin') {
           exportCtx.lineWidth = exportResolution.width * 0.005;
           exportCtx.beginPath();
@@ -150,20 +165,18 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
           exportCtx.arc(centerX, centerY, radius - inset, 0, Math.PI * 2);
           exportCtx.stroke();
         } else {
-          // Default fallback for 'double' or any other border style
           exportCtx.lineWidth = exportResolution.width * 0.005;
           exportCtx.beginPath();
           exportCtx.arc(centerX, centerY, radius, 0, Math.PI * 2);
           exportCtx.stroke();
         }
-        
-        // Draw compass rose if enabled and mask is circular
+
+        // Compass Rose
         if (config.format.compassRose) {
           const compassColor = config.palette.accent || config.palette.text;
           const compassLineWidth = Math.max(1, exportResolution.width * 0.002);
           const compassFontSize = exportResolution.width * 0.018;
-          
-          // Calculate the outer edge of the border
+
           let borderOuterRadius = radius;
           if (borderStyle === 'thin') {
             borderOuterRadius = radius + (exportResolution.width * 0.005) / 2;
@@ -174,7 +187,7 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
           } else {
             borderOuterRadius = radius + (exportResolution.width * 0.005) / 2;
           }
-          
+
           drawCompassRose(
             exportCtx,
             centerX,
@@ -187,6 +200,7 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
         }
       } else {
         if (borderStyle === 'thin') {
+          exportCtx.lineWidth = exportResolution.width * 0.005;
           exportCtx.strokeRect(marginPx, marginPx, drawWidth, drawHeight);
         } else if (borderStyle === 'thick') {
           exportCtx.lineWidth = exportResolution.width * 0.015;
@@ -196,12 +210,9 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
           exportCtx.lineWidth = exportResolution.width * 0.005;
           exportCtx.strokeRect(marginPx + inset, marginPx + inset, drawWidth - (inset * 2), drawHeight - (inset * 2));
         } else if (borderStyle === 'double') {
-          // Double border: draw two rectangles
           const doubleGap = exportResolution.width * 0.01;
           exportCtx.lineWidth = exportResolution.width * 0.005;
-          // Outer border
           exportCtx.strokeRect(marginPx, marginPx, drawWidth, drawHeight);
-          // Inner border
           exportCtx.strokeRect(marginPx + doubleGap, marginPx + doubleGap, drawWidth - (doubleGap * 2), drawHeight - (doubleGap * 2));
         }
       }
@@ -224,12 +235,15 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
       }, 'image/png');
     });
   } finally {
+    // RESTORE STATE
+    delete (container as any).clientWidth;
+    delete (container as any).clientHeight;
+
+    map.resize();
     map.setZoom(originalZoom);
     if (typeof (map as any).setMaxZoom === 'function' && originalMaxZoom !== undefined) {
       (map as any).setMaxZoom(originalMaxZoom);
     }
-    map.getCanvas().width = originalWidth;
-    map.getCanvas().height = originalHeight;
     map.resize();
   }
 }
@@ -240,24 +254,24 @@ function drawWatermark(
   height: number
 ): void {
   const watermarkText = 'https://www.cartoart.net';
-  
+
   // Calculate font size as a percentage of canvas width (small and subtle)
   const fontSize = Math.max(12, Math.round(width * 0.015));
   const padding = Math.max(20, Math.round(width * 0.02));
-  
+
   ctx.save();
   ctx.font = `${fontSize}px sans-serif`;
   ctx.textAlign = 'right';
   ctx.textBaseline = 'bottom';
   ctx.globalAlpha = 0.5; // Semi-transparent
-  
+
   // Use a color that contrasts with both light and dark backgrounds
   // Using a gray that should be visible on most backgrounds
   ctx.fillStyle = '#666666';
-  
+
   const x = width - padding;
   const y = height - padding;
-  
+
   ctx.fillText(watermarkText, x, y);
   ctx.restore();
 }

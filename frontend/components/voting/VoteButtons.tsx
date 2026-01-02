@@ -5,6 +5,7 @@ import { ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/control-components';
 import { voteOnMap, removeVote } from '@/lib/actions/votes';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface VoteButtonsProps {
   mapId: string;
@@ -33,13 +34,16 @@ export function VoteButtons({ mapId, initialVote, initialScore }: VoteButtonsPro
       try {
         if (newVote === null) {
           await removeVote(mapId);
+          toast.success('Vote removed');
         } else {
           await voteOnMap(mapId, newVote);
+          toast.success(newVote === 1 ? 'Upvoted!' : 'Downvoted');
         }
-      } catch (error) {
+      } catch (error: any) {
         // Revert on error
         setVote(vote);
         setScore(score);
+        toast.error(error.message || 'Failed to vote');
         console.error('Failed to vote:', error);
       }
     });
@@ -59,11 +63,11 @@ export function VoteButtons({ mapId, initialVote, initialScore }: VoteButtonsPro
       >
         <ChevronUp className="w-5 h-5" />
       </Button>
-      
+
       <span className="text-sm font-semibold text-gray-900 dark:text-white min-w-[2rem] text-center">
         {score}
       </span>
-      
+
       <Button
         variant="ghost"
         size="sm"

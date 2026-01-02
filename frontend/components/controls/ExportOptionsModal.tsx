@@ -40,55 +40,105 @@ export function ExportOptionsModal({ isOpen, onClose, onExport, isExporting, for
                     </button>
                 </div>
 
-                <div className="p-6 space-y-4">
+                <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                         Select the resolution for your export. Higher resolution results in better print quality but larger file size.
                     </p>
 
-                    <div className="space-y-3">
-                        {Object.entries(EXPORT_RESOLUTIONS).map(([key, base]) => {
-                            const res = calculateTargetResolution(
-                                base as BaseExportResolution,
-                                format.aspectRatio,
-                                format.orientation
-                            );
-                            const physical = getPhysicalDimensions(res.width, res.height, res.dpi);
-                            const isSelected = selectedKey === key;
+                    <div className="space-y-6">
+                        {/* Print Category */}
+                        <div>
+                            <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Printing & Physical</div>
+                            <div className="space-y-3">
+                                {Object.entries(EXPORT_RESOLUTIONS).filter(([key]) => !['THUMBNAIL', 'PHONE_WALLPAPER', 'LAPTOP_WALLPAPER', 'DESKTOP_4K'].includes(key)).map(([key, base]) => {
+                                    const res = calculateTargetResolution(
+                                        base as BaseExportResolution,
+                                        format.aspectRatio,
+                                        format.orientation
+                                    );
+                                    const physical = getPhysicalDimensions(res.width, res.height, res.dpi);
+                                    const isSelected = selectedKey === key;
 
-                            return (
-                                <button
-                                    key={key}
-                                    onClick={() => setSelectedKey(key)}
-                                    className={cn(
-                                        "w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-left",
-                                        isSelected
-                                            ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
-                                            : "border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800"
-                                    )}
-                                >
-                                    <div className="flex-1">
-                                        <div className="flex items-center justify-between mb-1">
-                                            <div className="font-semibold text-gray-900 dark:text-white">{res.name}</div>
-                                            {isSelected && <Check className="w-5 h-5 text-blue-500" />}
-                                        </div>
-                                        {res.description && (
-                                            <div className="text-xs text-gray-400 dark:text-gray-500 mb-2">
-                                                {res.description}
+                                    return (
+                                        <button
+                                            key={key}
+                                            onClick={() => setSelectedKey(key)}
+                                            className={cn(
+                                                "w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-left",
+                                                isSelected
+                                                    ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
+                                                    : "border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800"
+                                            )}
+                                        >
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <div className="font-semibold text-gray-900 dark:text-white">{res.name}</div>
+                                                    {isSelected && <Check className="w-5 h-5 text-blue-500" />}
+                                                </div>
+                                                {res.description && (
+                                                    <div className="text-xs text-gray-400 dark:text-gray-500 mb-2">
+                                                        {res.description}
+                                                    </div>
+                                                )}
+                                                <div className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                                                    <span>{res.width} × {res.height} px</span>
+                                                    <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+                                                    <span>{physical}</span>
+                                                    <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+                                                    <span>{res.dpi} DPI</span>
+                                                </div>
                                             </div>
-                                        )}
-                                        <div className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                                            <span>{res.width} × {res.height} px</span>
-                                            <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
-                                            <span>{physical}</span>
-                                            <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
-                                            <span>{res.dpi} DPI</span>
-                                        </div>
-                                    </div>
-                                </button>
-                            );
-                        })}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Digital Category */}
+                        <div>
+                            <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Digital & Wallpaper</div>
+                            <div className="space-y-3">
+                                {Object.entries(EXPORT_RESOLUTIONS).filter(([key]) => ['THUMBNAIL', 'PHONE_WALLPAPER', 'LAPTOP_WALLPAPER', 'DESKTOP_4K'].includes(key)).map(([key, base]) => {
+                                    const res = calculateTargetResolution(
+                                        base as BaseExportResolution,
+                                        format.aspectRatio,
+                                        format.orientation
+                                    );
+                                    const isSelected = selectedKey === key;
+
+                                    return (
+                                        <button
+                                            key={key}
+                                            onClick={() => setSelectedKey(key)}
+                                            className={cn(
+                                                "w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-left",
+                                                isSelected
+                                                    ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
+                                                    : "border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800"
+                                            )}
+                                        >
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <div className="font-semibold text-gray-900 dark:text-white">{res.name}</div>
+                                                    {isSelected && <Check className="w-5 h-5 text-blue-500" />}
+                                                </div>
+                                                {res.description && (
+                                                    <div className="text-xs text-gray-400 dark:text-gray-500 mb-2">
+                                                        {res.description}
+                                                    </div>
+                                                )}
+                                                <div className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                                                    <span>{res.width} × {res.height} px</span>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
                     </div>
                 </div>
+
 
                 <div className="p-6 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700">
                     <button

@@ -13,12 +13,12 @@ export interface ColorPalette {
   id: string;
   name: string;
   style: string;                    // Parent style ID
-  
+
   // Core colors
   background: string;
   text: string;
   border: string;
-  
+
   // Road hierarchy (7 levels)
   roads: {
     motorway: string;
@@ -29,21 +29,21 @@ export interface ColorPalette {
     residential: string;
     service: string;
   };
-  
+
   // Land features
   water: string;
   waterLine: string;                // Rivers, streams
   greenSpace: string;
   landuse: string;                  // General land tint
   buildings: string;
-  
+
   // Optional/style-specific
   accent?: string;
   contour?: string;
   contourIndex?: string;
   grid?: string;
   hillshade?: string;
-  
+
   // Keep for backward compatibility/internal use
   primary?: string; // Main streets/features
   secondary?: string; // Minor streets/features
@@ -93,7 +93,7 @@ export interface PosterConfig {
     maxWidth?: number; // New: max width percentage (0-100)
   };
   format: {
-    aspectRatio: '2:3' | '3:4' | '4:5' | '1:1' | 'ISO';
+    aspectRatio: '2:3' | '3:4' | '4:5' | '1:1' | 'ISO' | '16:9' | '16:10' | '9:16' | '9:19.5';
     orientation: 'portrait' | 'landscape';
     margin: number; // 0-100 (percentage based)
     borderStyle: 'none' | 'thin' | 'thick' | 'double' | 'inset';

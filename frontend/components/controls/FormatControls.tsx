@@ -15,13 +15,19 @@ const aspectRatioOptions: Array<{
   value: PosterConfig['format']['aspectRatio'];
   label: string;
   description?: string;
+  category: 'Standard' | 'Screen';
 }> = [
-  { value: '2:3', label: '2:3', description: 'Standard' },
-  { value: '3:4', label: '3:4', description: 'Medium' },
-  { value: '4:5', label: '4:5', description: 'Compact' },
-  { value: '1:1', label: '1:1', description: 'Square' },
-  { value: 'ISO', label: 'ISO', description: 'A-series' },
-];
+    { value: '2:3', label: '2:3', description: 'Photo', category: 'Standard' },
+    { value: '3:4', label: '3:4', description: 'Standard', category: 'Standard' },
+    { value: '4:5', label: '4:5', description: 'Compact', category: 'Standard' },
+    { value: '1:1', label: '1:1', description: 'Square', category: 'Standard' },
+    { value: 'ISO', label: 'ISO', description: 'A-series', category: 'Standard' },
+    { value: '16:9', label: '16:9', description: 'Desktop', category: 'Screen' },
+    { value: '16:10', label: '16:10', description: 'Laptop', category: 'Screen' },
+    { value: '9:16', label: '9:16', description: 'Phone', category: 'Screen' },
+    { value: '9:19.5', label: '9:19.5', description: 'Mobile', category: 'Screen' },
+  ];
+
 
 export function FormatControls({ format, onFormatChange }: FormatControlsProps) {
   const isSquareAspectRatio = format.aspectRatio === '1:1';
@@ -41,27 +47,58 @@ export function FormatControls({ format, onFormatChange }: FormatControlsProps) 
         <div className="space-y-4">
           <div className="space-y-2">
             <ControlLabel>Aspect Ratio</ControlLabel>
-            <div className="grid grid-cols-5 gap-2">
-              {aspectRatioOptions.map((option) => {
-                const isActive = format.aspectRatio === option.value;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => handleAspectRatioChange(option.value)}
-                    className={cn(
-                      'flex flex-col items-center justify-center p-2 rounded-lg border transition-all h-16',
-                      isActive
-                        ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:border-blue-400 dark:text-blue-300'
-                        : 'border-gray-200 hover:border-gray-300 text-gray-600 dark:border-gray-700 dark:text-gray-400 dark:hover:border-gray-600'
-                    )}
-                  >
-                    <span className="text-sm font-bold">{option.label}</span>
-                    <span className="text-[10px] opacity-75">{option.description}</span>
-                  </button>
-                );
-              })}
+            <div className="space-y-4">
+              <div>
+                <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Print & Classic</div>
+                <div className="grid grid-cols-5 gap-2">
+                  {aspectRatioOptions.filter(o => o.category === 'Standard').map((option) => {
+                    const isActive = format.aspectRatio === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => handleAspectRatioChange(option.value)}
+                        className={cn(
+                          'flex flex-col items-center justify-center p-2 rounded-lg border transition-all h-16',
+                          isActive
+                            ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:border-blue-400 dark:text-blue-300'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-600 dark:border-gray-700 dark:text-gray-400 dark:hover:border-gray-600'
+                        )}
+                      >
+                        <span className="text-sm font-bold">{option.label}</span>
+                        <span className="text-[10px] opacity-75">{option.description}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Wallpaper & Screen</div>
+                <div className="grid grid-cols-4 gap-2">
+                  {aspectRatioOptions.filter(o => o.category === 'Screen').map((option) => {
+                    const isActive = format.aspectRatio === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => handleAspectRatioChange(option.value)}
+                        className={cn(
+                          'flex flex-col items-center justify-center p-2 rounded-lg border transition-all h-16',
+                          isActive
+                            ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:border-blue-400 dark:text-blue-300'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-600 dark:border-gray-700 dark:text-gray-400 dark:hover:border-gray-600'
+                        )}
+                      >
+                        <span className="text-sm font-bold">{option.label}</span>
+                        <span className="text-[10px] opacity-75">{option.description}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
+
           </div>
 
           <div className="space-y-2">
@@ -151,7 +188,7 @@ export function FormatControls({ format, onFormatChange }: FormatControlsProps) 
                 </button>
               </Tooltip>
             </ControlRow>
-            
+
             {/* Compass Rose Toggle - Only show when circular mask is selected */}
             {format.maskShape === 'circular' && (
               <ControlRow>
@@ -206,8 +243,8 @@ export function FormatControls({ format, onFormatChange }: FormatControlsProps) 
                 onClick={() => onFormatChange({ texture: t as any })}
                 className={cn(
                   "px-4 py-2 text-xs font-medium rounded-full border transition-all",
-                  format.texture === t 
-                    ? "bg-gray-900 border-gray-900 text-white dark:bg-white dark:border-white dark:text-gray-900" 
+                  format.texture === t
+                    ? "bg-gray-900 border-gray-900 text-white dark:bg-white dark:border-white dark:text-gray-900"
                     : "bg-transparent border-gray-200 text-gray-600 hover:border-gray-400 dark:border-gray-700 dark:text-gray-400"
                 )}
               >
@@ -215,7 +252,7 @@ export function FormatControls({ format, onFormatChange }: FormatControlsProps) 
               </button>
             ))}
           </div>
-          
+
           {format.texture && format.texture !== 'none' && (
             <div className="space-y-2 pt-2">
               <div className="flex justify-between items-center mb-1">

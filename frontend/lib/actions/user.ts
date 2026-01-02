@@ -103,7 +103,7 @@ export async function followUser(targetUserId: string) {
         .insert({
             follower_id: user.id,
             following_id: targetUserId
-        });
+        } as Database['public']['Tables']['follows']['Insert']);
 
     if (error) {
         // Unique violation means already following, which is fine to ignore or handle

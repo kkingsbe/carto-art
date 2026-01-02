@@ -83,7 +83,7 @@ export const PosterConfigSchema: z.ZodType<PosterConfig> = z.object({
     maxWidth: z.number().min(0).max(100).optional(),
   }),
   format: z.object({
-    aspectRatio: z.enum(['2:3', '3:4', '4:5', '1:1', 'ISO']),
+    aspectRatio: z.enum(['2:3', '3:4', '4:5', '1:1', 'ISO', '16:9', '16:10', '9:16', '9:19.5']),
     orientation: z.enum(['portrait', 'landscape']),
     margin: z.number().min(0).max(100),
     borderStyle: z.enum(['none', 'thin', 'thick', 'double', 'inset']),
