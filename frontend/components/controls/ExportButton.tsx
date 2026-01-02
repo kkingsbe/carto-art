@@ -6,15 +6,17 @@ import { cn } from '@/lib/utils';
 import { ExportOptionsModal } from './ExportOptionsModal';
 import { KofiTipModal } from './KofiTipModal';
 import { Tooltip } from '@/components/ui/tooltip';
-import { EXPORT_RESOLUTIONS, DEFAULT_EXPORT_RESOLUTION } from '@/lib/export/constants';
+import { EXPORT_RESOLUTIONS } from '@/lib/export/constants';
 import type { ExportResolution } from '@/lib/export/resolution';
+import type { PosterConfig } from '@/types/poster';
 
 interface ExportButtonProps {
   onExport: (resolution: ExportResolution) => void;
   isExporting: boolean;
+  format: PosterConfig['format'];
 }
 
-export function ExportButton({ onExport, isExporting }: ExportButtonProps) {
+export function ExportButton({ onExport, isExporting, format }: ExportButtonProps) {
   const [showKofiModal, setShowKofiModal] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
 
@@ -36,7 +38,7 @@ export function ExportButton({ onExport, isExporting }: ExportButtonProps) {
     <>
       <div className="flex items-center gap-2">
         <Tooltip
-          content={`PNG • ${DEFAULT_EXPORT_RESOLUTION.name} • ${DEFAULT_EXPORT_RESOLUTION.width}×${DEFAULT_EXPORT_RESOLUTION.height}px • ${DEFAULT_EXPORT_RESOLUTION.dpi} DPI`}
+          content="Select resolution and export your poster as a high-quality PNG image."
           side="left"
         >
           <button
@@ -85,6 +87,7 @@ export function ExportButton({ onExport, isExporting }: ExportButtonProps) {
         onClose={() => setShowOptionsModal(false)}
         onExport={handleStartExport}
         isExporting={isExporting}
+        format={format}
       />
 
       <KofiTipModal

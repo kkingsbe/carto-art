@@ -34,7 +34,7 @@ export function VoteButtons({ mapId, initialVote, initialScore }: VoteButtonsPro
         if (newVote === null) {
           await removeVote(mapId);
         } else {
-          await voteOnMap(mapId, value);
+          await voteOnMap(mapId, newVote);
         }
       } catch (error) {
         // Revert on error

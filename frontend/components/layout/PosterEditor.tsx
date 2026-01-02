@@ -284,7 +284,7 @@ export function PosterEditor() {
           >
             <RotateCcw className="w-4 h-4" />
           </button>
-          <ExportButton onExport={handleExport} isExporting={isExporting} />
+          <ExportButton onExport={handleExport} isExporting={isExporting} format={config.format} />
         </div>
       </div>
 
@@ -372,7 +372,7 @@ export function PosterEditor() {
             isAuthenticated={isAuthenticated}
             disabled={isExporting}
           />
-          <ExportButton onExport={handleExport} isExporting={isExporting} />
+          <ExportButton onExport={handleExport} isExporting={isExporting} format={config.format} />
         </div>
 
         {/* Map Canvas */}

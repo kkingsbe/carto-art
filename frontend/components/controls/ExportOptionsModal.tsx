@@ -3,18 +3,20 @@
 import { useState } from 'react';
 import { X, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { EXPORT_RESOLUTIONS, DEFAULT_EXPORT_RESOLUTION } from '@/lib/export/constants';
-import type { ExportResolution } from '@/lib/export/resolution';
+import { EXPORT_RESOLUTIONS, DEFAULT_EXPORT_RESOLUTION, type ExportResolutionKey } from '@/lib/export/constants';
+import { calculateTargetResolution, getPhysicalDimensions, type ExportResolution, type BaseExportResolution } from '@/lib/export/resolution';
+import type { PosterConfig } from '@/types/poster';
 
 interface ExportOptionsModalProps {
     isOpen: boolean;
     onClose: () => void;
     onExport: (resolution: ExportResolution) => void;
     isExporting: boolean;
+    format: PosterConfig['format'];
 }
 
-export function ExportOptionsModal({ isOpen, onClose, onExport, isExporting }: ExportOptionsModalProps) {
-    const [selectedRes, setSelectedRes] = useState<ExportResolution>(DEFAULT_EXPORT_RESOLUTION);
+export function ExportOptionsModal({ isOpen, onClose, onExport, isExporting, format }: ExportOptionsModalProps) {
+    const [selectedKey, setSelectedKey] = useState<string>('SMALL');
 
     if (!isOpen) return null;
 
@@ -44,34 +46,62 @@ export function ExportOptionsModal({ isOpen, onClose, onExport, isExporting }: E
                     </p>
 
                     <div className="space-y-3">
-                        {Object.entries(EXPORT_RESOLUTIONS).map(([key, res]) => (
-                            <button
-                                key={key}
-                                onClick={() => setSelectedRes(res as ExportResolution)}
-                                className={cn(
-                                    "w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all",
-                                    selectedRes.name === res.name
-                                        ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
-                                        : "border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800"
-                                )}
-                            >
-                                <div className="text-left">
-                                    <div className="font-medium text-gray-900 dark:text-white">{res.name}</div>
-                                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                                        {res.width} × {res.height} px • {res.dpi} DPI
+                        {Object.entries(EXPORT_RESOLUTIONS).map(([key, base]) => {
+                            const res = calculateTargetResolution(
+                                base as BaseExportResolution,
+                                format.aspectRatio,
+                                format.orientation
+                            );
+                            const physical = getPhysicalDimensions(res.width, res.height, res.dpi);
+                            const isSelected = selectedKey === key;
+
+                            return (
+                                <button
+                                    key={key}
+                                    onClick={() => setSelectedKey(key)}
+                                    className={cn(
+                                        "w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-left",
+                                        isSelected
+                                            ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
+                                            : "border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800"
+                                    )}
+                                >
+                                    <div className="flex-1">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <div className="font-semibold text-gray-900 dark:text-white">{res.name}</div>
+                                            {isSelected && <Check className="w-5 h-5 text-blue-500" />}
+                                        </div>
+                                        {res.description && (
+                                            <div className="text-xs text-gray-400 dark:text-gray-500 mb-2">
+                                                {res.description}
+                                            </div>
+                                        )}
+                                        <div className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                                            <span>{res.width} × {res.height} px</span>
+                                            <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+                                            <span>{physical}</span>
+                                            <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+                                            <span>{res.dpi} DPI</span>
+                                        </div>
                                     </div>
-                                </div>
-                                {selectedRes.name === res.name && (
-                                    <Check className="w-5 h-5 text-blue-500" />
-                                )}
-                            </button>
-                        ))}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 
                 <div className="p-6 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700">
                     <button
-                        onClick={() => onExport(selectedRes)}
+                        onClick={() => {
+                            const base = EXPORT_RESOLUTIONS[selectedKey as ExportResolutionKey];
+                            const res = calculateTargetResolution(
+                                base,
+                                format.aspectRatio,
+                                format.orientation
+                            );
+                            onExport(res);
+                        }}
+
                         disabled={isExporting}
                         className={cn(
                             "w-full py-3 rounded-xl font-semibold shadow-lg transition-all",

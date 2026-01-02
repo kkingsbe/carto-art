@@ -68,8 +68,11 @@ export async function getProfileStats(targetUserId: string): Promise<ProfileStat
         supabase.from('maps').select('view_count, vote_score').eq('user_id', targetUserId).eq('is_published', true)
     ]);
 
-    const totalViews = mapsStats.data?.reduce((acc, map) => acc + (map.view_count || 0), 0) || 0;
-    const totalLikes = mapsStats.data?.reduce((acc, map) => acc + (map.vote_score || 0), 0) || 0;
+    type MapStats = Pick<Database['public']['Tables']['maps']['Row'], 'view_count' | 'vote_score'>;
+    const mapsData = (mapsStats.data || []) as MapStats[];
+    
+    const totalViews = mapsData.reduce((acc, map) => acc + (map.view_count || 0), 0);
+    const totalLikes = mapsData.reduce((acc, map) => acc + (map.vote_score || 0), 0);
 
     return {
         followers: followersCount.count || 0,
