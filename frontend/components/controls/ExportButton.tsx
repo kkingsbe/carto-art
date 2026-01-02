@@ -3,33 +3,39 @@
 import { useState } from 'react';
 import { Download, Loader2, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ExportOptionsModal } from './ExportOptionsModal';
 import { KofiTipModal } from './KofiTipModal';
 import { Tooltip } from '@/components/ui/tooltip';
-import { DEFAULT_EXPORT_RESOLUTION } from '@/lib/export/constants';
+import { EXPORT_RESOLUTIONS, DEFAULT_EXPORT_RESOLUTION } from '@/lib/export/constants';
+import type { ExportResolution } from '@/lib/export/resolution';
 
 interface ExportButtonProps {
-  onExport: () => void;
+  onExport: (resolution: ExportResolution) => void;
   isExporting: boolean;
 }
 
 export function ExportButton({ onExport, isExporting }: ExportButtonProps) {
-  const [showModal, setShowModal] = useState(false);
+  const [showKofiModal, setShowKofiModal] = useState(false);
+  const [showOptionsModal, setShowOptionsModal] = useState(false);
 
-  const handleButtonClick = () => {
-    // Start download immediately
-    onExport();
-    // Show modal overlay
-    setShowModal(true);
+  const handleExportClick = () => {
+    setShowOptionsModal(true);
   };
 
-  const handleClose = () => {
-    setShowModal(false);
+  const handleStartExport = (resolution: ExportResolution) => {
+    setShowOptionsModal(false);
+    onExport(resolution);
+    setShowKofiModal(true);
+  };
+
+  const handleCloseKofi = () => {
+    setShowKofiModal(false);
   };
 
   return (
     <>
       <div className="flex items-center gap-2">
-        <Tooltip 
+        <Tooltip
           content={`PNG • ${DEFAULT_EXPORT_RESOLUTION.name} • ${DEFAULT_EXPORT_RESOLUTION.width}×${DEFAULT_EXPORT_RESOLUTION.height}px • ${DEFAULT_EXPORT_RESOLUTION.dpi} DPI`}
           side="left"
         >
@@ -43,7 +49,7 @@ export function ExportButton({ onExport, isExporting }: ExportButtonProps) {
         </Tooltip>
         <button
           type="button"
-          onClick={handleButtonClick}
+          onClick={handleExportClick}
           disabled={isExporting}
           className={cn(
             'group relative flex items-center gap-2 px-5 py-2.5 rounded-full font-medium shadow-lg transition-all duration-300',
@@ -58,7 +64,7 @@ export function ExportButton({ onExport, isExporting }: ExportButtonProps) {
           )}>
             <Download className="h-4 w-4" />
           </div>
-          
+
           {isExporting && (
             <div className="absolute left-5 top-1/2 -translate-y-1/2">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -74,9 +80,16 @@ export function ExportButton({ onExport, isExporting }: ExportButtonProps) {
         </button>
       </div>
 
+      <ExportOptionsModal
+        isOpen={showOptionsModal}
+        onClose={() => setShowOptionsModal(false)}
+        onExport={handleStartExport}
+        isExporting={isExporting}
+      />
+
       <KofiTipModal
-        isOpen={showModal}
-        onClose={handleClose}
+        isOpen={showKofiModal}
+        onClose={handleCloseKofi}
       />
     </>
   );

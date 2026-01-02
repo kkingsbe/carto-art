@@ -189,10 +189,15 @@ function convertToGeoJSON(pads: LaunchLibraryPad[]): GeoJSONResponse {
 
 export async function GET(request: NextRequest) {
   try {
+    // Log request details for debugging
+    const origin = request.headers.get('origin') || request.headers.get('referer') || 'unknown';
+    const url = request.url;
+    logger.debug(`Spaceports API request: origin=${origin}, url=${url}`);
+    
     // Check cache first
     const cached = cache.get(CACHE_KEY);
     if (cached) {
-      logger.debug('Returning cached spaceports GeoJSON');
+      logger.debug(`Returning cached spaceports GeoJSON (request from ${origin})`);
       return NextResponse.json(cached, {
         headers: {
           'Content-Type': 'application/geo+json',
@@ -202,7 +207,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch all pads from API
-    logger.info('Fetching spaceports data from Launch Library API...');
+    logger.info(`Fetching spaceports data from Launch Library API (request from ${origin})...`);
     const pads = await fetchAllPads();
     
     if (pads.length === 0) {
@@ -234,12 +239,13 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    logger.error('Unhandled spaceports API error:', error);
+    const origin = request.headers.get('origin') || request.headers.get('referer') || 'unknown';
+    logger.error(`Unhandled spaceports API error (request from ${origin}):`, error);
     
     // Try to return cached data even if expired, as fallback
     const cached = cache.get(CACHE_KEY);
     if (cached) {
-      logger.warn('API error, returning stale cached data');
+      logger.warn(`API error, returning stale cached data (request from ${origin})`);
       return NextResponse.json(cached, {
         headers: {
           'Content-Type': 'application/geo+json',

@@ -14,6 +14,7 @@ export function Navbar() {
     const navLinks = [
         { href: '/', label: 'Home' },
         { href: '/gallery', label: 'Gallery' },
+        { href: '/editor', label: 'Editor' },
     ];
 
     return (
@@ -70,20 +71,6 @@ export function Navbar() {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <Link
-                        href="/editor"
-                        className={cn(
-                            "relative py-1 text-sm font-medium transition-all duration-200 hover:text-foreground group",
-                            pathname === "/editor" ? "text-foreground" : "text-foreground/60"
-                        )}
-                    >
-                        Editor
-                        <span className={cn(
-                            "absolute -bottom-1 left-0 h-0.5 w-full bg-blue-500 rounded-full transition-all duration-300 origin-left",
-                            pathname === "/editor" ? "scale-x-100 opacity-100" : "scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-50"
-                        )} />
-                    </Link>
-
                     <div className="flex items-center pl-2 border-l border-border/50">
                         <AuthButton />
                     </div>

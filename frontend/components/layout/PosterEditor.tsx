@@ -24,6 +24,7 @@ import type MapLibreGL from 'maplibre-gl';
 import { getMapById } from '@/lib/actions/maps';
 import { isConfigEqual, cloneConfig } from '@/lib/utils/configComparison';
 import type { SavedProject, PosterConfig } from '@/types/poster';
+import type { ExportResolution } from '@/lib/export/resolution';
 import { generateThumbnail } from '@/lib/export/thumbnail';
 import { DEFAULT_CONFIG } from '@/lib/config/defaults';
 
@@ -33,11 +34,11 @@ export function PosterEditor() {
   const [activeTab, setActiveTab] = useState<Tab>('location');
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
 
-  const { 
-    config, 
-    updateLocation, 
-    updateStyle, 
-    updatePalette, 
+  const {
+    config,
+    updateLocation,
+    updateStyle,
+    updatePalette,
     updateTypography,
     updateFormat,
     updateLayers,
@@ -47,7 +48,7 @@ export function PosterEditor() {
     canUndo,
     canRedo,
   } = usePosterConfig();
-  
+
   const {
     projects,
     saveProject,
@@ -72,11 +73,11 @@ export function PosterEditor() {
 
   // Keep a reference to the map instance for thumbnail generation
   const mapInstanceRef = useRef<MapLibreGL.Map | null>(null);
-  
+
   // Wrap exportToPNG to handle errors
-  const handleExport = useCallback(async () => {
+  const handleExport = useCallback(async (resolution?: ExportResolution) => {
     try {
-      await exportToPNG();
+      await exportToPNG(resolution);
     } catch (error) {
       handleError(error);
     }
@@ -198,9 +199,9 @@ export function PosterEditor() {
   // Apply palette colors and visibility to the current map style
   const mapStyle = useMemo(() => {
     return applyPaletteToStyle(
-      config.style.mapStyle, 
-      config.palette, 
-      config.layers, 
+      config.style.mapStyle,
+      config.palette,
+      config.layers,
       config.style.layerToggles
     );
   }, [config.style.mapStyle, config.palette, config.layers, config.style.layerToggles]);
@@ -287,7 +288,7 @@ export function PosterEditor() {
         </div>
       </div>
 
-      <TabNavigation 
+      <TabNavigation
         activeTab={activeTab}
         isDrawerOpen={isDrawerOpen}
         onTabChange={setActiveTab}
@@ -317,7 +318,7 @@ export function PosterEditor() {
       />
 
       {/* Main Content */}
-      <main 
+      <main
         className="flex-1 relative bg-gray-100 dark:bg-gray-950 flex flex-col overflow-hidden pb-16 md:pb-0"
         style={{ containerType: 'size' }}
       >
@@ -376,9 +377,9 @@ export function PosterEditor() {
 
         {/* Map Canvas */}
         <div className="flex-1 relative flex items-center justify-center p-4 md:p-8">
-          <div 
+          <div
             className="relative shadow-2xl bg-white flex flex-col transition-all duration-300 ease-in-out ring-1 ring-black/5"
-            style={{ 
+            style={{
               aspectRatio: getAspectRatioCSS(config.format.aspectRatio, config.format.orientation),
               backgroundColor: config.palette.background,
               width: `min(calc(100% - 2rem), calc((100cqh - 2rem) * ${numericRatio}))`,
@@ -389,7 +390,7 @@ export function PosterEditor() {
             }}
           >
             {/* The Map Window */}
-            <div 
+            <div
               className="absolute overflow-hidden min-h-0 min-w-0"
               style={{
                 top: `${config.format.margin}cqw`,
@@ -410,7 +411,7 @@ export function PosterEditor() {
                 layers={config.layers}
                 layerToggles={config.style.layerToggles}
               />
-              
+
               {/* Floating Map Controls */}
               <div className="absolute bottom-4 right-4 flex flex-row gap-2 z-10">
                 <button
@@ -436,13 +437,13 @@ export function PosterEditor() {
                 </button>
               </div>
             </div>
-            
+
             {/* Text Overlay */}
             <TextOverlay config={config} />
 
             {/* Border Overlay - Now drawn AFTER TextOverlay to stay on top of gradients */}
             {config.format.borderStyle !== 'none' && (
-              <div 
+              <div
                 className="absolute pointer-events-none z-30"
                 style={{
                   top: `${config.format.margin}cqw`,
@@ -452,22 +453,21 @@ export function PosterEditor() {
                   padding: config.format.borderStyle === 'inset' ? '2cqw' : '0',
                 }}
               >
-                <div 
+                <div
                   className="w-full h-full"
                   style={{
-                    border: `${
-                      config.format.borderStyle === 'thick' ? '1.5cqw' : '0.5cqw'
-                    } solid ${config.palette.accent || config.palette.text}`,
+                    border: `${config.format.borderStyle === 'thick' ? '1.5cqw' : '0.5cqw'
+                      } solid ${config.palette.accent || config.palette.text}`,
                     borderRadius: (config.format.maskShape || 'rectangular') === 'circular' ? '50%' : '0',
                   }}
                 />
-                
+
                 {/* Compass Rose Preview (SVG) */}
                 {(config.format.maskShape || 'rectangular') === 'circular' && config.format.compassRose && (
-                  <svg 
+                  <svg
                     className="absolute"
-                    style={{ 
-                      pointerEvents: 'none', 
+                    style={{
+                      pointerEvents: 'none',
                       overflow: 'visible',
                       top: '-4cqw',
                       left: '-4cqw',
@@ -505,17 +505,17 @@ export function PosterEditor() {
                         // Ticks start at the border edge and extend outward
                         const tickStartRadius = borderOuterRadius;
                         const tickEndRadius = borderOuterRadius + tickLen;
-                        
+
                         const x1 = centerX + Math.cos(rad) * tickStartRadius;
                         const y1 = centerY + Math.sin(rad) * tickStartRadius;
                         const x2 = centerX + Math.cos(rad) * tickEndRadius;
                         const y2 = centerY + Math.sin(rad) * tickEndRadius;
-                        
+
                         // Position labels further out from the border
                         const labelRadius = borderOuterRadius + tickLen + 1.0;
                         const labelX = centerX + Math.cos(rad) * labelRadius;
                         const labelY = centerY + Math.sin(rad) * labelRadius;
-                        
+
                         return (
                           <g key={angle}>
                             <line x1={x1} y1={y1} x2={x2} y2={y2} />
@@ -533,7 +533,7 @@ export function PosterEditor() {
                           </g>
                         );
                       })}
-                      
+
                       {/* Draw intermediate ticks */}
                       {Array.from({ length: 24 }, (_, i) => {
                         if (i % 3 === 0) return null; // Skip positions where we have main directions
@@ -545,12 +545,12 @@ export function PosterEditor() {
                         // Ticks start at the border edge and extend outward
                         const tickStartRadius = borderOuterRadius;
                         const tickEndRadius = borderOuterRadius + tickLen;
-                        
+
                         const x1 = centerX + Math.cos(angle) * tickStartRadius;
                         const y1 = centerY + Math.sin(angle) * tickStartRadius;
                         const x2 = centerX + Math.cos(angle) * tickEndRadius;
                         const y2 = centerY + Math.sin(angle) * tickEndRadius;
-                        
+
                         return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} opacity="0.6" />;
                       })}
                     </g>

@@ -37,9 +37,10 @@ export function getLogLevel(): LogLevel {
 export const logger = {
   /**
    * Log an error message
+   * Errors are logged in both development and production to help with debugging
    */
   error: (...args: unknown[]): void => {
-    if (isDev && currentLogLevel >= LogLevel.ERROR) {
+    if (currentLogLevel >= LogLevel.ERROR) {
       console.error(...args);
     }
     // In production, you might want to send errors to an error tracking service

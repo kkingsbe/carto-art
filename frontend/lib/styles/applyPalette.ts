@@ -1,6 +1,7 @@
 import type { ColorPalette, PosterConfig, PosterStyle } from '@/types/poster';
 import { isColorDark } from '@/lib/utils';
 import { getContourTileJsonUrl } from '@/lib/styles/tileUrl';
+import { logger } from '@/lib/logger';
 
 /**
  * Simple color manipulation helpers for adjusting landcover/landuse colors
@@ -131,6 +132,7 @@ export function applyPaletteToStyle(
   }
 
   handleContourSource(updatedStyle);
+  normalizeSpaceportsSource(updatedStyle);
   
   // Ensure water layers always come after hillshade to hide terrain under water
   reorderLayersForWater(updatedStyle.layers);
@@ -193,6 +195,24 @@ function handleContourSource(style: any) {
     }
   }
   // If URL exists (even if relative), don't filter - let MapLibre handle it
+}
+
+/**
+ * Normalizes spaceports source URL to always be relative.
+ * This ensures saved map styles work regardless of where they were saved or where they're being viewed.
+ * Handles cases where the URL might be an absolute URL like https://www.cartoart.net/api/spaceports.
+ */
+function normalizeSpaceportsSource(style: any): void {
+  const spaceportsSource = style.sources?.spaceports;
+  if (spaceportsSource && spaceportsSource.data) {
+    const url = spaceportsSource.data;
+    // If it's an absolute URL containing /api/spaceports, normalize to relative
+    if (typeof url === 'string' && url.includes('/api/spaceports')) {
+      const originalUrl = url;
+      spaceportsSource.data = '/api/spaceports';
+      logger.debug(`Normalized spaceports URL from ${originalUrl} to /api/spaceports`);
+    }
+  }
 }
 
 function reorderLayersForWater(layers: any[]) {
