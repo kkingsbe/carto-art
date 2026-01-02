@@ -74,6 +74,10 @@ export function TypographyControls({ config, onTypographyChange, onLocationChang
                 step="0.1"
                 value={typography.titleSize}
                 onChange={(e) => onTypographyChange({ titleSize: parseFloat(e.target.value) })}
+                displayValue={`${typography.titleSize.toFixed(1)}cqw`}
+                onValueChange={(value) => onTypographyChange({ titleSize: value })}
+                formatValue={(v) => v.toFixed(1)}
+                parseValue={(s) => parseFloat(s.replace('cqw', ''))}
               />
             </div>
 
@@ -107,6 +111,10 @@ export function TypographyControls({ config, onTypographyChange, onLocationChang
                 step="0.1"
                 value={typography.subtitleSize}
                 onChange={(e) => onTypographyChange({ subtitleSize: parseFloat(e.target.value) })}
+                displayValue={`${typography.subtitleSize.toFixed(1)}cqw`}
+                onValueChange={(value) => onTypographyChange({ subtitleSize: value })}
+                formatValue={(v) => v.toFixed(1)}
+                parseValue={(s) => parseFloat(s.replace('cqw', ''))}
               />
             </div>
           </div>

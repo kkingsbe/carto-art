@@ -7,7 +7,9 @@
       "Bash(do grep -n \"const layerToggles\" \"C:\\\\Users\\\\Kyle\\\\Documents\\\\code\\\\carto-art\\\\frontend\\\\lib\\\\styles$file\")",
       "Bash(echo:*)",
       "Bash(done)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(cat:*)",
+      "Bash(npx shadcn@latest add accordion badge card tabs separator)"
     ]
   }
 }

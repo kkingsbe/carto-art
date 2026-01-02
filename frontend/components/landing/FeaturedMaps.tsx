@@ -13,17 +13,21 @@ export async function FeaturedMaps() {
   }
 
   return (
-    <section className="py-20 bg-gray-50 dark:bg-gray-800">
+    <section className="py-24 bg-[#f5f0e8]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <TrendingUp className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Featured Maps
+            <TrendingUp className="w-8 h-8 text-[#c9a962]" />
+            <h2 className="text-4xl md:text-5xl font-bold text-[#0a0f1a]">
+              Community
+              <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#c9a962] to-[#b87333]">
+                Creations
+              </span>
             </h2>
           </div>
-          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Top-rated creations from our community
+          <p className="text-xl text-[#141d2e]/70 max-w-2xl mx-auto">
+            See what others are making—get inspired for your own
           </p>
         </div>
 
@@ -36,7 +40,7 @@ export async function FeaturedMaps() {
         <div className="text-center">
           <Link
             href="/gallery"
-            className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors"
+            className="inline-flex items-center justify-center px-8 py-4 border-2 border-[#0a0f1a] text-base font-bold rounded-lg text-[#0a0f1a] bg-white hover:bg-[#0a0f1a] hover:text-[#f5f0e8] transition-all duration-300"
           >
             View Full Gallery
           </Link>

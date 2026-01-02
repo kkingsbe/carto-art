@@ -1,9 +1,9 @@
-'use client';
-
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import { getSiteStats } from '@/lib/actions/stats';
 
-export function FinalCTA() {
+export async function FinalCTA() {
+  const stats = await getSiteStats();
   return (
     <section className="py-24 bg-gradient-to-br from-[#0a0f1a] via-[#141d2e] to-[#0a0f1a] relative overflow-hidden">
       {/* Background pattern */}
@@ -24,9 +24,14 @@ export function FinalCTA() {
           </span>
         </h2>
 
-        <p className="text-xl text-[#d4cfc4] mb-8 max-w-2xl mx-auto leading-relaxed">
+        <p className="text-xl text-[#d4cfc4] mb-6 max-w-2xl mx-auto leading-relaxed">
           Every poster you create is yours. No watermarks, no subscriptions, no accounts.
           Just print-ready art from the places that matter to you.
+        </p>
+
+        {/* Social proof */}
+        <p className="text-sm text-[#d4cfc4]/60 mb-8">
+          Join {stats.totalUsers.toLocaleString()}+ creators who've made {stats.totalMaps.toLocaleString()}+ maps
         </p>
 
         <Link

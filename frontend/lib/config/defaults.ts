@@ -68,6 +68,17 @@ export const DEFAULT_CONFIG: PosterConfig = {
     markerType: 'crosshair',
     markerColor: undefined, // Default to palette primary
     roadWeight: 1.0,
+    // Landcover layers (enabled by default)
+    landcoverWood: true,
+    landcoverGrass: true,
+    landcoverFarmland: true,
+    landcoverIce: true,
+    // Landuse layers (disabled by default)
+    landuseForest: false,
+    landuseOrchard: false,
+    landuseVineyard: false,
+    landuseCemetery: false,
+    landuseGrass: false,
   },
 };
 

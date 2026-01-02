@@ -6,6 +6,7 @@ import { createLabelLayers, LabelLayerOptions } from './layers/labels';
 import { createBoundaryLayers, BoundaryLayerOptions } from './layers/boundaries';
 import { createPOILayers, POILayerOptions } from './layers/poi';
 import { createTerrainLayers, TerrainLayerOptions } from './layers/terrain';
+import { createLandcoverLayers, LandcoverLayerOptions } from './layers/landcover';
 import { getBaseLayerToggles, LayerToggleOptions } from './layerToggles';
 import { StyleVariantConfig, styleVariants } from './variants';
 
@@ -121,30 +122,37 @@ export function buildStyle(options: StyleBuildOptions): PosterStyle {
   // 4. Bathymetry layers (after water)
   layers.push(...bathymetryLayers);
 
-  // 5. Parks and buildings
-  layers.push(...baseLayers.filter(l => l.id === 'park' || l.id === 'buildings'));
+  // 5. Parks
+  layers.push(...baseLayers.filter(l => l.id === 'park'));
 
-  // 6. Roads
+  // 6. Landcover and landuse layers (after parks, before buildings)
+  const landcoverLayers = createLandcoverLayers(defaultPalette, overrides.landcover);
+  layers.push(...landcoverLayers);
+
+  // 7. Buildings
+  layers.push(...baseLayers.filter(l => l.id === 'buildings'));
+
+  // 8. Roads
   const roadLayers = createRoadLayers(defaultPalette, roadOptions);
   layers.push(...roadLayers);
 
-  // 7. Population density
+  // 9. Population density
   layers.push(...baseLayers.filter(l => l.id === 'population-density'));
 
-  // 8. Contours
+  // 10. Contours
   layers.push(...contourLayers);
 
-  // 9. Boundaries
+  // 11. Boundaries
   const boundaryLayers = createBoundaryLayers(defaultPalette, overrides.boundaries);
   layers.push(...boundaryLayers);
 
-  // 10. Labels (country, state, city)
+  // 12. Labels (country, state, city)
   const labelLayers = createLabelLayers(defaultPalette, labelOptions);
   layers.push(...labelLayers.filter(l => 
     l.id === 'labels-country' || l.id === 'labels-state' || l.id === 'labels-city'
   ));
 
-  // 11. POI layers (aeroway, spaceports, POIs)
+  // 13. POI layers (aeroway, spaceports, POIs)
   const poiLayers = createPOILayers(defaultPalette, poiOptions);
   layers.push(...poiLayers);
 

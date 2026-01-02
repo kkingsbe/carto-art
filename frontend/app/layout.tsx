@@ -16,21 +16,23 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Carto-Art | Free Map Poster Design Tool",
-  description: "Create gallery-quality cartographic posters of any location—completely free. GPU terrain shading, print-quality export, no signup required.",
+  title: "Free Map Poster Maker | Create Custom Wall Art - Carto-Art",
+  description: "Turn any location into beautiful wall art. Free map poster creator with no watermarks. Export at 24×36\" print size. No signup required. Better than Mapiful & Grafomap.",
+  keywords: "map poster, custom map art, free poster maker, wall art, personalized map, location poster, map print, cartographic art, Mapiful alternative, Grafomap alternative",
   icons: {
     icon: "/icon.svg",
   },
   openGraph: {
-    title: "Transform Any Location Into Art",
-    description: "Free alternative to Mapiful & Grafomap. Create print-ready map posters with GPU terrain shading.",
+    title: "Free Map Poster Maker - Turn Any Place Into Wall Art",
+    description: "Create personalized map posters in minutes. 100% free, no watermarks, print-ready at 24×36\". Join thousands of creators worldwide.",
     images: ["/hero.jpg"],
     type: "website",
+    siteName: "Carto-Art",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Transform Any Location Into Art",
-    description: "Free alternative to Mapiful & Grafomap. Create print-ready map posters with GPU terrain shading.",
+    title: "Free Map Poster Maker - Carto-Art",
+    description: "Turn any place into personalized wall art. Free forever, no watermarks, print-ready quality.",
     images: ["/hero.jpg"],
   },
 };

@@ -5,23 +5,23 @@ import { Globe, Palette, Mountain, Printer, Layers, Type } from 'lucide-react';
 const primaryFeatures = [
   {
     icon: Globe,
-    title: 'Any Location',
-    description: 'Search or navigate to anywhere on Earth using OpenStreetMap data',
+    title: 'Your Place, Your Story',
+    description: 'Search anywhere on Earth—from your childhood street to your dream destination',
   },
   {
     icon: Palette,
-    title: 'Curated Styles',
-    description: 'Minimal, noir, blueprint, vintage—each with recommended typography',
+    title: 'Styles That Match Your Vibe',
+    description: 'Minimalist, dramatic, vintage, or modern—find the perfect mood for your space',
   },
   {
     icon: Mountain,
-    title: 'GPU Terrain Shading',
-    description: 'Photorealistic hillshading using Terrain-RGB and Lambertian reflectance',
+    title: 'Mountains That Pop',
+    description: 'Real elevation data makes terrain look like it jumps off the page',
   },
   {
     icon: Printer,
-    title: 'Print-Quality Export',
-    description: 'Up to 24×36" at 300 DPI (7200×10800 pixels)',
+    title: 'Poster Size, No Compromises',
+    description: 'Download at massive resolution—ready for professional printing up to 24×36"',
   },
 ];
 

@@ -75,6 +75,51 @@ export function getBaseLayerToggles(
       layerIds: customLayerIds.parks || ['park'],
     },
     {
+      id: 'landcoverWood',
+      name: 'Woods',
+      layerIds: customLayerIds.landcoverWood || ['landcover-wood'],
+    },
+    {
+      id: 'landcoverGrass',
+      name: 'Grass',
+      layerIds: customLayerIds.landcoverGrass || ['landcover-grass'],
+    },
+    {
+      id: 'landcoverFarmland',
+      name: 'Farmland',
+      layerIds: customLayerIds.landcoverFarmland || ['landcover-farmland'],
+    },
+    {
+      id: 'landcoverIce',
+      name: 'Ice',
+      layerIds: customLayerIds.landcoverIce || ['landcover-ice'],
+    },
+    {
+      id: 'landuseForest',
+      name: 'Forests',
+      layerIds: customLayerIds.landuseForest || ['landuse-forest'],
+    },
+    {
+      id: 'landuseOrchard',
+      name: 'Orchards',
+      layerIds: customLayerIds.landuseOrchard || ['landuse-orchard'],
+    },
+    {
+      id: 'landuseVineyard',
+      name: 'Vineyards',
+      layerIds: customLayerIds.landuseVineyard || ['landuse-vineyard'],
+    },
+    {
+      id: 'landuseCemetery',
+      name: 'Cemeteries',
+      layerIds: customLayerIds.landuseCemetery || ['landuse-cemetery'],
+    },
+    {
+      id: 'landuseGrass',
+      name: 'Grass (Landuse)',
+      layerIds: customLayerIds.landuseGrass || ['landuse-grass'],
+    },
+    {
       id: 'terrain',
       name: 'Terrain Shading',
       layerIds: customLayerIds.terrain || ['hillshade'],

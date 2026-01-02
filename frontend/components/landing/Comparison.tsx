@@ -3,12 +3,11 @@
 import { Check, X } from 'lucide-react';
 
 const features = [
-  { name: 'Price per poster', cartoArt: 'Free', competitors: '$49-89' },
-  { name: 'Signup required', cartoArt: false, competitors: true },
-  { name: 'Layer control', cartoArt: 'Full', competitors: 'Limited' },
-  { name: 'GPU terrain shading', cartoArt: true, competitors: false },
+  { name: 'Price per poster', cartoArt: '$0', competitors: '$49-89' },
   { name: 'Max resolution', cartoArt: '7200×10800px', competitors: '3600×5400px' },
-  { name: 'Real-time color swap', cartoArt: true, competitors: false },
+  { name: 'Watermark', cartoArt: false, competitors: true },
+  { name: 'Terrain shading', cartoArt: true, competitors: false },
+  { name: 'Your data privacy', cartoArt: 'We don\'t track you', competitors: 'Third-party tracking' },
 ];
 
 export function Comparison() {
@@ -18,12 +17,15 @@ export function Comparison() {
         {/* Section Header */}
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-bold text-[#f5f0e8] mb-4">
-            The Free Alternative to
+            Why Choose
             <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#c9a962] to-[#b87333]">
-              Mapiful & Grafomap
+              Carto-Art?
             </span>
           </h2>
+          <p className="text-lg text-[#d4cfc4] max-w-2xl mx-auto">
+            See how we compare to paid poster services
+          </p>
         </div>
 
         {/* Comparison Table */}

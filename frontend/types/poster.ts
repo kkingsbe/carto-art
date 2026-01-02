@@ -123,6 +123,17 @@ export interface PosterConfig {
     markerType?: 'pin' | 'crosshair' | 'dot' | 'ring' | 'heart' | 'home';
     markerColor?: string;
     roadWeight: number; // New: control road line thickness
+    // Landcover layers (from 'landcover' source-layer)
+    landcoverWood?: boolean;
+    landcoverGrass?: boolean;
+    landcoverFarmland?: boolean;
+    landcoverIce?: boolean;
+    // Landuse layers (from 'landuse' source-layer)
+    landuseForest?: boolean;
+    landuseOrchard?: boolean;
+    landuseVineyard?: boolean;
+    landuseCemetery?: boolean;
+    landuseGrass?: boolean;
   };
 }
 

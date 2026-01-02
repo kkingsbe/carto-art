@@ -3,6 +3,90 @@ import { isColorDark } from '@/lib/utils';
 import { getContourTileJsonUrl } from '@/lib/styles/tileUrl';
 
 /**
+ * Simple color manipulation helpers for adjusting landcover/landuse colors
+ */
+function hexToRgb(hex: string): [number, number, number] | null {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? [
+    parseInt(result[1], 16),
+    parseInt(result[2], 16),
+    parseInt(result[3], 16)
+  ] : null;
+}
+
+function rgbToHex(r: number, g: number, b: number): string {
+  return '#' + [r, g, b].map(x => {
+    const hex = Math.round(x).toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+  }).join('');
+}
+
+function adjustColorHue(hex: string, degrees: number): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+  
+  // Simple hue adjustment by rotating RGB values (approximation)
+  // For small adjustments, we'll just shift the color slightly
+  const [r, g, b] = rgb;
+  const factor = degrees / 360;
+  
+  // Shift towards yellow (increase green) or blue (increase blue)
+  if (degrees > 0) {
+    // Shift towards yellow: increase green, decrease blue slightly
+    return rgbToHex(
+      Math.min(255, r + factor * 20),
+      Math.min(255, g + factor * 30),
+      Math.max(0, b - factor * 10)
+    );
+  } else {
+    // Shift towards blue: increase blue, decrease green slightly
+    return rgbToHex(
+      Math.max(0, r - Math.abs(factor) * 10),
+      Math.max(0, g - Math.abs(factor) * 20),
+      Math.min(255, b + Math.abs(factor) * 30)
+    );
+  }
+}
+
+function lightenColor(hex: string, amount: number): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+  
+  const [r, g, b] = rgb;
+  return rgbToHex(
+    Math.min(255, r + (255 - r) * amount),
+    Math.min(255, g + (255 - g) * amount),
+    Math.min(255, b + (255 - b) * amount)
+  );
+}
+
+function darkenColor(hex: string, amount: number): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+  
+  const [r, g, b] = rgb;
+  return rgbToHex(
+    Math.max(0, r * (1 - amount)),
+    Math.max(0, g * (1 - amount)),
+    Math.max(0, b * (1 - amount))
+  );
+}
+
+function desaturateColor(hex: string, amount: number): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+  
+  const [r, g, b] = rgb;
+  const gray = r * 0.299 + g * 0.587 + b * 0.114;
+  
+  return rgbToHex(
+    Math.round(r + (gray - r) * amount),
+    Math.round(g + (gray - g) * amount),
+    Math.round(b + (gray - b) * amount)
+  );
+}
+
+/**
  * Helper to scale a value that might be a number or a zoom interpolation expression
  */
 function scaleExpression(expr: any, factor: number): any {
@@ -283,6 +367,50 @@ function updateLayerPaint(
   // Parks
   if (id === 'park' && type === 'fill') {
     layer.paint = { ...layer.paint, 'fill-color': palette.parks || palette.greenSpace };
+    return;
+  }
+
+  // Landcover layers
+  const baseGreenSpace = palette.greenSpace || palette.parks || '#90EE90';
+  if (id.startsWith('landcover-') && type === 'fill') {
+    let color = baseGreenSpace;
+    
+    // Apply subtle color variations for different landcover classes
+    if (id === 'landcover-farmland') {
+      // Farmland: slightly more yellow/golden (shift towards yellow)
+      color = adjustColorHue(baseGreenSpace, 15); // Shift hue towards yellow
+    } else if (id === 'landcover-ice') {
+      // Ice: blue-tinted white/light blue
+      color = adjustColorHue(baseGreenSpace, -120); // Shift towards blue, then lighten
+      color = lightenColor(color, 0.4);
+    } else if (id === 'landcover-wood') {
+      // Wood: deeper/darker green
+      color = darkenColor(baseGreenSpace, 0.2);
+    }
+    
+    layer.paint = { ...layer.paint, 'fill-color': color };
+    return;
+  }
+
+  // Landuse layers
+  if (id.startsWith('landuse-') && type === 'fill') {
+    let color = baseGreenSpace;
+    
+    // Apply subtle color variations for different landuse classes
+    if (id === 'landuse-forest') {
+      // Forest: deeper green
+      color = darkenColor(baseGreenSpace, 0.15);
+    } else if (id === 'landuse-orchard' || id === 'landuse-vineyard') {
+      // Orchard/Vineyard: lighter green or olive
+      color = adjustColorHue(baseGreenSpace, 25); // Slight shift towards yellow-green
+      color = lightenColor(color, 0.1);
+    } else if (id === 'landuse-cemetery') {
+      // Cemetery: muted green
+      color = darkenColor(baseGreenSpace, 0.1);
+      color = desaturateColor(color, 0.2);
+    }
+    
+    layer.paint = { ...layer.paint, 'fill-color': color };
     return;
   }
 
