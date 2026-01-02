@@ -11,7 +11,9 @@
       "Bash(cat:*)",
       "Bash(npx shadcn@latest add accordion badge card tabs separator)",
       "Bash(git log:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npm view:*)",
+      "WebSearch"
     ]
   }
 }

@@ -3,18 +3,22 @@
  * Sanitizes user-generated content to prevent XSS and other security issues
  */
 
-import DOMPurify from 'isomorphic-dompurify';
-
 /**
  * Sanitize text input by removing HTML tags and dangerous content
  * @param text - Text to sanitize
  * @returns Sanitized text
  */
 export function sanitizeText(text: string): string {
-  return DOMPurify.sanitize(text, {
-    ALLOWED_TAGS: [],
-    ALLOWED_ATTR: [],
-  }).trim();
+  // Remove HTML tags
+  let sanitized = text.replace(/<[^>]*>/g, '');
+
+  // Remove zero-width characters
+  sanitized = sanitized.replace(/[\u200B-\u200D\uFEFF]/g, '');
+
+  // Normalize Unicode to NFC form
+  sanitized = sanitized.normalize('NFC');
+
+  return sanitized.trim();
 }
 
 /**

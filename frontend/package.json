@@ -18,7 +18,6 @@
     "@supabase/supabase-js": "^2.89.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "isomorphic-dompurify": "^2.35.0",
     "lru-cache": "^11.0.1",
     "lucide-react": "^0.562.0",
     "lz-string": "^1.5.0",
