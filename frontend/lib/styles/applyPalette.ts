@@ -714,10 +714,27 @@ function updateLayerLayout(layer: any, layers: PosterConfig['layers'] | undefine
       };
     }
 
-    if (layers?.labelSize && layers.labelSize !== 1.0) {
+    // Apply specific label sizes based on layer type
+    let sizeMultiplier = 1.0;
+
+    // Admin labels (country, state) - use labelAdminSize if available
+    if ((id.includes('labels-country') || id.includes('labels-state')) && layers?.labelAdminSize && layers.labelAdminSize !== 1.0) {
+      sizeMultiplier = layers.labelAdminSize;
+    }
+    // City labels - use labelCitiesSize if available
+    else if (id.includes('labels-city') && layers?.labelCitiesSize && layers.labelCitiesSize !== 1.0) {
+      sizeMultiplier = layers.labelCitiesSize;
+    }
+    // General labels - use labelSize if available and no specific size was applied
+    else if (layers?.labelSize && layers.labelSize !== 1.0) {
+      sizeMultiplier = layers.labelSize;
+    }
+
+    // Apply the size multiplier if it's not 1.0
+    if (sizeMultiplier !== 1.0) {
       const existingSize = layer.layout?.['text-size'];
       if (existingSize) {
-        layer.layout['text-size'] = scaleExpression(existingSize, layers.labelSize);
+        layer.layout['text-size'] = scaleExpression(existingSize, sizeMultiplier);
       }
     }
 

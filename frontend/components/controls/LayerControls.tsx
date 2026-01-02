@@ -234,6 +234,50 @@ export function LayerControls({ layers, onLayersChange, availableToggles, palett
             </div>
           </div>
         )}
+
+        {/* State & Country Names Size Control */}
+        {item.id === 'labels-admin' && layers['labels-admin'] && (
+          <div className="pl-8 pr-2 pb-2">
+            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-3">
+              <div className="space-y-1">
+                <ControlLabel className="text-[10px] uppercase text-gray-500">Label Size</ControlLabel>
+                <ControlSlider
+                  min="0.5"
+                  max="2.5"
+                  step="0.1"
+                  value={layers.labelAdminSize ?? 1.0}
+                  onChange={(e) => onLayersChange({ labelAdminSize: parseFloat(e.target.value) })}
+                  displayValue={`${(layers.labelAdminSize ?? 1.0).toFixed(1)}x`}
+                  onValueChange={(value) => onLayersChange({ labelAdminSize: value })}
+                  formatValue={(v) => v.toFixed(1)}
+                  parseValue={(s) => parseFloat(s.replace('x', ''))}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* City Names Size Control */}
+        {item.id === 'labels-cities' && layers['labels-cities'] && (
+          <div className="pl-8 pr-2 pb-2">
+            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-3">
+              <div className="space-y-1">
+                <ControlLabel className="text-[10px] uppercase text-gray-500">Label Size</ControlLabel>
+                <ControlSlider
+                  min="0.5"
+                  max="2.5"
+                  step="0.1"
+                  value={layers.labelCitiesSize ?? 1.0}
+                  onChange={(e) => onLayersChange({ labelCitiesSize: parseFloat(e.target.value) })}
+                  displayValue={`${(layers.labelCitiesSize ?? 1.0).toFixed(1)}x`}
+                  onValueChange={(value) => onLayersChange({ labelCitiesSize: value })}
+                  formatValue={(v) => v.toFixed(1)}
+                  parseValue={(s) => parseFloat(s.replace('x', ''))}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };

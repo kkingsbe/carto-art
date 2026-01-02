@@ -117,7 +117,9 @@ export interface PosterConfig {
     labelMaxWidth: number; // New: control map label wrap width
     labelStyle?: 'standard' | 'elevated' | 'glass' | 'vintage'; // New: control map label visual style
     'labels-admin'?: boolean; // Toggle for state & country names
+    labelAdminSize?: number; // Size for state & country names
     'labels-cities'?: boolean; // Toggle for city names
+    labelCitiesSize?: number; // Size for city names
     boundaries?: boolean; // Toggle for administrative boundaries (country/state/county)
     marker: boolean;
     markerType?: 'pin' | 'crosshair' | 'dot' | 'ring' | 'heart' | 'home';

@@ -63,6 +63,8 @@ export const DEFAULT_CONFIG: PosterConfig = {
     labelSize: 1,
     labelMaxWidth: 10,
     labelStyle: 'elevated',
+    labelAdminSize: 1.0,
+    labelCitiesSize: 1.0,
     boundaries: false,
     marker: true,
     markerType: 'crosshair',
