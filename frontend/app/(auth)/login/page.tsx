@@ -7,6 +7,8 @@ export const metadata = {
   description: 'Sign in to save and share your map posters',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function LoginPage({
   searchParams,
 }: {

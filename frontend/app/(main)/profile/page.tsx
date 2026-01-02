@@ -8,6 +8,8 @@ export const metadata = {
   description: 'View and manage your saved map posters',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function ProfilePage() {
   const supabase = await createClient();
   
