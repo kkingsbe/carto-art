@@ -51,7 +51,7 @@ export const DEFAULT_CONFIG: PosterConfig = {
     streets: true,
     buildings: false,
     water: true,
-    parks: true,
+    parks: false,
     terrain: true,
     terrainUnderWater: true,
     hillshadeExaggeration: 0.5,

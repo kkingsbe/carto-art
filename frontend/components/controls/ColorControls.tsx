@@ -4,9 +4,14 @@ import { HexColorPicker } from 'react-colorful';
 import { useState } from 'react';
 import type { ColorPalette } from '@/types/poster';
 import { cn } from '@/lib/utils';
-import { ControlSection, ControlGroup, ControlLabel, ControlInput } from '@/components/ui/control-components';
-import { Check, Info } from 'lucide-react';
-import { Tooltip } from '@/components/ui/tooltip';
+import { ControlLabel, ControlInput } from '@/components/ui/control-components';
+import { Check, ChevronDown, Palette, Paintbrush } from 'lucide-react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface ColorControlsProps {
   palette: ColorPalette;
@@ -19,10 +24,37 @@ const colorLabels: Record<string, string> = {
   primary: 'Primary',
   secondary: 'Secondary',
   water: 'Water',
-  greenSpace: 'Green Space',
+  greenSpace: 'Parks',
   text: 'Text',
   grid: 'Grid',
 };
+
+// Extract main colors for the preset preview
+function getPresetColors(preset: ColorPalette): string[] {
+  const colors: string[] = [];
+
+  // Always show background
+  if (preset.background) colors.push(preset.background);
+
+  // Show primary road color or text
+  if ('roads' in preset && typeof preset.roads === 'object') {
+    const roads = preset.roads as any;
+    if (roads.primary) colors.push(roads.primary);
+  } else if (preset.primary) {
+    colors.push(preset.primary);
+  } else if (preset.text) {
+    colors.push(preset.text);
+  }
+
+  // Show water if available
+  if (preset.water) colors.push(preset.water);
+
+  // Show green space if available
+  if (preset.greenSpace) colors.push(preset.greenSpace);
+
+  // Limit to 4 colors
+  return colors.slice(0, 4);
+}
 
 export function ColorControls({ palette, presets, onPaletteChange }: ColorControlsProps) {
   const [activeColor, setActiveColor] = useState<string | null>(null);
@@ -34,113 +66,128 @@ export function ColorControls({ palette, presets, onPaletteChange }: ColorContro
     });
   };
 
-  const visibleColorKeys = Object.keys(colorLabels).filter(key => 
+  const visibleColorKeys = Object.keys(colorLabels).filter(key =>
     key in palette || (key === 'grid' && presets?.some(p => 'grid' in p))
   );
 
   return (
-    <div className="space-y-6">
-      <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-100 dark:border-blue-800/30">
-        <div className="flex gap-2">
-          <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-          <p className="text-[11px] text-blue-700 dark:text-blue-300 leading-relaxed">
-            <span className="font-medium">Theme colors:</span> Presets are color variations for the selected theme. Custom colors override presets and give you full control.
-          </p>
-        </div>
-      </div>
-
+    <div className="space-y-4">
+      {/* Presets Grid */}
       {presets && presets.length > 0 && (
-        <ControlSection title="Presets">
-          <div className="ml-4 pl-4 border-l-2 border-gray-200 dark:border-gray-700">
-            <div className="grid grid-cols-2 gap-2">
-              {presets.map((preset) => {
-                const isActive = palette.id === preset.id;
-                return (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() => onPaletteChange(preset)}
-                    className={cn(
-                      'group relative flex flex-col gap-2 p-3 text-left border rounded-lg transition-all',
-                      isActive
-                        ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10 dark:border-blue-500/50 shadow-sm'
-                        : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50'
-                    )}
-                  >
-                    <div className="flex -space-x-1.5">
-                      <div className="w-5 h-5 rounded-full border-2 border-white dark:border-gray-800 shadow-sm" style={{ backgroundColor: preset.background }} />
-                      <div className="w-5 h-5 rounded-full border-2 border-white dark:border-gray-800 shadow-sm" style={{ backgroundColor: preset.primary }} />
-                      <div className="w-5 h-5 rounded-full border-2 border-white dark:border-gray-800 shadow-sm" style={{ backgroundColor: preset.water }} />
-                    </div>
-                  <div className="flex items-center gap-1.5 w-full min-w-0">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 px-1">
+            <Palette className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Color Presets
+            </h4>
+            <span className="text-xs text-gray-400 dark:text-gray-500">
+              ({presets.length})
+            </span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            {presets.map((preset) => {
+              const isActive = palette.id === preset.id;
+              const presetColors = getPresetColors(preset);
+
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => onPaletteChange(preset)}
+                  className={cn(
+                    'group relative flex flex-col gap-2 p-2.5 text-left border rounded-lg transition-all hover:scale-[1.02]',
+                    isActive
+                      ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20 shadow-md ring-2 ring-blue-500/20'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm'
+                  )}
+                >
+                  {/* Color Swatches */}
+                  <div className="flex gap-1 w-full">
+                    {presetColors.map((color, idx) => (
+                      <div
+                        key={idx}
+                        className="flex-1 h-8 rounded border border-white/20 dark:border-black/20 shadow-sm"
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Name */}
+                  <div className="flex items-center justify-between gap-1 min-w-0">
                     <span className={cn(
-                      "text-xs font-medium truncate flex-1",
-                      isActive ? "text-blue-700 dark:text-blue-300" : "text-gray-700 dark:text-gray-300"
+                      "text-[10px] font-medium truncate leading-tight",
+                      isActive
+                        ? "text-blue-700 dark:text-blue-300"
+                        : "text-gray-600 dark:text-gray-400"
                     )}>
                       {preset.name}
                     </span>
-                    {preset.name === 'Whiteprint' && (
-                      <Tooltip content="Inverse of blueprint: dark lines on light background">
-                        <Info className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                      </Tooltip>
+                    {isActive && (
+                      <Check className="w-3 h-3 text-blue-500 flex-shrink-0" />
                     )}
                   </div>
-                    {isActive && (
-                      <div className="absolute top-2 right-2 text-blue-500">
-                        <Check className="w-3.5 h-3.5" />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+                </button>
+              );
+            })}
           </div>
-        </ControlSection>
-      )}
-      
-      <ControlSection title="Custom Colors" className="pt-4 border-t-2 border-gray-200 dark:border-gray-700">
-        <div className="space-y-3">
-          {visibleColorKeys.map((colorKey) => (
-            <div key={colorKey} className="relative">
-              <ControlLabel>{colorLabels[colorKey]}</ControlLabel>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setActiveColor(activeColor === colorKey ? null : colorKey)}
-                  className={cn(
-                    'w-9 h-9 rounded-md border shadow-sm transition-all',
-                    activeColor === colorKey
-                      ? 'border-blue-500 ring-2 ring-blue-500/20'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
-                  )}
-                  style={{ backgroundColor: (palette as any)[colorKey] }}
-                  aria-label={`Select ${colorLabels[colorKey]} color`}
-                />
-                <ControlInput
-                  type="text"
-                  value={(palette as any)[colorKey] || ''}
-                  onChange={(e) => handleColorChange(colorKey, e.target.value)}
-                  className="font-mono"
-                  placeholder="#000000"
-                />
-              </div>
-              
-              {activeColor === colorKey && (
-                <div className="absolute left-0 top-full mt-2 z-50 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl animate-in fade-in zoom-in-95 duration-200">
-                  <div 
-                    className="fixed inset-0 z-[-1]" 
-                    onClick={() => setActiveColor(null)} 
-                  />
-                  <HexColorPicker
-                    color={(palette as any)[colorKey] || '#000000'}
-                    onChange={(color) => handleColorChange(colorKey, color)}
-                  />
-                </div>
-              )}
-            </div>
-          ))}
         </div>
-      </ControlSection>
+      )}
+
+      {/* Customize Colors - Collapsible */}
+      <Accordion type="single" collapsible className="border-t border-gray-200 dark:border-gray-700 pt-2">
+        <AccordionItem value="custom-colors" className="border-none">
+          <AccordionTrigger className="px-1 py-2 hover:no-underline text-sm font-semibold text-gray-700 dark:text-gray-300">
+            <div className="flex items-center gap-2">
+              <Paintbrush className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              Customize Colors
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="pt-3 pb-1">
+            <div className="space-y-2.5">
+              {visibleColorKeys.map((colorKey) => (
+                <div key={colorKey} className="relative">
+                  <ControlLabel className="text-xs mb-1.5">{colorLabels[colorKey]}</ControlLabel>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveColor(activeColor === colorKey ? null : colorKey)}
+                      className={cn(
+                        'w-10 h-10 rounded-md border shadow-sm transition-all flex-shrink-0',
+                        activeColor === colorKey
+                          ? 'border-blue-500 ring-2 ring-blue-500/20 scale-105'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 hover:scale-105'
+                      )}
+                      style={{ backgroundColor: (palette as any)[colorKey] }}
+                      aria-label={`Select ${colorLabels[colorKey]} color`}
+                    />
+                    <ControlInput
+                      type="text"
+                      value={(palette as any)[colorKey] || ''}
+                      onChange={(e) => handleColorChange(colorKey, e.target.value)}
+                      className="font-mono text-xs h-10"
+                      placeholder="#000000"
+                    />
+                  </div>
+
+                  {activeColor === colorKey && (
+                    <div className="absolute left-0 top-full mt-2 z-50 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl animate-in fade-in zoom-in-95 duration-200">
+                      <div
+                        className="fixed inset-0 z-[-1]"
+                        onClick={() => setActiveColor(null)}
+                      />
+                      <HexColorPicker
+                        color={(palette as any)[colorKey] || '#000000'}
+                        onChange={(color) => handleColorChange(colorKey, color)}
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }

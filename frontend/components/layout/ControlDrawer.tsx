@@ -143,22 +143,14 @@ export function ControlDrawer({
         )}
 
         {activeTab === 'style' && (
-          <div className="space-y-8">
-            <div className="space-y-4">
-              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Map Style
-              </h3>
-              <StyleSelector
-                selectedStyleId={config.style.id}
-                onStyleSelect={updateStyle}
-                currentConfig={config}
-              />
-            </div>
+          <div className="space-y-6">
+            <StyleSelector
+              selectedStyleId={config.style.id}
+              onStyleSelect={updateStyle}
+              currentConfig={config}
+            />
 
-            <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Color Palette
-              </h3>
+            <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
               <ColorControls
                 palette={config.palette}
                 presets={config.style.palettes}

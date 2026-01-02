@@ -4,9 +4,7 @@ import { useState } from 'react';
 import type { PosterStyle, PosterConfig } from '@/types/poster';
 import { styles } from '@/lib/styles';
 import { cn } from '@/lib/utils';
-import { Check } from 'lucide-react';
-import { ControlSection } from '@/components/ui/control-components';
-import { PosterThumbnail } from '@/components/map/PosterThumbnail';
+import { Check, Sparkles } from 'lucide-react';
 
 interface StyleSelectorProps {
   selectedStyleId: string;
@@ -14,64 +12,98 @@ interface StyleSelectorProps {
   currentConfig: PosterConfig;
 }
 
-export function StyleSelector({ selectedStyleId, onStyleSelect, currentConfig }: StyleSelectorProps) {
-  const [hoveredStyleId, setHoveredStyleId] = useState<string | null>(null);
+// Extract representative colors from a style's default palette
+function getStyleColors(style: PosterStyle): string[] {
+  const palette = style.defaultPalette;
+  const colors: string[] = [];
 
+  // Always show background
+  if (palette.background) colors.push(palette.background);
+
+  // Show primary road/line color
+  if ('roads' in palette && typeof palette.roads === 'object') {
+    const roads = palette.roads as any;
+    if (roads.primary) colors.push(roads.primary);
+  } else if (palette.primary) {
+    colors.push(palette.primary);
+  } else if (palette.text) {
+    colors.push(palette.text);
+  }
+
+  // Show water
+  if (palette.water) colors.push(palette.water);
+
+  // Show green space
+  if (palette.greenSpace) colors.push(palette.greenSpace);
+
+  return colors.slice(0, 4);
+}
+
+export function StyleSelector({ selectedStyleId, onStyleSelect, currentConfig }: StyleSelectorProps) {
   return (
-    <ControlSection title="Theme">
-      <div className="grid grid-cols-1 gap-2">
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 px-1">
+        <Sparkles className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+          Map Themes
+        </h4>
+        <span className="text-xs text-gray-400 dark:text-gray-500">
+          ({styles.length})
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
         {styles.map((style) => {
           const isSelected = selectedStyleId === style.id;
-          const isHovered = hoveredStyleId === style.id;
-          const previewConfig: PosterConfig = {
-            ...currentConfig,
-            style,
-            palette: style.defaultPalette,
-          };
-          
+          const styleColors = getStyleColors(style);
+
           return (
-            <div key={style.id} className="relative">
-              <button
-                type="button"
-                onClick={() => onStyleSelect(style)}
-                onMouseEnter={() => setHoveredStyleId(style.id)}
-                onMouseLeave={() => setHoveredStyleId(null)}
-                className={cn(
-                  'group relative flex items-start gap-4 p-4 text-left border rounded-lg transition-all w-full',
-                  isSelected
-                    ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10 dark:border-blue-500/50 ring-1 ring-blue-500/20'
-                    : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50'
-                )}
-              >
-                <div className="flex-1 space-y-1">
-                  <div className={cn(
-                    "font-medium transition-colors",
-                    isSelected ? "text-blue-700 dark:text-blue-300" : "text-gray-900 dark:text-white"
+            <button
+              key={style.id}
+              type="button"
+              onClick={() => onStyleSelect(style)}
+              className={cn(
+                'group relative flex flex-col gap-2.5 p-3 text-left border rounded-lg transition-all hover:scale-[1.02]',
+                isSelected
+                  ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20 shadow-md ring-2 ring-blue-500/20'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm'
+              )}
+            >
+              {/* Color Swatches */}
+              <div className="flex gap-1 w-full">
+                {styleColors.map((color, idx) => (
+                  <div
+                    key={idx}
+                    className="flex-1 h-10 rounded border border-white/20 dark:border-black/20 shadow-sm"
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+
+              {/* Name & Description */}
+              <div className="space-y-1 min-w-0">
+                <div className="flex items-center justify-between gap-1.5">
+                  <h5 className={cn(
+                    "text-xs font-semibold truncate",
+                    isSelected
+                      ? "text-blue-700 dark:text-blue-300"
+                      : "text-gray-900 dark:text-white"
                   )}>
                     {style.name}
-                  </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                    {style.description}
-                  </div>
+                  </h5>
+                  {isSelected && (
+                    <Check className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                  )}
                 </div>
-                
-                {isSelected && (
-                  <div className="text-blue-500 dark:text-blue-400">
-                    <Check className="w-5 h-5" />
-                  </div>
-                )}
-              </button>
-
-              {isHovered && !isSelected && (
-                <div className="absolute left-full ml-4 top-0 z-50 w-32 h-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden pointer-events-none">
-                  <PosterThumbnail config={previewConfig} className="w-full h-full" />
-                </div>
-              )}
-            </div>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-snug line-clamp-2">
+                  {style.description}
+                </p>
+              </div>
+            </button>
           );
         })}
       </div>
-    </ControlSection>
+    </div>
   );
 }
 
