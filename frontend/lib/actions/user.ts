@@ -166,9 +166,13 @@ export async function updateFeaturedMaps(mapIds: string[]) {
         }
     }
 
-    const { error } = await supabase
+    const updateData: Database['public']['Tables']['profiles']['Update'] = {
+        featured_map_ids: mapIds,
+    };
+
+    const { error } = await (supabase as any)
         .from('profiles')
-        .update({ featured_map_ids: mapIds })
+        .update(updateData)
         .eq('id', user.id);
 
     if (error) {
