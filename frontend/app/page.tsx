@@ -1,5 +1,4 @@
 import { Hero } from '@/components/landing/Hero';
-import { StatsHero } from '@/components/landing/StatsHero';
 import { Features } from '@/components/landing/Features';
 import { HowItWorks } from '@/components/landing/HowItWorks';
 import { UseCases } from '@/components/landing/UseCases';
@@ -15,7 +14,6 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen">
       <Hero />
-      <StatsHero />
       <Features />
       <HowItWorks />
       <UseCases />
