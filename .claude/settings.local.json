@@ -10,7 +10,8 @@
       "Bash(npm run build:*)",
       "Bash(cat:*)",
       "Bash(npx shadcn@latest add accordion badge card tabs separator)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(grep:*)"
     ]
   }
 }

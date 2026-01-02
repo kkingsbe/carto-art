@@ -1,10 +1,10 @@
 'use client';
 
-import { Map as MapIcon, Type, Layout, Sparkles, Palette, User } from 'lucide-react';
+import { Map as MapIcon, Type, Layout, Sparkles, Palette, User, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
-export type Tab = 'library' | 'location' | 'style' | 'text' | 'frame' | 'account';
+export type Tab = 'library' | 'location' | 'style' | 'layers' | 'text' | 'frame' | 'account';
 
 interface TabNavigationProps {
   activeTab: Tab;
@@ -61,6 +61,7 @@ export function TabNavigation({
         <TabButton id="library" icon={Sparkles} label="Library" />
         <TabButton id="location" icon={MapIcon} label="Location" />
         <TabButton id="style" icon={Palette} label="Style" />
+        <TabButton id="layers" icon={Layers} label="Layers" />
         <TabButton id="text" icon={Type} label="Text" />
         <TabButton id="frame" icon={Layout} label="Frame" />
         {/* Account tab on mobile - shows in bottom nav with others */}

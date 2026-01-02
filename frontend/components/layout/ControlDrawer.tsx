@@ -165,10 +165,14 @@ export function ControlDrawer({
                 onPaletteChange={updatePalette}
               />
             </div>
+          </div>
+        )}
 
-            <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+        {activeTab === 'layers' && (
+          <div className="space-y-6">
+            <div className="space-y-4">
               <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Layer Visibility
+                Layer Controls
               </h3>
               <LayerControls
                 layers={config.layers}
