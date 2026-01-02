@@ -103,7 +103,7 @@ export async function followUser(targetUserId: string) {
         .insert({
             follower_id: user.id,
             following_id: targetUserId
-        } as Database['public']['Tables']['follows']['Insert']);
+        } as any);
 
     if (error) {
         // Unique violation means already following, which is fine to ignore or handle
@@ -168,7 +168,7 @@ export async function updateFeaturedMaps(mapIds: string[]) {
 
     const { error } = await supabase
         .from('profiles')
-        .update({ featured_map_ids: mapIds } as any) // Type might not be fully updated yet in codebase
+        .update({ featured_map_ids: mapIds })
         .eq('id', user.id);
 
     if (error) {

@@ -5,6 +5,7 @@ import "./globals.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { KofiWidget } from "@/components/third-party/KofiWidget";
 import { Navbar } from "@/components/layout/Navbar";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -76,6 +77,7 @@ export default function RootLayout({
         <main className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden">
           {children}
         </main>
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   );
