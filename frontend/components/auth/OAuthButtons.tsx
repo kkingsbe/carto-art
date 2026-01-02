@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/control-components';
+import { AlertCircle } from 'lucide-react';
 
 interface OAuthButtonsProps {
   redirectTo?: string;
@@ -10,31 +11,63 @@ interface OAuthButtonsProps {
 
 export function OAuthButtons({ redirectTo }: OAuthButtonsProps) {
   const [loading, setLoading] = useState<'google' | 'github' | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
 
   const handleOAuth = async (provider: 'google' | 'github') => {
     try {
       setLoading(provider);
+      setError(null);
+
       const redirectUrl = redirectTo
         ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`
         : `${window.location.origin}/auth/callback`;
-      
-      const { error } = await supabase.auth.signInWithOAuth({
+
+      console.log('[OAuth] Initiating OAuth flow:', { provider, redirectUrl, redirectTo });
+
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo: redirectUrl,
         },
       });
 
-      if (error) throw error;
-    } catch (error) {
-      console.error('OAuth error:', error);
+      if (oauthError) {
+        console.error('[OAuth] Error:', oauthError);
+        throw oauthError;
+      }
+
+      console.log('[OAuth] Success, should redirect to provider:', data);
+
+      // Note: If we reach here without redirecting, there's a problem
+      // OAuth should redirect the browser to the provider
+    } catch (err) {
+      console.error('[OAuth] Exception:', err);
+      const message = err instanceof Error ? err.message : 'Failed to initiate login. Please try again.';
+      setError(message);
       setLoading(null);
     }
   };
 
   return (
     <div className="space-y-4">
+      {error && (
+        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-red-800 dark:text-red-200">
+              Authentication Error
+            </p>
+            <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+              {error}
+            </p>
+            <p className="text-xs text-red-600 dark:text-red-400 mt-2">
+              Check the console for more details. If this persists, verify your Supabase redirect URLs are configured correctly.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Temporarily hidden Google login button */}
       {/* <Button
         onClick={() => handleOAuth('google')}

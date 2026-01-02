@@ -10,7 +10,7 @@ export const metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ redirect?: string }>;
+  searchParams: Promise<{ redirect?: string; error?: string }>;
 }) {
   const supabase = await createClient();
   const {
@@ -37,6 +37,18 @@ export default async function LoginPage({
               Sign in to save, publish, and share your map posters
             </p>
           </div>
+
+          {params.error && (
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <p className="text-sm font-medium text-red-800 dark:text-red-200 mb-1">
+                Authentication Failed
+              </p>
+              <p className="text-sm text-red-700 dark:text-red-300">
+                {params.error}
+              </p>
+            </div>
+          )}
+
           <OAuthButtons redirectTo={params.redirect} />
         </div>
       </div>
