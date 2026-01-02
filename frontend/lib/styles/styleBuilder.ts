@@ -25,6 +25,7 @@ export interface StyleBuildOptions {
     boundaries?: Partial<BoundaryLayerOptions>;
     poi?: Partial<POILayerOptions>;
     terrain?: Partial<TerrainLayerOptions>;
+    landcover?: Partial<LandcoverLayerOptions>;
     layerToggles?: Partial<LayerToggleOptions>;
   };
 }
