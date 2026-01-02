@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/control-components';
 import { Clock, TrendingUp } from 'lucide-react';
 
@@ -11,11 +11,12 @@ interface FeedFiltersProps {
 export function FeedFilters({ currentSort }: FeedFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
 
   const handleSortChange = (sort: 'fresh' | 'top') => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('sort', sort);
-    router.push(`/feed?${params.toString()}`);
+    router.push(`${pathname}?${params.toString()}`);
   };
 
   return (
