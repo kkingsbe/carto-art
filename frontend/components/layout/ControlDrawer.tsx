@@ -190,6 +190,7 @@ export function ControlDrawer({
                 config={config}
                 onTypographyChange={updateTypography}
                 onLocationChange={updateLocation}
+                onLayersChange={updateLayers}
               />
             </div>
           </div>

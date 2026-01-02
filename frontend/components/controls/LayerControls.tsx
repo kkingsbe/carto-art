@@ -38,14 +38,6 @@ export function LayerControls({ layers, onLayersChange, availableToggles, palett
   const isTerrainToggleVisible = availableToggles.some(t => t.id === 'terrain');
   const isTerrainUnderWaterToggleVisible = availableToggles.some(t => t.id === 'terrainUnderWater');
 
-  const handleLabelSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onLayersChange({ labelSize: parseFloat(e.target.value) });
-  };
-
-  const handleLabelMaxWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onLayersChange({ labelMaxWidth: parseFloat(e.target.value) });
-  };
-
   const handleContourDensityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
     onLayersChange({ contourDensity: value });
@@ -60,19 +52,16 @@ export function LayerControls({ layers, onLayersChange, availableToggles, palett
   };
 
   // Categorize layers
-  const geographicLayers = availableToggles.filter(t => 
+  const geographicLayers = availableToggles.filter(t =>
     ['terrain', 'water', 'parks', 'buildings', 'terrainUnderWater', 'contours', 'boundaries'].includes(t.id)
   );
-  const landcoverLayers = availableToggles.filter(t => 
+  const landcoverLayers = availableToggles.filter(t =>
     ['landcoverWood', 'landcoverGrass', 'landcoverFarmland', 'landcoverIce'].includes(t.id)
   );
-  const landuseLayers = availableToggles.filter(t => 
+  const landuseLayers = availableToggles.filter(t =>
     ['landuseForest', 'landuseOrchard', 'landuseVineyard', 'landuseCemetery', 'landuseGrass'].includes(t.id)
   );
-  const labelLayers = availableToggles.filter(t => 
-    ['labels', 'labels-admin', 'labels-cities'].includes(t.id)
-  );
-  const dataLayers = availableToggles.filter(t => 
+  const dataLayers = availableToggles.filter(t =>
     ['streets', 'population', 'pois'].includes(t.id)
   );
 
@@ -106,63 +95,6 @@ export function LayerControls({ layers, onLayersChange, availableToggles, palett
                   <span>Fine</span>
                   <span>Bold</span>
                 </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Label Size Control */}
-        {item.id === 'labels' && layers.labels && (
-          <div className="pl-8 pr-2 pb-2">
-            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-4">
-              <div className="space-y-2">
-                <ControlLabel className="text-[10px] uppercase text-gray-500">Label Style</ControlLabel>
-                <div className="grid grid-cols-2 gap-2">
-                  {['standard', 'elevated', 'glass', 'vintage'].map((style) => (
-                    <button
-                      key={style}
-                      onClick={() => onLayersChange({ labelStyle: style as any })}
-                      className={cn(
-                        "py-1.5 px-2 text-[10px] uppercase font-bold rounded border transition-all",
-                        (layers.labelStyle || 'elevated') === style 
-                          ? "bg-blue-600 border-blue-600 text-white shadow-sm" 
-                          : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300 dark:hover:border-gray-600"
-                      )}
-                    >
-                      {style}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <ControlLabel className="text-[10px] uppercase text-gray-500">Label Size</ControlLabel>
-                <ControlSlider
-                  min="0.5"
-                  max="2.5"
-                  step="0.1"
-                  value={layers.labelSize ?? 1.0}
-                  onChange={handleLabelSizeChange}
-                  displayValue={`${(layers.labelSize ?? 1.0).toFixed(1)}x`}
-                  onValueChange={(value) => onLayersChange({ labelSize: value })}
-                  formatValue={(v) => v.toFixed(1)}
-                  parseValue={(s) => parseFloat(s.replace('x', ''))}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <ControlLabel className="text-[10px] uppercase text-gray-500">Label Wrap</ControlLabel>
-                <ControlSlider
-                  min="2"
-                  max="20"
-                  step="1"
-                  value={layers.labelMaxWidth ?? 10}
-                  onChange={handleLabelMaxWidthChange}
-                  displayValue={layers.labelMaxWidth ?? 10}
-                  onValueChange={(value) => onLayersChange({ labelMaxWidth: value })}
-                  formatValue={(v) => String(Math.round(v))}
-                  parseValue={(s) => parseInt(s)}
-                />
               </div>
             </div>
           </div>
@@ -230,50 +162,6 @@ export function LayerControls({ layers, onLayersChange, availableToggles, palett
                   <span>Dense</span>
                   <span>Sparse</span>
                 </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* State & Country Names Size Control */}
-        {item.id === 'labels-admin' && layers['labels-admin'] && (
-          <div className="pl-8 pr-2 pb-2">
-            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-3">
-              <div className="space-y-1">
-                <ControlLabel className="text-[10px] uppercase text-gray-500">Label Size</ControlLabel>
-                <ControlSlider
-                  min="0.5"
-                  max="2.5"
-                  step="0.1"
-                  value={layers.labelAdminSize ?? 1.0}
-                  onChange={(e) => onLayersChange({ labelAdminSize: parseFloat(e.target.value) })}
-                  displayValue={`${(layers.labelAdminSize ?? 1.0).toFixed(1)}x`}
-                  onValueChange={(value) => onLayersChange({ labelAdminSize: value })}
-                  formatValue={(v) => v.toFixed(1)}
-                  parseValue={(s) => parseFloat(s.replace('x', ''))}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* City Names Size Control */}
-        {item.id === 'labels-cities' && layers['labels-cities'] && (
-          <div className="pl-8 pr-2 pb-2">
-            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-3">
-              <div className="space-y-1">
-                <ControlLabel className="text-[10px] uppercase text-gray-500">Label Size</ControlLabel>
-                <ControlSlider
-                  min="0.5"
-                  max="2.5"
-                  step="0.1"
-                  value={layers.labelCitiesSize ?? 1.0}
-                  onChange={(e) => onLayersChange({ labelCitiesSize: parseFloat(e.target.value) })}
-                  displayValue={`${(layers.labelCitiesSize ?? 1.0).toFixed(1)}x`}
-                  onValueChange={(value) => onLayersChange({ labelCitiesSize: value })}
-                  formatValue={(v) => v.toFixed(1)}
-                  parseValue={(s) => parseFloat(s.replace('x', ''))}
-                />
               </div>
             </div>
           </div>
@@ -400,15 +288,6 @@ export function LayerControls({ layers, onLayersChange, availableToggles, palett
                   </div>
                 </CollapsibleSection>
               )}
-            </div>
-          </CollapsibleSection>
-        )}
-
-        {/* Labels */}
-        {labelLayers.length > 0 && (
-          <CollapsibleSection title="Labels" defaultOpen={true}>
-            <div className="space-y-2">
-              {labelLayers.map(renderLayerItem)}
             </div>
           </CollapsibleSection>
         )}
