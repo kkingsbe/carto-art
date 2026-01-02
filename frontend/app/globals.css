@@ -190,3 +190,45 @@ div[id*="kofi"] {
   margin-bottom: 1.5rem;
   break-inside: avoid; /* Prevent items from breaking across columns */
 }
+
+/* Glass morphism backdrop blur support */
+@supports (backdrop-filter: blur(20px)) {
+  .glass-effect {
+    backdrop-filter: blur(20px);
+  }
+}
+
+/* Shimmer loading animation for image placeholders */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.shimmer {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(
+    to right,
+    #f0f0f0 4%,
+    #e8e8e8 25%,
+    #f0f0f0 36%
+  );
+  background-size: 1000px 100%;
+}
+
+.dark .shimmer {
+  background: linear-gradient(
+    to right,
+    #1f2937 4%,
+    #374151 25%,
+    #1f2937 36%
+  );
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}

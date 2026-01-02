@@ -1,8 +1,9 @@
 import { FeedClient } from '@/components/feed/FeedClient';
+import GalleryHero from '@/components/gallery/GalleryHero';
 
 export const metadata = {
-  title: 'Gallery | Carto-Art',
-  description: 'Discover beautiful map posters created by the community',
+  title: 'Community Gallery | Carto Art',
+  description: 'Discover stunning map posters created by the community. Browse and get inspired by beautiful cartographic designs.',
 };
 
 interface GalleryPageProps {
@@ -14,20 +15,15 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
   const sort = (params.sort || 'fresh') as 'fresh' | 'top';
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Gallery
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Explore beautiful map posters created by the community
-          </p>
-        </div>
+    <>
+      {/* Hero Section */}
+      <GalleryHero />
 
+      {/* Filter Bar + Content */}
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <FeedClient initialSort={sort} />
       </div>
-    </div>
+    </>
   );
 }
 
