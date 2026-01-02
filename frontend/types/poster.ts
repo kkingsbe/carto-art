@@ -80,6 +80,8 @@ export interface PosterConfig {
     titleAllCaps?: boolean;      // Added all-caps support
     subtitleFont: string;
     subtitleSize: number;
+    subtitleWeight?: number;        // Subtitle font weight (100-900)
+    subtitleLetterSpacing?: number; // Subtitle letter spacing
     showTitle?: boolean;      // New: toggle title visibility
     showSubtitle?: boolean;   // New: toggle subtitle visibility
     showCoordinates?: boolean; // New: toggle coordinates visibility

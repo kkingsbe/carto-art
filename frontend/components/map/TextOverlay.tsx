@@ -74,9 +74,10 @@ export function TextOverlay({ config }: TextOverlayProps) {
   const subtitleStyle = {
     fontFamily: typography.subtitleFont,
     fontSize: `${typography.subtitleSize}cqw`,
+    fontWeight: typography.subtitleWeight || 400,
     color: config.palette.text,
     opacity: 0.9,
-    letterSpacing: '0.2em',
+    letterSpacing: typography.subtitleLetterSpacing ? `${typography.subtitleLetterSpacing}em` : '0.2em',
     lineHeight: 1,
     textShadow: (backdropType === 'gradient' || backdropType === 'none') ? 'none' : buildHaloTextShadow(config.palette.background, subtitleHalo),
   };
