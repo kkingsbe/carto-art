@@ -1,19 +1,21 @@
-'use client';
+import { Hero } from '@/components/landing/Hero';
+import { Features } from '@/components/landing/Features';
+import { FeaturedMaps } from '@/components/landing/FeaturedMaps';
+import { Comparison } from '@/components/landing/Comparison';
+import { TechStack } from '@/components/landing/TechStack';
+import { FinalCTA } from '@/components/landing/FinalCTA';
+import { Footer } from '@/components/landing/Footer';
 
-import { Suspense } from 'react';
-import { PosterEditor } from '@/components/layout/PosterEditor';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
-
-export default function Home() {
+export default function LandingPage() {
   return (
-    <ErrorBoundary>
-      <Suspense fallback={
-        <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      }>
-        <PosterEditor />
-      </Suspense>
-    </ErrorBoundary>
+    <div className="min-h-screen">
+      <Hero />
+      <Features />
+      <FeaturedMaps />
+      <Comparison />
+      <TechStack />
+      <FinalCTA />
+      <Footer />
+    </div>
   );
 }

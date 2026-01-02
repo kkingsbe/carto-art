@@ -401,7 +401,7 @@ export async function publishMap(
 
   logger.info('Map published successfully', { mapId: id, userId: user.id, hasThumbnail: !!thumbnailUrl });
   revalidatePath('/profile');
-  revalidatePath('/feed');
+  revalidatePath('/gallery');
   revalidatePath(`/map/${id}`);
   return data as SavedMap;
 }
@@ -445,7 +445,7 @@ export async function unpublishMap(id: string) {
 
   logger.info('Map unpublished successfully', { mapId: id, userId: user.id });
   revalidatePath('/profile');
-  revalidatePath('/feed');
+  revalidatePath('/gallery');
   revalidatePath(`/map/${id}`);
   return data as SavedMap;
 }

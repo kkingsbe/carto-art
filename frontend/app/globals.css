@@ -79,6 +79,15 @@
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.705 0.015 286.067);
+
+  /* Landing page design system colors */
+  --navy-deep: #0a0f1a;
+  --navy-mid: #141d2e;
+  --cream: #f5f0e8;
+  --cream-muted: #d4cfc4;
+  --accent-gold: #c9a962;
+  --accent-copper: #b87333;
+  --topo-line: rgba(245, 240, 232, 0.06);
 }
 
 .dark {

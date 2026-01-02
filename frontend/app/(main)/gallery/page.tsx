@@ -1,15 +1,15 @@
 import { FeedClient } from '@/components/feed/FeedClient';
 
 export const metadata = {
-  title: 'Browse Maps | CartoArt',
+  title: 'Gallery | Carto-Art',
   description: 'Discover beautiful map posters created by the community',
 };
 
-interface FeedPageProps {
+interface GalleryPageProps {
   searchParams: Promise<{ sort?: 'fresh' | 'top' }>;
 }
 
-export default async function FeedPage({ searchParams }: FeedPageProps) {
+export default async function GalleryPage({ searchParams }: GalleryPageProps) {
   const params = await searchParams;
   const sort = (params.sort || 'fresh') as 'fresh' | 'top';
 
@@ -18,13 +18,13 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Discover Maps
+            Gallery
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
             Explore beautiful map posters created by the community
           </p>
         </div>
-        
+
         <FeedClient initialSort={sort} />
       </div>
     </div>

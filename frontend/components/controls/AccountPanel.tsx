@@ -63,7 +63,7 @@ export function AccountPanel({
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.push('/');
+    router.push('/editor');
     router.refresh();
   };
 
@@ -171,7 +171,7 @@ export function AccountPanel({
                   onClick={handleUnpublish}
                 >
                   <EyeOff className="w-4 h-4" />
-                  Unpublish from Feed
+                  Unpublish from Gallery
                 </Button>
               ) : (
                 <Button
@@ -181,7 +181,7 @@ export function AccountPanel({
                   onClick={() => setShowPublishModal(true)}
                 >
                   <Upload className="w-4 h-4" />
-                  Publish to Feed
+                  Publish to Gallery
                 </Button>
               )}
 
@@ -242,10 +242,10 @@ export function AccountPanel({
             <Button
               variant="outline"
               className="w-full justify-start gap-3"
-              onClick={() => router.push('/feed')}
+              onClick={() => router.push('/gallery')}
             >
               <Compass className="w-4 h-4" />
-              Browse Feed
+              Browse Gallery
             </Button>
 
             <Button
@@ -292,10 +292,10 @@ export function AccountPanel({
             <Button
               variant="outline"
               className="w-full justify-start gap-3"
-              onClick={() => router.push('/feed')}
+              onClick={() => router.push('/gallery')}
             >
               <Compass className="w-4 h-4" />
-              Browse Feed
+              Browse Gallery
             </Button>
 
             <Button

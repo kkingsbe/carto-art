@@ -16,21 +16,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CartoArt | Map Poster Generator",
-  description: "Create beautifully stylized map posters from real geographic data",
+  title: "Carto-Art | Free Map Poster Design Tool",
+  description: "Create gallery-quality cartographic posters of any location—completely free. GPU terrain shading, print-quality export, no signup required.",
   icons: {
     icon: "/icon.svg",
   },
   openGraph: {
-    title: "CartoArt | Map Poster Generator",
-    description: "Create beautifully stylized map posters from real geographic data",
+    title: "Transform Any Location Into Art",
+    description: "Free alternative to Mapiful & Grafomap. Create print-ready map posters with GPU terrain shading.",
     images: ["/hero.jpg"],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "CartoArt | Map Poster Generator",
-    description: "Create beautifully stylized map posters from real geographic data",
+    title: "Transform Any Location Into Art",
+    description: "Free alternative to Mapiful & Grafomap. Create print-ready map posters with GPU terrain shading.",
     images: ["/hero.jpg"],
   },
 };
