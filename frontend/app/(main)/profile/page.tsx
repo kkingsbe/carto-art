@@ -6,6 +6,9 @@ import { MyMapsList } from '@/components/profile/MyMapsList';
 import { ProfileHeader } from '@/components/profile/ProfileHeader';
 import { FeaturedMapsEditor } from '@/components/profile/FeaturedMapsEditor';
 import { SITE_URL } from '@/lib/utils/env';
+import type { Database } from '@/types/database';
+
+type Profile = Database['public']['Tables']['profiles']['Row'];
 
 export const metadata = {
   title: 'My Maps | CartoArt',
@@ -37,6 +40,9 @@ export default async function ProfilePage() {
     return <div>Profile not found</div>;
   }
 
+  // TypeScript needs explicit typing for profile after null check
+  const typedProfile: Profile = profile;
+
   const [maps, stats] = await Promise.all([
     getUserMaps(),
     getProfileStats(user.id)
@@ -46,7 +52,7 @@ export default async function ProfilePage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <ProfileHeader
-          profile={profile}
+          profile={typedProfile}
           stats={stats}
           isOwnProfile={true}
         />
@@ -60,7 +66,7 @@ export default async function ProfilePage() {
                 <p className="text-gray-500 dark:text-gray-400 text-sm">Manage your saved designs</p>
               </div>
               <a
-                href={`/user/${profile.username}`}
+                href={`/user/${typedProfile.username}`}
                 target="_blank"
                 className="hidden sm:inline-flex items-center gap-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500"
               >
@@ -71,9 +77,9 @@ export default async function ProfilePage() {
             <MyMapsList
               maps={maps}
               userProfile={{
-                username: profile.username,
-                display_name: profile.display_name,
-                avatar_url: profile.avatar_url,
+                username: typedProfile.username,
+                display_name: typedProfile.display_name,
+                avatar_url: typedProfile.avatar_url,
               }}
               onDelete={deleteMap}
               onPublish={publishMap}
@@ -85,7 +91,7 @@ export default async function ProfilePage() {
           <div className="space-y-8">
             <FeaturedMapsEditor
               allMaps={maps}
-              initialFeaturedIds={profile.featured_map_ids || []}
+              initialFeaturedIds={typedProfile.featured_map_ids || []}
             />
 
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-100 dark:border-gray-700">
@@ -96,7 +102,7 @@ export default async function ProfilePage() {
                 Share your profile with others
               </p>
               <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700 text-sm font-mono text-gray-600 dark:text-gray-300 break-all">
-                {`${SITE_URL || 'https://cartoart.com'}/user/${profile.username}`}
+                {`${SITE_URL || 'https://cartoart.com'}/user/${typedProfile.username}`}
               </div>
             </div>
           </div>
