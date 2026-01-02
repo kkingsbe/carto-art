@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import type { Database } from '@/types/database';
 import { SUPABASE_URL, SUPABASE_ANON_KEY, getRequiredEnv } from '@/lib/utils/env';
@@ -32,5 +33,18 @@ export async function createClient() {
       },
     }
   );
+}
+
+/**
+ * Create an anonymous Supabase client without cookies
+ * Use this for cached functions or queries that don't require authentication
+ * This avoids the "cookies() inside unstable_cache()" error
+ */
+export function createAnonymousClient() {
+  // Validate env vars when client is created, not at module load time
+  const url = SUPABASE_URL || getRequiredEnv('NEXT_PUBLIC_SUPABASE_URL');
+  const key = SUPABASE_ANON_KEY || getRequiredEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+
+  return createSupabaseClient<Database>(url, key);
 }
 

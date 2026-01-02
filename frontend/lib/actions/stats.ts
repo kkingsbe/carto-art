@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createAnonymousClient } from '@/lib/supabase/server';
 import { unstable_cache } from 'next/cache';
 
 export interface SiteStats {
@@ -23,7 +23,7 @@ async function fetchSiteStats(): Promise<SiteStats> {
   };
 
   try {
-    const supabase = await createClient();
+    const supabase = createAnonymousClient();
 
     // Run all queries in parallel for better performance
     const [
