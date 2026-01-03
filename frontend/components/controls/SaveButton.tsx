@@ -12,6 +12,7 @@ interface SaveButtonProps {
   hasUnsavedChanges?: boolean;
   isAuthenticated: boolean;
   disabled?: boolean;
+  className?: string;
 }
 
 export function SaveButton({
@@ -19,7 +20,8 @@ export function SaveButton({
   currentMapName,
   hasUnsavedChanges,
   isAuthenticated,
-  disabled
+  disabled,
+  className
 }: SaveButtonProps) {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
@@ -81,7 +83,8 @@ export function SaveButton({
             'flex items-center gap-2 px-4 py-2 rounded-full font-medium transition-all',
             'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400',
             'hover:bg-gray-200 dark:hover:bg-gray-700',
-            'disabled:opacity-50 disabled:cursor-not-allowed'
+            'disabled:opacity-50 disabled:cursor-not-allowed',
+            className
           )}
           onClick={handleSaveClick}
         >
@@ -103,9 +106,10 @@ export function SaveButton({
           hasUnsavedChanges
             ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg'
             : currentMapName
-            ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750',
-          'disabled:opacity-70 disabled:cursor-wait disabled:hover:shadow-md'
+              ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750',
+          'disabled:opacity-70 disabled:cursor-wait disabled:hover:shadow-md',
+          className
         )}
         title={currentMapName ? `Save "${currentMapName}"` : 'Save as new project'}
       >
@@ -115,7 +119,7 @@ export function SaveButton({
         )}>
           <Save className="h-4 w-4" />
         </div>
-        
+
         {isSaving && (
           <div className="absolute left-4 top-1/2 -translate-y-1/2">
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -134,7 +138,7 @@ export function SaveButton({
         )}>
           {isSaving ? 'Saving...' : showSuccess ? 'Saved!' : currentMapName ? 'Save' : 'Save Project'}
         </span>
-        
+
         {hasUnsavedChanges && (
           <span className="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
         )}
@@ -155,7 +159,7 @@ export function SaveButton({
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                 Save Project
               </h2>
-              
+
               <form onSubmit={handleDialogSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

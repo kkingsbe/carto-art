@@ -56,8 +56,8 @@ export function MapPreview({
     longitude: location.center[0],
     latitude: location.center[1],
     zoom: effectiveZoom,
-    pitch: layers?.buildings3D ? (layers.buildings3DPitch ?? 45) : 0,
-    bearing: layers?.buildings3D ? (layers.buildings3DBearing ?? 0) : 0,
+    pitch: layers?.buildings3DPitch ?? 0,
+    bearing: layers?.buildings3DBearing ?? 0,
   });
 
   // Sync with external location changes (e.g. search, button clicks)
@@ -73,21 +73,12 @@ export function MapPreview({
 
   // Sync pitch/bearing with 3D buildings layer settings
   useEffect(() => {
-    if (layers?.buildings3D) {
-      setViewState(prev => ({
-        ...prev,
-        pitch: layers.buildings3DPitch ?? 45,
-        bearing: layers.buildings3DBearing ?? 0,
-      }));
-    } else {
-      // Reset to flat view when 3D is disabled
-      setViewState(prev => ({
-        ...prev,
-        pitch: 0,
-        bearing: 0,
-      }));
-    }
-  }, [layers?.buildings3D, layers?.buildings3DPitch, layers?.buildings3DBearing]);
+    setViewState(prev => ({
+      ...prev,
+      pitch: layers?.buildings3DPitch ?? 0,
+      bearing: layers?.buildings3DBearing ?? 0,
+    }));
+  }, [layers?.buildings3DPitch, layers?.buildings3DBearing]);
 
 
   const handleLoad = useCallback(() => {

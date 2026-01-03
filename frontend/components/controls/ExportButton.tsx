@@ -16,9 +16,10 @@ interface ExportButtonProps {
   onExport: (resolution: ExportResolution) => void;
   isExporting: boolean;
   format: PosterConfig['format'];
+  className?: string;
 }
 
-export function ExportButton({ onExport, isExporting, format }: ExportButtonProps) {
+export function ExportButton({ onExport, isExporting, format, className }: ExportButtonProps) {
   const [showKofiModal, setShowKofiModal] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [localExportCount, setLocalExportCount] = useState(0);
@@ -75,7 +76,8 @@ export function ExportButton({ onExport, isExporting, format }: ExportButtonProp
             'group relative flex items-center gap-2 px-5 py-2.5 rounded-full font-medium shadow-lg transition-all duration-300',
             'bg-gray-900 text-white dark:bg-white dark:text-gray-900',
             'hover:shadow-xl hover:scale-105 active:scale-95',
-            'disabled:opacity-70 disabled:cursor-wait disabled:hover:scale-100 disabled:shadow-lg'
+            'disabled:opacity-70 disabled:cursor-wait disabled:hover:scale-100 disabled:shadow-lg',
+            className
           )}
         >
           <div className={cn(

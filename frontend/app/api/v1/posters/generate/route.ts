@@ -6,20 +6,37 @@ import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
 
-// Basic Validation Schema (You might want to make this stricter/more complete)
-// Using a loose schema for now to accept the existing PosterConfig structure
-const GeneratePosterSchema = z.object({
-    config: z.object({
-        palette: z.object({
-            background: z.string(),
-            text: z.string(),
-            // Add other critical fields as optional if needed, but background/text are usually essential
-        }).passthrough(),
-    }).passthrough(),
-    resolution: z.object({
-        width: z.number().min(100).max(10000),
-        height: z.number().min(100).max(10000),
-        pixelRatio: z.number().min(1).max(4).optional().default(1)
+import { getStyleById, getDefaultStyle } from '@/lib/styles';
+
+const SimplifiedPosterSchema = z.object({
+    location: z.object({
+        lat: z.number(),
+        lng: z.number()
+    }),
+    style: z.string().optional().default('minimal'),
+    camera: z.object({
+        pitch: z.number().min(0).max(60).default(0),
+        bearing: z.number().min(0).max(360).default(0),
+        zoom: z.number().min(0).max(20).default(12),
+    }).optional().default({ pitch: 0, bearing: 0, zoom: 12 }),
+    options: z.object({
+        buildings_3d: z.boolean().default(false),
+        high_res: z.boolean().default(false),
+        streets: z.boolean().default(true),
+        water: z.boolean().default(true),
+        parks: z.boolean().default(true),
+        buildings: z.boolean().default(true),
+        labels: z.boolean().default(true),
+        background: z.boolean().default(true),
+    }).optional().default({
+        buildings_3d: false,
+        high_res: false,
+        streets: true,
+        water: true,
+        parks: true,
+        buildings: true,
+        labels: true,
+        background: true
     })
 });
 
@@ -36,10 +53,10 @@ export async function POST(req: NextRequest) {
                 'unauthorized': 401,
                 'rate_limited': 429,
                 'server_error': 500
-            };
+            } as const;
             return NextResponse.json(
                 { error: authResult.reason === 'rate_limited' ? 'Too Many Requests' : 'Unauthorized', message: authResult.message },
-                { status: statusMap[authResult.reason] }
+                { status: statusMap[authResult.reason as keyof typeof statusMap] || 500 }
             );
         }
         const authContext = authResult.context;
@@ -48,12 +65,6 @@ export async function POST(req: NextRequest) {
         // 2. Parse Body
         const rawBody = await req.text();
         console.log(`[PosterDebug] Request from ${authContext.userId} - Body size: ${rawBody.length} bytes`);
-
-        if (rawBody.length > 0) {
-            console.log(`[PosterDebug] Raw Body Preview: ${rawBody.slice(0, 500)}`);
-        } else {
-            console.warn(`[PosterDebug] WARNING: Received EMPTY body for requestId ${requestId}`);
-        }
 
         let body;
         try {
@@ -66,7 +77,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const validation = GeneratePosterSchema.safeParse(body);
+        const validation = SimplifiedPosterSchema.safeParse(body);
 
         if (!validation.success) {
             console.error(`[PosterDebug] Validation failed for ${requestId}:`, JSON.stringify(validation.error.flatten(), null, 2));
@@ -76,8 +87,67 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const { config, resolution } = validation.data;
-        const { width, height, pixelRatio } = resolution;
+        const data = validation.data;
+
+        // 3. Map simplified input to full PosterConfig
+        const selectedStyle = getStyleById(data.style) || getDefaultStyle();
+
+        const config: any = {
+            location: {
+                center: [data.location.lng, data.location.lat],
+                zoom: data.camera.zoom,
+                name: "API Request", // Default name
+                bounds: [[data.location.lng - 0.1, data.location.lat - 0.1], [data.location.lng + 0.1, data.location.lat + 0.1]] // Dummy bounds, renderer uses center/zoom
+            },
+            style: {
+                id: selectedStyle.id,
+                name: selectedStyle.name
+            },
+            palette: selectedStyle.defaultPalette,
+            layers: {
+                streets: data.options.streets,
+                buildings: data.options.buildings,
+                water: data.options.water,
+                parks: data.options.parks,
+                labels: data.options.labels,
+                buildings3D: data.options.buildings_3d,
+                buildings3DPitch: data.camera.pitch,
+                buildings3DBearing: data.camera.bearing,
+                // defaults for others
+                terrain: false,
+                marker: false,
+                labelSize: 1,
+                roadWeight: 1,
+                labelsCities: data.options.labels
+            },
+            format: {
+                aspectRatio: '2:3',
+                orientation: 'portrait',
+                margin: 5,
+                borderStyle: 'none'
+            },
+            typography: selectedStyle.defaultPalette.text ? {
+                titleFont: selectedStyle.recommendedFonts?.[0] || 'Inter',
+                titleSize: 5,
+                titleWeight: 800,
+                titleLetterSpacing: 0.08,
+                titleAllCaps: true,
+                subtitleFont: selectedStyle.recommendedFonts?.[0] || 'Inter',
+                subtitleSize: 2.5,
+                subtitleWeight: 400,
+                subtitleLetterSpacing: 0.2,
+                showTitle: true,
+                showSubtitle: true,
+                showCoordinates: true,
+                position: 'bottom'
+            } : undefined
+        };
+
+        // Resolution handling
+        const pixelRatio = data.options.high_res ? 3 : 1;
+        const width = 2400;
+        const height = 3600;
+
 
         // 3. Launch Browser & Render
         // Note: Vercel functions have a timeout (10s hobby, 60s pro). 
@@ -249,7 +319,7 @@ export async function POST(req: NextRequest) {
             resource_type: 'poster_generation',
             credits_used: 1, // Or calculate based on resolution
             response_time_ms: duration,
-            request_metadata: { resolution },
+            request_metadata: { resolution: { width, height, pixelRatio } },
         }).then(({ error }: { error: any }) => {
             if (error) logger.error('Failed to log API usage', { error });
         });

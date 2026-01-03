@@ -11,13 +11,15 @@ interface SaveCopyButtonProps {
   currentMapName?: string | null;
   isAuthenticated: boolean;
   disabled?: boolean;
+  className?: string;
 }
 
 export function SaveCopyButton({
   onSave,
   currentMapName,
   isAuthenticated,
-  disabled
+  disabled,
+  className
 }: SaveCopyButtonProps) {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
@@ -82,7 +84,8 @@ export function SaveCopyButton({
             'flex items-center gap-2 px-4 py-2 rounded-full font-medium transition-all',
             'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400',
             'hover:bg-gray-200 dark:hover:bg-gray-700',
-            'disabled:opacity-50 disabled:cursor-not-allowed'
+            'disabled:opacity-50 disabled:cursor-not-allowed',
+            className
           )}
           onClick={handleSaveCopyClick}
         >
@@ -104,7 +107,8 @@ export function SaveCopyButton({
           'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300',
           'border border-gray-200 dark:border-gray-700',
           'hover:bg-gray-50 dark:hover:bg-gray-750 hover:shadow-lg',
-          'disabled:opacity-70 disabled:cursor-wait disabled:hover:shadow-md'
+          'disabled:opacity-70 disabled:cursor-wait disabled:hover:shadow-md',
+          className
         )}
         title="Create a copy of this map"
       >

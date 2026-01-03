@@ -147,13 +147,34 @@ export const openApiSpec = {
                             schema: {
                                 type: 'object',
                                 properties: {
-                                    config: { $ref: '#/components/schemas/PosterConfig' },
-                                    resolution: {
+                                    location: {
+                                        type: 'object',
+                                        required: ['lat', 'lng'],
+                                        properties: {
+                                            lat: { type: 'number', example: 40.7128 },
+                                            lng: { type: 'number', example: -74.0060 }
+                                        }
+                                    },
+                                    style: { type: 'string', example: 'blueprint', default: 'minimal' },
+                                    camera: {
                                         type: 'object',
                                         properties: {
-                                            width: { type: 'number', default: 2400 },
-                                            height: { type: 'number', default: 3600 },
-                                            pixelRatio: { type: 'number', default: 1 }
+                                            pitch: { type: 'number', minimum: 0, maximum: 60, default: 0 },
+                                            bearing: { type: 'number', minimum: 0, maximum: 360, default: 0 },
+                                            zoom: { type: 'number', minimum: 0, maximum: 20, default: 12 }
+                                        }
+                                    },
+                                    options: {
+                                        type: 'object',
+                                        properties: {
+                                            buildings_3d: { type: 'boolean', default: false },
+                                            high_res: { type: 'boolean', default: false },
+                                            streets: { type: 'boolean', default: true },
+                                            water: { type: 'boolean', default: true },
+                                            parks: { type: 'boolean', default: true },
+                                            buildings: { type: 'boolean', default: true },
+                                            labels: { type: 'boolean', default: true },
+                                            background: { type: 'boolean', default: true }
                                         }
                                     }
                                 }

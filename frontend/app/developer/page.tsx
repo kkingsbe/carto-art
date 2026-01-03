@@ -170,14 +170,27 @@ export default function DeveloperPage() {
                                     icon: <Rocket className="w-6 h-6" />,
                                     title: "CDN Distribution",
                                     description: "All generated assets are automatically uploaded to our globally distributed edge network."
+                                },
+                                {
+                                    icon: <Cpu className="w-6 h-6" />,
+                                    title: "MCP Protocol",
+                                    description: "Standardized tool definitions for AI Agents. Generate maps directly in conversation.",
+                                    link: "/developer/mcp"
                                 }
                             ].map((f, i) => (
-                                <div key={i} className="glass-card p-8 rounded-2xl hover:border-[#c9a962]/30 transition-all duration-500 group">
-                                    <div className="w-12 h-12 rounded-xl bg-[#c9a962]/10 flex items-center justify-center text-[#c9a962] mb-6 group-hover:scale-110 group-hover:bg-[#c9a962]/20 transition-transform">
-                                        {f.icon}
+                                <div key={i} className="group relative">
+                                    <div className="glass-card p-8 rounded-2xl hover:border-[#c9a962]/30 transition-all duration-500 h-full flex flex-col">
+                                        <div className="w-12 h-12 rounded-xl bg-[#c9a962]/10 flex items-center justify-center text-[#c9a962] mb-6 group-hover:scale-110 group-hover:bg-[#c9a962]/20 transition-transform">
+                                            {f.icon}
+                                        </div>
+                                        <h3 className="text-xl font-bold mb-4">{f.title}</h3>
+                                        <p className="text-gray-400 leading-relaxed mb-6 flex-grow">{f.description}</p>
+                                        {(f as any).link && (
+                                            <Link href={(f as any).link} className="inline-flex items-center gap-2 text-[#c9a962] text-sm font-bold hover:gap-3 transition-all">
+                                                Setup MCP <ArrowRight className="w-4 h-4" />
+                                            </Link>
+                                        )}
                                     </div>
-                                    <h3 className="text-xl font-bold mb-4">{f.title}</h3>
-                                    <p className="text-gray-400 leading-relaxed">{f.description}</p>
                                 </div>
                             ))}
                         </div>

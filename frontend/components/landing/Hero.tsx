@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Map, Sparkles, ChevronRight } from 'lucide-react';
+import { ArrowRight, Map, Sparkles, ChevronRight, Cpu } from 'lucide-react';
 import { Background3D } from '@/components/landing/3DBackground';
 import { Button } from '@/components/ui/button';
 
@@ -55,6 +55,17 @@ export function Hero() {
                 className="h-14 px-8 text-lg border-[#d4cfc4]/30 text-[#d4cfc4] hover:bg-white/5 hover:text-[#f5f0e8] rounded-full backdrop-blur-sm transition-all duration-300"
               >
                 Explore Gallery
+              </Button>
+            </Link>
+
+            <Link href="/developer/mcp">
+              <Button
+                variant="ghost"
+                size="lg"
+                className="h-14 px-6 text-[#c9a962] hover:bg-[#c9a962]/10 rounded-full transition-all duration-300 gap-2"
+              >
+                <Cpu className="w-5 h-5" />
+                MCP Server
               </Button>
             </Link>
           </div>

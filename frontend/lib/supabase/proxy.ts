@@ -8,7 +8,7 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
-  // Validate env vars when middleware runs, not at module load time
+  // Validate env vars when proxy runs, not at module load time
   const url = SUPABASE_URL || getRequiredEnv('NEXT_PUBLIC_SUPABASE_URL');
   const key = SUPABASE_ANON_KEY || getRequiredEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY');
 

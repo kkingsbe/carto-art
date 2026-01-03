@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { SaveButton } from '@/components/controls/SaveButton';
 import { SaveCopyButton } from '@/components/controls/SaveCopyButton';
 import { ExportButton } from '@/components/controls/ExportButton';
-import type { FormatOptions } from '@/types/poster';
+import type { PosterConfig } from '@/types/poster';
 
 interface EditorToolbarProps {
     onUndo: () => void;
@@ -27,7 +27,7 @@ interface EditorToolbarProps {
     currentMapName: string | null;
     hasUnsavedChanges?: boolean;
     isAuthenticated: boolean;
-    format: FormatOptions;
+    format: PosterConfig['format'];
     currentMapId: string | null;
 }
 
