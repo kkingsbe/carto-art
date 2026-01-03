@@ -98,6 +98,12 @@ const poster = await client.posters.generate({
     bearing: 90,    // Rotation (0-360)
     zoom: 14        // Zoom level (1-20)
   },
+  text: {
+      title: 'LONDON',
+      subtitle: 'United Kingdom',
+      position: 'bottom',
+      show_coordinates: true
+  },
   options: {
     high_res: true,       // Generate high-resolution output
     buildings_3d: true,   // Enable 3D buildings
@@ -172,6 +178,14 @@ Generate a new map poster.
 | `location.lat` | `number` | Yes | Latitude (-90 to 90) |
 | `location.lng` | `number` | Yes | Longitude (-180 to 180) |
 | `style` | `string` | No | Style ID (e.g., 'minimal', 'vibrant') |
+| `text` | `PosterText` | No | Text overlay configuration |
+| `text.title` | `string` | No | Main title text |
+| `text.subtitle` | `string` | No | Subtitle text |
+| `text.position` | `'top' \| 'bottom' \| 'center'` | No | Text position (default: 'bottom') |
+| `text.show_title` | `boolean` | No | Show/hide title |
+| `text.show_subtitle` | `boolean` | No | Show/hide subtitle |
+| `text.show_coordinates` | `boolean` | No | Show/hide coordinates |
+| `text.color` | `string` | No | Text color hex code |
 | `camera` | `PosterCamera` | No | Camera configuration |
 | `camera.pitch` | `number` | No | Tilt angle (0-60 degrees) |
 | `camera.bearing` | `number` | No | Rotation (0-360 degrees) |
@@ -185,6 +199,16 @@ Generate a new map poster.
 | `options.buildings` | `boolean` | No | Show building footprints |
 | `options.labels` | `boolean` | No | Show labels |
 | `options.background` | `boolean` | No | Include background |
+| `options.terrain` | `boolean` | No | Show terrain |
+| `options.terrain_under_water` | `boolean` | No | Show bathymetry |
+| `options.contours` | `boolean` | No | Show contour lines |
+| `options.boundaries` | `boolean` | No | Show administrative boundaries |
+| `options.population` | `boolean` | No | Show population density |
+| `options.pois` | `boolean` | No | Show points of interest |
+| `options.marker` | `boolean` | No | Show location marker |
+| `options.landcover_wood` | `boolean` | No | Show woodland |
+| `options.landcover_grass` | `boolean` | No | Show grass |
+| `options.landuse_forest` | `boolean` | No | Show forest landuse |
 
 **Returns:**
 

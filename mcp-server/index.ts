@@ -32,7 +32,13 @@ const GeneratePosterArgumentsSchema = z.object({
     zoom: z.number().optional().describe("The zoom level (1-20)"),
     pitch: z.number().optional().describe("The pitch of the camera (0-60)"),
     bearing: z.number().optional().describe("The bearing of the camera (0-360)"),
+    title: z.string().optional().describe("Custom title for the map"),
+    subtitle: z.string().optional().describe("Custom subtitle for the map"),
     buildings_3d: z.boolean().optional().describe("Whether to enable 3D buildings"),
+    terrain: z.boolean().optional().describe("Whether to show terrain"),
+    water: z.boolean().optional().describe("Whether to show water"),
+    parks: z.boolean().optional().describe("Whether to show parks"),
+    streets: z.boolean().optional().describe("Whether to show streets"),
 });
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -49,7 +55,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                         zoom: { type: "number", description: "The zoom level (1-20)" },
                         pitch: { type: "number", description: "The pitch of the camera (0-60)" },
                         bearing: { type: "number", description: "The bearing of the camera (0-360)" },
+                        title: { type: "string", description: "Custom title for the map" },
+                        subtitle: { type: "string", description: "Custom subtitle for the map" },
                         buildings_3d: { type: "boolean", description: "Whether to enable 3D buildings" },
+                        terrain: { type: "boolean", description: "Whether to show terrain" },
+                        water: { type: "boolean", description: "Whether to show water" },
+                        parks: { type: "boolean", description: "Whether to show parks" },
+                        streets: { type: "boolean", description: "Whether to show streets" },
                     },
                     required: ["location"],
                 },
@@ -115,9 +127,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     bearing: args.bearing || 0,
                     zoom: args.zoom || 12,
                 },
+                text: {
+                    title: args.title,
+                    subtitle: args.subtitle,
+                },
                 options: {
-                    buildings_3d: args.buildings_3d || false,
                     high_res: true,
+                    buildings_3d: args.buildings_3d,
+                    terrain: args.terrain,
+                    water: args.water,
+                    parks: args.parks,
+                    streets: args.streets,
                 }
             };
 

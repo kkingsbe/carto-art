@@ -164,9 +164,22 @@ export const openApiSpec = {
                                             zoom: { type: 'number', minimum: 0, maximum: 20, default: 12 }
                                         }
                                     },
+                                    text: {
+                                        type: 'object',
+                                        properties: {
+                                            title: { type: 'string', example: 'New York' },
+                                            subtitle: { type: 'string', example: 'United States' },
+                                            show_title: { type: 'boolean', default: true },
+                                            show_subtitle: { type: 'boolean', default: true },
+                                            show_coordinates: { type: 'boolean', default: true },
+                                            position: { type: 'string', enum: ['top', 'bottom', 'center'], default: 'bottom' },
+                                            color: { type: 'string', example: '#000000' }
+                                        }
+                                    },
                                     options: {
                                         type: 'object',
                                         properties: {
+                                            // Core
                                             buildings_3d: { type: 'boolean', default: false },
                                             high_res: { type: 'boolean', default: false },
                                             streets: { type: 'boolean', default: true },
@@ -174,7 +187,21 @@ export const openApiSpec = {
                                             parks: { type: 'boolean', default: true },
                                             buildings: { type: 'boolean', default: true },
                                             labels: { type: 'boolean', default: true },
-                                            background: { type: 'boolean', default: true }
+                                            background: { type: 'boolean', default: true },
+
+                                            // Advanced
+                                            terrain: { type: 'boolean', default: false },
+                                            terrain_under_water: { type: 'boolean', default: false },
+                                            contours: { type: 'boolean', default: false },
+                                            boundaries: { type: 'boolean', default: false },
+                                            population: { type: 'boolean', default: false },
+                                            pois: { type: 'boolean', default: false },
+                                            marker: { type: 'boolean', default: false },
+
+                                            // Landcover/Landuse
+                                            landcover_wood: { type: 'boolean', default: false },
+                                            landcover_grass: { type: 'boolean', default: false },
+                                            landuse_forest: { type: 'boolean', default: false }
                                         }
                                     }
                                 }

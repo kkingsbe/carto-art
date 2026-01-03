@@ -43,15 +43,26 @@ export async function GET(request: NextRequest) {
     // We will loop until we get < PAGE_SIZE or hit the end of our time window (implicit in query)
 
     while (hasMore) {
-        let query = supabase
-            .from('page_events')
-            .select('created_at')
-            .gte('created_at', startDate.toISOString())
-            .order('created_at', { ascending: true })
-            .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+        let query;
 
-        if (eventType !== 'all') {
-            query = query.eq('event_type', eventType);
+        if (eventType === 'api_request') {
+            query = supabase
+                .from('api_usage')
+                .select('created_at')
+                .gte('created_at', startDate.toISOString())
+                .order('created_at', { ascending: true })
+                .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+        } else {
+            query = supabase
+                .from('page_events')
+                .select('created_at')
+                .gte('created_at', startDate.toISOString())
+                .order('created_at', { ascending: true })
+                .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+
+            if (eventType !== 'all') {
+                query = query.eq('event_type', eventType);
+            }
         }
 
         const { data: events, error } = await query;
