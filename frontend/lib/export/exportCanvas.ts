@@ -89,7 +89,9 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
 
     map.jumpTo({
       center: config.location.center,
-      zoom: originalZoom + zoomOffset
+      zoom: originalZoom + zoomOffset,
+      pitch: config.layers.buildings3DPitch ?? 0,
+      bearing: config.layers.buildings3DBearing ?? 0
     });
 
     await new Promise<void>(resolve => {

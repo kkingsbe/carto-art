@@ -60,6 +60,11 @@ export function getBaseLayerToggles(
       layerIds: customLayerIds.buildings || ['buildings'],
     },
     {
+      id: 'buildings3D',
+      name: '3D Buildings',
+      layerIds: customLayerIds.buildings3D || ['buildings-3d'],
+    },
+    {
       id: 'water',
       name: 'Water',
       layerIds: customLayerIds.water || ['water', 'waterway'],

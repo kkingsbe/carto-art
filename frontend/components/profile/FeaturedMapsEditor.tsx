@@ -53,28 +53,28 @@ export function FeaturedMapsEditor({ allMaps, initialFeaturedIds }: FeaturedMaps
     const publishedMaps = allMaps.filter(m => m.is_published);
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-100 dark:border-gray-700">
+        <div className="glass-card rounded-xl p-6 border border-white/5 bg-white/5">
             <div className="flex items-center justify-between mb-4">
                 <div>
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                        <Star className="w-5 h-5 text-yellow-500" />
+                    <h2 className="text-lg font-semibold text-[#f5f0e8] flex items-center gap-2">
+                        <Star className="w-5 h-5 text-[#c9a962]" />
                         Featured Maps
                     </h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Select up to 3 published maps to highlight on your profile
+                    <p className="text-sm text-[#d4cfc4]/60">
+                        Select up to 3 published maps to highlight
                     </p>
                 </div>
                 <button
                     onClick={handleSave}
                     disabled={isPending}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                    className="px-4 py-2 bg-[#c9a962] text-[#0a0f1a] rounded-lg text-sm font-bold hover:bg-[#d4b472] disabled:opacity-50 transition-colors"
                 >
-                    {isPending ? 'Saving...' : 'Save Changes'}
+                    {isPending ? 'Saving...' : 'Save'}
                 </button>
             </div>
 
             {publishedMaps.length === 0 ? (
-                <div className="text-center py-8 text-gray-500 bg-gray-50 dark:bg-gray-900 rounded-lg border border-dashed border-gray-200 dark:border-gray-700">
+                <div className="text-center py-8 text-[#d4cfc4]/40 bg-white/5 rounded-lg border border-dashed border-white/10 text-sm">
                     Publish some maps to feature them!
                 </div>
             ) : (
@@ -93,49 +93,50 @@ export function FeaturedMapsEditor({ allMaps, initialFeaturedIds }: FeaturedMaps
                                 onClick={() => toggleFeatured(map.id)}
                                 className={`
                                     relative cursor-pointer group overflow-hidden transition-all duration-500
-                                    bg-white dark:bg-gray-800/40 rounded-2xl border
-                                    shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_30px_-4px_rgba(0,0,0,0.3)]
-                                    hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.2)] dark:hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.4)]
-                                    hover:scale-[1.01] 
+                                    bg-[#141d2e] rounded-xl border
+                                    shadow-lg
+                                    hover:scale-[1.02] 
                                     ${isFeatured
-                                        ? 'border-indigo-500 ring-4 ring-indigo-500/20'
-                                        : 'border-gray-100 dark:border-white/5 hover:border-blue-500/30 dark:hover:border-blue-400/20'
+                                        ? 'border-[#c9a962] ring-1 ring-[#c9a962]/50'
+                                        : 'border-white/5 hover:border-white/20'
                                     }
                                 `}
                             >
-                                <div className="relative bg-gray-50 dark:bg-gray-900/50 w-full overflow-hidden" style={{ minHeight: '150px' }}>
+                                <div className="relative bg-[#0a0f1a] w-full overflow-hidden aspect-[2/3]">
                                     {map.thumbnail_url ? (
                                         <>
                                             <Image
                                                 src={map.thumbnail_url}
                                                 alt={map.title}
                                                 fill
-                                                className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                                                className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                                             />
                                             {/* Gradient overlay */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-500" />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1a] via-transparent to-transparent opacity-80 group-hover:opacity-60 transition-opacity duration-500" />
                                         </>
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs font-medium tracking-wide aspect-[2/3]">
+                                        <div className="w-full h-full flex items-center justify-center text-[#d4cfc4]/20 text-xs font-medium tracking-wide">
                                             NO PREVIEW
                                         </div>
                                     )}
 
                                     {/* Selection Overlay */}
                                     <div className={`
-                                        absolute inset-0 bg-black/40 transition-opacity flex items-center justify-center
+                                        absolute inset-0 bg-[#0a0f1a]/60 transition-opacity flex items-center justify-center
                                         ${isFeatured ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
                                     `}>
                                         {isFeatured && (
-                                            <div className="w-10 h-10 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold shadow-lg text-lg">
+                                            <div className="w-10 h-10 rounded-full bg-[#c9a962] text-[#0a0f1a] flex items-center justify-center font-bold shadow-[0_0_15px_rgba(201,169,98,0.4)] text-lg animate-bounce-in">
                                                 {selectionOrder}
                                             </div>
                                         )}
                                     </div>
                                 </div>
 
-                                <div className="p-3 text-sm font-semibold truncate bg-white dark:bg-gray-900 text-gray-900 dark:text-white/90">
-                                    {map.title}
+                                <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-[#0a0f1a] to-transparent">
+                                    <div className="text-sm font-semibold truncate text-[#f5f0e8]">
+                                        {map.title}
+                                    </div>
                                 </div>
                             </div>
                         );

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Masonry from 'react-masonry-css';
-import { Trash2, Edit, Eye, EyeOff } from 'lucide-react';
+import { Trash2, Edit, Eye, EyeOff, Map as MapIcon } from 'lucide-react';
 import { Button } from '@/components/ui/control-components';
 import { PublishModal } from './PublishModal';
 import { MapCard } from '@/components/feed/MapCard';
@@ -99,12 +99,18 @@ export function MyMapsList({ maps, userProfile, onDelete, onPublish, onUnpublish
 
   if (maps.length === 0) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500 dark:text-gray-400 mb-4">
-          You haven't saved any maps yet.
+      <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+        <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mb-6 animate-float">
+          <MapIcon className="w-12 h-12 text-[#c9a962]/50" />
+        </div>
+        <h3 className="text-xl font-bold text-[#f5f0e8] mb-2">No Maps Yet</h3>
+        <p className="text-[#d4cfc4]/60 max-w-md mb-8">
+          You haven't created any maps yet. Start your journey by designing your first custom map poster.
         </p>
         <Link href="/editor">
-          <Button>Create Your First Map</Button>
+          <Button className="bg-[#c9a962] text-[#0a0f1a] hover:bg-[#d4b472] border-none font-bold px-8 py-6 text-lg">
+            Create Your First Map
+          </Button>
         </Link>
       </div>
     );
@@ -123,11 +129,11 @@ export function MyMapsList({ maps, userProfile, onDelete, onPublish, onUnpublish
               key={map.id}
               map={toFeedMap(map, userProfile)}
               actionSlot={
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mt-2">
                   {map.is_published ? (
                     <>
                       <Link href={`/map/${map.id}`} className="flex-1">
-                        <Button variant="outline" size="sm" className="w-full">
+                        <Button variant="outline" size="sm" className="w-full border-white/20 bg-white/5 hover:bg-white/10 text-[#f5f0e8]">
                           <Eye className="w-4 h-4 mr-2" />
                           View
                         </Button>
@@ -137,6 +143,7 @@ export function MyMapsList({ maps, userProfile, onDelete, onPublish, onUnpublish
                         size="sm"
                         onClick={() => handleUnpublish(map.id)}
                         disabled={publishingId === map.id}
+                        className="border-white/20 bg-white/5 hover:bg-white/10 text-[#f5f0e8]"
                       >
                         <EyeOff className="w-4 h-4" />
                       </Button>
@@ -144,7 +151,7 @@ export function MyMapsList({ maps, userProfile, onDelete, onPublish, onUnpublish
                   ) : (
                     <>
                       <Link href={`/editor?mapId=${map.id}`} className="flex-1">
-                        <Button variant="outline" size="sm" className="w-full">
+                        <Button variant="outline" size="sm" className="w-full border-white/20 bg-white/5 hover:bg-white/10 text-[#f5f0e8]">
                           <Edit className="w-4 h-4 mr-2" />
                           Edit
                         </Button>
@@ -154,6 +161,7 @@ export function MyMapsList({ maps, userProfile, onDelete, onPublish, onUnpublish
                         size="sm"
                         onClick={() => handlePublishClick(map)}
                         disabled={publishingId === map.id}
+                        className="bg-[#c9a962] text-[#0a0f1a] hover:bg-[#d4b472] border-none font-bold"
                       >
                         {publishingId === map.id ? 'Publishing...' : 'Publish'}
                       </Button>
@@ -164,6 +172,7 @@ export function MyMapsList({ maps, userProfile, onDelete, onPublish, onUnpublish
                     size="sm"
                     onClick={() => handleDelete(map.id)}
                     disabled={deletingId === map.id}
+                    className="hover:bg-red-500/20 hover:text-red-400 text-[#d4cfc4]/50"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>

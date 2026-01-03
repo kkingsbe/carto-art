@@ -25,12 +25,12 @@ function rgbToHex(r: number, g: number, b: number): string {
 function adjustColorHue(hex: string, degrees: number): string {
   const rgb = hexToRgb(hex);
   if (!rgb) return hex;
-  
+
   // Simple hue adjustment by rotating RGB values (approximation)
   // For small adjustments, we'll just shift the color slightly
   const [r, g, b] = rgb;
   const factor = degrees / 360;
-  
+
   // Shift towards yellow (increase green) or blue (increase blue)
   if (degrees > 0) {
     // Shift towards yellow: increase green, decrease blue slightly
@@ -52,7 +52,7 @@ function adjustColorHue(hex: string, degrees: number): string {
 function lightenColor(hex: string, amount: number): string {
   const rgb = hexToRgb(hex);
   if (!rgb) return hex;
-  
+
   const [r, g, b] = rgb;
   return rgbToHex(
     Math.min(255, r + (255 - r) * amount),
@@ -64,7 +64,7 @@ function lightenColor(hex: string, amount: number): string {
 function darkenColor(hex: string, amount: number): string {
   const rgb = hexToRgb(hex);
   if (!rgb) return hex;
-  
+
   const [r, g, b] = rgb;
   return rgbToHex(
     Math.max(0, r * (1 - amount)),
@@ -76,10 +76,10 @@ function darkenColor(hex: string, amount: number): string {
 function desaturateColor(hex: string, amount: number): string {
   const rgb = hexToRgb(hex);
   if (!rgb) return hex;
-  
+
   const [r, g, b] = rgb;
   const gray = r * 0.299 + g * 0.587 + b * 0.114;
-  
+
   return rgbToHex(
     Math.round(r + (gray - r) * amount),
     Math.round(g + (gray - g) * amount),
@@ -90,9 +90,42 @@ function desaturateColor(hex: string, amount: number): string {
 /**
  * Helper to scale a value that might be a number or a zoom interpolation expression
  */
+
+function saturateColor(hex: string, amount: number): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+
+  const [r, g, b] = rgb;
+  const gray = r * 0.299 + g * 0.587 + b * 0.114;
+
+  return rgbToHex(
+    Math.max(0, Math.min(255, Math.round(gray + (r - gray) * (1 + amount)))),
+    Math.max(0, Math.min(255, Math.round(gray + (g - gray) * (1 + amount)))),
+    Math.max(0, Math.min(255, Math.round(gray + (b - gray) * (1 + amount))))
+  );
+}
+
+function mixColor(hex1: string, hex2: string, weight: number): string {
+  const rgb1 = hexToRgb(hex1);
+  const rgb2 = hexToRgb(hex2);
+  if (!rgb1 || !rgb2) return hex1;
+
+  const w = Math.min(1, Math.max(0, weight));
+  const w1 = 1 - w;
+
+  return rgbToHex(
+    Math.round(rgb1[0] * w1 + rgb2[0] * w),
+    Math.round(rgb1[1] * w1 + rgb2[1] * w),
+    Math.round(rgb1[2] * w1 + rgb2[2] * w)
+  );
+}
+
+/**
+ * Helper to scale a value that might be a number or a zoom interpolation expression
+ */
 function scaleExpression(expr: any, factor: number): any {
   if (typeof expr === 'number') return expr * factor;
-  
+
   // Handle modern interpolate expression
   if (Array.isArray(expr) && expr[0] === 'interpolate') {
     return expr.map((val: any, i: number) => {
@@ -103,7 +136,7 @@ function scaleExpression(expr: any, factor: number): any {
       return val;
     });
   }
-  
+
   // Handle legacy stops format
   if (expr && typeof expr === 'object' && expr.stops) {
     return {
@@ -111,7 +144,7 @@ function scaleExpression(expr: any, factor: number): any {
       stops: expr.stops.map((stop: [number, number]) => [stop[0], stop[1] * factor])
     };
   }
-  
+
   return expr;
 }
 
@@ -119,8 +152,8 @@ function scaleExpression(expr: any, factor: number): any {
  * Applies a color palette and layer visibility to a MapLibre style
  */
 export function applyPaletteToStyle(
-  style: any, 
-  palette: ColorPalette, 
+  style: any,
+  palette: ColorPalette,
   layers?: PosterConfig['layers'],
   layerToggles?: PosterStyle['layerToggles']
 ): any {
@@ -131,12 +164,17 @@ export function applyPaletteToStyle(
     return updatedStyle;
   }
 
+  if (!palette) {
+    console.warn('applyPaletteToStyle called without palette');
+    return updatedStyle;
+  }
+
   handleContourSource(updatedStyle);
   normalizeSpaceportsSource(updatedStyle);
-  
+
   // Ensure water layers always come after hillshade to hide terrain under water
   reorderLayersForWater(updatedStyle.layers);
-  
+
   if (layers && layerToggles) {
     applyVisibilityToggles(updatedStyle.layers, layers, layerToggles);
   } else if (layers) {
@@ -160,35 +198,45 @@ export function applyPaletteToStyle(
     updateLayerLayout(layer, layers);
   });
 
+  // Update global light from palette if building3D config exists
+  if (palette.building3D && updatedStyle.light) {
+    if (palette.building3D.lightColor) {
+      updatedStyle.light.color = palette.building3D.lightColor;
+    }
+    if (palette.building3D.lightIntensity !== undefined) {
+      updatedStyle.light.intensity = palette.building3D.lightIntensity;
+    }
+  }
+
   return updatedStyle;
 }
 
 function handleContourSource(style: any) {
   const contourSource = style.sources?.contours;
-  
+
   // If source doesn't exist at all, filter out layers
   if (!contourSource) {
-    style.layers = style.layers.filter((layer: any) => 
-      layer.id !== 'contours' && 
+    style.layers = style.layers.filter((layer: any) =>
+      layer.id !== 'contours' &&
       !layer.id.includes('contour') &&
       !layer.id.includes('bathymetry')
     );
     return;
   }
-  
+
   // If source exists but URL is empty, try to regenerate it at runtime
   // This handles cases where getBaseUrl() returned empty at module load time
   if (!contourSource.url || contourSource.url === '') {
     const url = getContourTileJsonUrl();
-    
+
     if (url) {
       // Set the URL if we can get it now (browser context has window.location)
       contourSource.url = url;
     } else {
       // Only filter if we're certain the key is missing
       // This should be rare if NEXT_PUBLIC_MAPTILER_KEY is set
-      style.layers = style.layers.filter((layer: any) => 
-        layer.id !== 'contours' && 
+      style.layers = style.layers.filter((layer: any) =>
+        layer.id !== 'contours' &&
         !layer.id.includes('contour') &&
         !layer.id.includes('bathymetry')
       );
@@ -219,17 +267,17 @@ function reorderLayersForWater(layers: any[]) {
   // Find indices of hillshade and water layers
   const hillshadeIndex = layers.findIndex((layer: any) => layer.id === 'hillshade' && layer.type === 'hillshade');
   const waterIndices: number[] = [];
-  
+
   layers.forEach((layer: any, index: number) => {
     if (layer.id === 'water' && layer.type === 'fill') {
       waterIndices.push(index);
     }
   });
-  
+
   // If hillshade exists and comes after any water layer, we need to reorder
   if (hillshadeIndex !== -1 && waterIndices.length > 0) {
     const firstWaterIndex = waterIndices[0];
-    
+
     // If hillshade comes after water, move it before water
     if (hillshadeIndex > firstWaterIndex) {
       const hillshadeLayer = layers[hillshadeIndex];
@@ -240,8 +288,8 @@ function reorderLayersForWater(layers: any[]) {
 }
 
 function applyVisibilityToggles(
-  styleLayers: any[], 
-  configLayers: PosterConfig['layers'], 
+  styleLayers: any[],
+  configLayers: PosterConfig['layers'],
   layerToggles: PosterStyle['layerToggles']
 ) {
   styleLayers.forEach((layer) => {
@@ -266,7 +314,7 @@ function applyVisibilityToggles(
     if (toggle) {
       const toggleValue = configLayers[toggle.id as keyof PosterConfig['layers']];
       const isVisible = Boolean(toggleValue);
-      
+
       // For bathymetry layers, we already set visibility above based on terrainUnderWater
       // Only override if this is a different toggle (not terrainUnderWater) that's disabled
       if (layer.id.includes('bathymetry')) {
@@ -296,9 +344,9 @@ function applyVisibilityToggles(
 }
 
 function updateLayerPaint(
-  layer: any, 
-  palette: ColorPalette, 
-  layers: PosterConfig['layers'] | undefined, 
+  layer: any,
+  palette: ColorPalette,
+  layers: PosterConfig['layers'] | undefined,
   labelAdjustment: number,
   roadWeightMultiplier: number
 ) {
@@ -313,10 +361,10 @@ function updateLayerPaint(
   // Hillshade
   if (id === 'hillshade' && type === 'hillshade') {
     const isDark = isColorDark(palette.background);
-    
+
     // Add exaggeration from config if available, clamped between 0 and 1
     const exaggeration = Math.min(Math.max(layers?.hillshadeExaggeration ?? 0.5, 0), 1);
-    
+
     if (palette.hillshade) {
       layer.paint = {
         ...layer.paint,
@@ -346,12 +394,12 @@ function updateLayerPaint(
     const baseOpacity = layer.paint?.['fill-opacity'] ?? 1;
     // If terrainUnderWater is disabled, force full opacity to hide hillshade
     // Otherwise, use the style's opacity (but ensure it's at least 0.95 to mostly hide hillshade)
-    const waterOpacity = terrainUnderWaterEnabled 
+    const waterOpacity = terrainUnderWaterEnabled
       ? Math.max(baseOpacity, 0.95) // Allow slight transparency only when underwater terrain is enabled
       : 1.0; // Full opacity when disabled to completely hide hillshade
-    
-    layer.paint = { 
-      ...layer.paint, 
+
+    layer.paint = {
+      ...layer.paint,
       'fill-color': palette.water,
       'fill-opacity': waterOpacity
     };
@@ -372,11 +420,11 @@ function updateLayerPaint(
 
   // Disable any water outline/border/casing layers that create halos
   // This catches layers from the base tile data that we don't explicitly create
-  if (type === 'line' && 
-      (id.includes('water-outline') || 
-       id.includes('water-border') || 
-       id.includes('water-casing') ||
-       (id.includes('water-line') && id !== 'waterway'))) {
+  if (type === 'line' &&
+    (id.includes('water-outline') ||
+      id.includes('water-border') ||
+      id.includes('water-casing') ||
+      (id.includes('water-line') && id !== 'waterway'))) {
     layer.paint = {
       ...layer.paint,
       'line-opacity': 0,
@@ -394,43 +442,75 @@ function updateLayerPaint(
   const baseGreenSpace = palette.greenSpace || palette.parks || '#90EE90';
   if (id.startsWith('landcover-') && type === 'fill') {
     let color = baseGreenSpace;
-    
-    // Apply subtle color variations for different landcover classes
+    let opacity = layer.paint?.['fill-opacity'] || 0.3;
+
     if (id === 'landcover-farmland') {
-      // Farmland: slightly more yellow/golden (shift towards yellow)
-      color = adjustColorHue(baseGreenSpace, 15); // Shift hue towards yellow
+      // Farmland: Mix greenSpace with a warm wheat/gold color
+      // #F5DEB3 is Wheat, #DAA520 is Goldenrod. let's range towards a warm earth tone.
+      // If base is dark (e.g. night mode), we might want to keep it subtle.
+      const isDark = isColorDark(palette.background);
+      const earthTone = isDark ? '#8B4513' : '#F4D03F'; // SaddleBrown or Sunflower Yellow
+      color = mixColor(baseGreenSpace, earthTone, 0.35); // 35% earth tone
+      opacity = 0.3;
     } else if (id === 'landcover-ice') {
-      // Ice: blue-tinted white/light blue
-      color = adjustColorHue(baseGreenSpace, -120); // Shift towards blue, then lighten
-      color = lightenColor(color, 0.4);
+      // Ice: White/Blue tint
+      color = '#F0F8FF'; // AliceBlue
+      if (isColorDark(palette.background)) {
+        color = '#1E90FF'; // DodgerBlue in dark mode
+      }
+      opacity = 0.45; // Reduced opacity to blend better
     } else if (id === 'landcover-wood') {
-      // Wood: deeper/darker green
-      color = darkenColor(baseGreenSpace, 0.2);
+      // Wood: Deeper, darker green.
+      color = darkenColor(baseGreenSpace, 0.25);
+      color = saturateColor(color, 0.1);
+      opacity = 0.45; // slightly higher opacity for density
+    } else if (id === 'landcover-grass') {
+      // Grass: Vibrant, fresh. 
+      // Maybe slightly lighter/yellower than base if base is generic
+      color = adjustColorHue(baseGreenSpace, 5);
+      color = saturateColor(color, 0.2);
     }
-    
-    layer.paint = { ...layer.paint, 'fill-color': color };
+
+    layer.paint = {
+      ...layer.paint,
+      'fill-color': color,
+      'fill-opacity': opacity
+    };
     return;
   }
 
   // Landuse layers
   if (id.startsWith('landuse-') && type === 'fill') {
     let color = baseGreenSpace;
-    
-    // Apply subtle color variations for different landuse classes
+    let opacity = layer.paint?.['fill-opacity'] || 0.3;
+
     if (id === 'landuse-forest') {
-      // Forest: deeper green
-      color = darkenColor(baseGreenSpace, 0.15);
-    } else if (id === 'landuse-orchard' || id === 'landuse-vineyard') {
-      // Orchard/Vineyard: lighter green or olive
-      color = adjustColorHue(baseGreenSpace, 25); // Slight shift towards yellow-green
-      color = lightenColor(color, 0.1);
+      // Forest: similar to Wood but maybe even denser
+      color = darkenColor(baseGreenSpace, 0.3);
+      color = saturateColor(color, 0.1);
+      opacity = 0.5;
+    } else if (id === 'landuse-orchard') {
+      // Orchard: organized vegetation, maybe olive tone
+      color = mixColor(baseGreenSpace, '#808000', 0.4); // Mix with Olive
+    } else if (id === 'landuse-vineyard') {
+      // Vineyard: similar to orchard but maybe more purple/red tint? 
+      // actually usually just green, but let's go with a warm green.
+      color = mixColor(baseGreenSpace, '#9ACD32', 0.3); // YellowGreen
     } else if (id === 'landuse-cemetery') {
-      // Cemetery: muted green
-      color = darkenColor(baseGreenSpace, 0.1);
-      color = desaturateColor(color, 0.2);
+      // Cemetery: Muted, respectful green
+      color = desaturateColor(baseGreenSpace, 0.4);
+      color = darkenColor(color, 0.1);
+    } else if (id === 'landuse-grass') {
+      // Grass (landuse): Match landcover-grass vibrancy
+      color = adjustColorHue(baseGreenSpace, 5);
+      color = saturateColor(color, 0.2);
     }
-    
-    layer.paint = { ...layer.paint, 'fill-color': color };
+
+    layer.paint = {
+      ...layer.paint,
+      'fill-color': color,
+      'fill-opacity': opacity
+    };
     return;
   }
 
@@ -438,8 +518,8 @@ function updateLayerPaint(
   if (id.includes('contour') || id.includes('topo')) {
     if (type === 'line') {
       const color = id.includes('index')
-        ? (palette.contourIndex || palette.contour || palette.secondary || palette.roads.secondary)
-        : (palette.contour || palette.secondary || palette.roads.secondary);
+        ? (palette.contourIndex || palette.contour || palette.secondary || palette.roads?.secondary || palette.text)
+        : (palette.contour || palette.secondary || palette.roads?.secondary || palette.text);
 
       layer.paint = {
         ...layer.paint,
@@ -466,7 +546,7 @@ function updateLayerPaint(
     const existingOpacity = layer.paint?.['fill-opacity'];
     layer.paint = {
       ...layer.paint,
-      'fill-color': palette.population || palette.accent || palette.primary || palette.roads.motorway,
+      'fill-color': palette.population || palette.accent || palette.primary || palette.roads?.motorway || palette.text,
       'fill-opacity': Array.isArray(existingOpacity) ? existingOpacity : (existingOpacity ?? 0.6),
     };
     return;
@@ -475,7 +555,7 @@ function updateLayerPaint(
   // Roads & Bridges
   if (id.startsWith('road-') || id.startsWith('bridge-') || id.startsWith('tunnel-')) {
     updateRoadLayer(layer, palette, labelAdjustment);
-    
+
     // Apply road weight multiplier correctly to interpolation arrays or numbers
     if (layer.paint?.['line-width']) {
       layer.paint['line-width'] = scaleExpression(layer.paint['line-width'], roadWeightMultiplier);
@@ -485,6 +565,49 @@ function updateLayerPaint(
 
   // Buildings
   if (id.includes('building')) {
+    if (id === 'buildings-3d' && type === 'fill-extrusion') {
+      const b3d = palette.building3D;
+      const heightScale = layers?.buildings3DHeightScale ?? 1.0;
+      const defaultHeight = layers?.buildings3DDefaultHeight ?? 6;
+
+      if (b3d) {
+        layer.paint = {
+          ...layer.paint,
+          'fill-extrusion-color': [
+            'interpolate',
+            ['linear'],
+            ['coalesce', ['get', 'render_height'], defaultHeight],
+            0, b3d.colorLow,
+            30, b3d.colorMid,
+            100, b3d.colorHigh,
+          ],
+          'fill-extrusion-opacity': b3d.opacity,
+          'fill-extrusion-height': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            layer.minzoom || 8, 0,
+            (layer.minzoom || 8) + 0.5, ['*', heightScale, ['coalesce', ['get', 'render_height'], defaultHeight]],
+          ],
+        };
+      } else {
+        // Fallback if no 3D-specific palette exists
+        layer.paint = {
+          ...layer.paint,
+          'fill-extrusion-color': palette.buildings || palette.primary || palette.text,
+          'fill-extrusion-opacity': 1.0,
+          'fill-extrusion-height': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            layer.minzoom || 8, 0,
+            (layer.minzoom || 8) + 0.5, ['*', heightScale, ['coalesce', ['get', 'render_height'], defaultHeight]],
+          ],
+        };
+      }
+      return;
+    }
+
     if (type === 'fill') {
       layer.paint = {
         ...layer.paint,
@@ -514,7 +637,7 @@ function updateLayerPaint(
     // Determine label type and set appropriate halo settings for fade-out effect
     let haloWidth: number;
     let haloBlur: number;
-    
+
     if (id === 'labels-country') {
       // Country labels: largest halos for maximum legibility
       haloWidth = 3.5;
@@ -532,10 +655,10 @@ function updateLayerPaint(
       haloWidth = 2.25;
       haloBlur = 1.25;
     }
-    
+
     // Preserve existing text-opacity if set, otherwise default to 0.9
     const textOpacity = layer.paint?.['text-opacity'] ?? 0.9;
-    
+
     layer.paint = {
       ...layer.paint,
       'text-color': palette.text,
@@ -680,9 +803,9 @@ function updateRoadLayer(layer: any, palette: ColorPalette, labelAdjustment: num
   // Handle specific road classes
   const classes = ['motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'residential', 'service'];
   const matchedClass = classes.find(cls => layer.id.includes(cls));
-  
+
   if (matchedClass) {
-    const roadColor = (palette.roads as any)[matchedClass];
+    const roadColor = palette.roads ? (palette.roads as any)[matchedClass] : null;
     if (roadColor) {
       layer.paint['line-color'] = roadColor;
       // Special handling for glow layers - keep their blur and reduce opacity
@@ -699,7 +822,7 @@ function updateRoadLayer(layer: any, palette: ColorPalette, labelAdjustment: num
   if (layer.id.includes('glow')) {
     layer.paint = {
       ...layer.paint,
-      'line-color': palette.roads.motorway,
+      'line-color': palette.roads?.motorway || palette.primary || palette.text,
       'line-opacity': (layer.paint?.['line-opacity'] ?? 0.4) * labelAdjustment,
     };
     return;
@@ -707,9 +830,9 @@ function updateRoadLayer(layer: any, palette: ColorPalette, labelAdjustment: num
 
   // Fallback for any other line layers starting with 'road-'
   const isSecondary = ['road-street', 'road-residential', 'road-tertiary', 'road-service'].includes(layer.id);
-  const fallbackColor = isSecondary 
-    ? (palette.secondary || palette.roads.secondary) 
-    : (palette.primary || palette.roads.primary);
+  const fallbackColor = isSecondary
+    ? (palette.secondary || palette.roads?.secondary)
+    : (palette.primary || palette.roads?.primary);
 
   layer.paint = {
     ...layer.paint,

@@ -7,6 +7,7 @@ import { createBoundaryLayers, BoundaryLayerOptions } from './layers/boundaries'
 import { createPOILayers, POILayerOptions } from './layers/poi';
 import { createTerrainLayers, TerrainLayerOptions } from './layers/terrain';
 import { createLandcoverLayers, LandcoverLayerOptions } from './layers/landcover';
+import { createBuilding3DLayer, createBuilding3DLight, Building3DLayerOptions } from './layers/buildings3d';
 import { getBaseLayerToggles, LayerToggleOptions } from './layerToggles';
 import { StyleVariantConfig, styleVariants } from './variants';
 
@@ -90,7 +91,7 @@ export function buildStyle(options: StyleBuildOptions): PosterStyle {
     includeRoadGlow: variant.roadOptions.includeGlow,
     includeSpaceports: variant.includeSpaceports,
     includeBridges: roadOptions.includeBridges,
-    contourLayerIds: terrainOptions.contourStyle === 'detailed' 
+    contourLayerIds: terrainOptions.contourStyle === 'detailed'
       ? ['contours-regular', 'contours-index', 'contours-labels']
       : undefined,
     terrainUnderWaterLayerIds: terrainOptions.includeVolumetricBathymetry
@@ -130,14 +131,18 @@ export function buildStyle(options: StyleBuildOptions): PosterStyle {
   const landcoverLayers = createLandcoverLayers(defaultPalette, overrides.landcover);
   layers.push(...landcoverLayers);
 
-  // 7. Buildings
+  // 7. Buildings (2D)
   layers.push(...baseLayers.filter(l => l.id === 'buildings'));
 
   // 8. Roads
   const roadLayers = createRoadLayers(defaultPalette, roadOptions);
   layers.push(...roadLayers);
 
-  // 9. Population density
+  // 9. 3D Buildings (after roads for proper occlusion)
+  const buildings3DLayer = createBuilding3DLayer(defaultPalette);
+  layers.push(buildings3DLayer);
+
+  // 10. Population density
   layers.push(...baseLayers.filter(l => l.id === 'population-density'));
 
   // 10. Contours
@@ -149,7 +154,7 @@ export function buildStyle(options: StyleBuildOptions): PosterStyle {
 
   // 12. Labels (country, state, city)
   const labelLayers = createLabelLayers(defaultPalette, labelOptions);
-  layers.push(...labelLayers.filter(l => 
+  layers.push(...labelLayers.filter(l =>
     l.id === 'labels-country' || l.id === 'labels-state' || l.id === 'labels-city'
   ));
 
@@ -172,6 +177,7 @@ export function buildStyle(options: StyleBuildOptions): PosterStyle {
     },
     sources: getBaseSources({ includeSpaceports: poiOptions.includeSpaceports }),
     glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
+    light: createBuilding3DLight(defaultPalette),
     layers,
   };
 

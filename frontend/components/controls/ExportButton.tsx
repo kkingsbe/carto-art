@@ -5,6 +5,8 @@ import { Download, Loader2, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ExportOptionsModal } from './ExportOptionsModal';
 import { KofiTipModal } from './KofiTipModal';
+import { FeedbackModal } from '@/components/feedback/FeedbackModal';
+import { useFeedback } from '@/components/feedback/useFeedback';
 import { Tooltip } from '@/components/ui/tooltip';
 import { EXPORT_RESOLUTIONS } from '@/lib/export/constants';
 import type { ExportResolution } from '@/lib/export/resolution';
@@ -14,11 +16,26 @@ interface ExportButtonProps {
   onExport: (resolution: ExportResolution) => void;
   isExporting: boolean;
   format: PosterConfig['format'];
+  className?: string;
 }
 
-export function ExportButton({ onExport, isExporting, format }: ExportButtonProps) {
+export function ExportButton({ onExport, isExporting, format, className }: ExportButtonProps) {
   const [showKofiModal, setShowKofiModal] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
+  const [localExportCount, setLocalExportCount] = useState(0);
+
+  // Integrate feedback system
+  // We track local exports to decide when to trigger the check
+  const {
+    shouldShow,
+    showFeedback,
+    isSubmitting: isFeedbackSubmitting,
+    submitFeedback,
+    dismissFeedback
+  } = useFeedback({
+    triggerType: 'post_export',
+    exportCount: localExportCount,
+  });
 
   const handleExportClick = () => {
     setShowOptionsModal(true);
@@ -28,6 +45,8 @@ export function ExportButton({ onExport, isExporting, format }: ExportButtonProp
     setShowOptionsModal(false);
     onExport(resolution);
     setShowKofiModal(true);
+    // Increment local export count to potentially trigger feedback check
+    setLocalExportCount(prev => prev + 1);
   };
 
   const handleCloseKofi = () => {
@@ -57,7 +76,8 @@ export function ExportButton({ onExport, isExporting, format }: ExportButtonProp
             'group relative flex items-center gap-2 px-5 py-2.5 rounded-full font-medium shadow-lg transition-all duration-300',
             'bg-gray-900 text-white dark:bg-white dark:text-gray-900',
             'hover:shadow-xl hover:scale-105 active:scale-95',
-            'disabled:opacity-70 disabled:cursor-wait disabled:hover:scale-100 disabled:shadow-lg'
+            'disabled:opacity-70 disabled:cursor-wait disabled:hover:scale-100 disabled:shadow-lg',
+            className
           )}
         >
           <div className={cn(
@@ -93,6 +113,15 @@ export function ExportButton({ onExport, isExporting, format }: ExportButtonProp
       <KofiTipModal
         isOpen={showKofiModal}
         onClose={handleCloseKofi}
+      />
+
+      {/* Feedback Modal - Only show if indicated AND donation modal is closed */}
+      <FeedbackModal
+        isOpen={shouldShow && !showKofiModal}
+        onClose={() => dismissFeedback(false)}
+        onDismiss={dismissFeedback}
+        onSubmit={submitFeedback}
+        isSubmitting={isFeedbackSubmitting}
       />
     </>
   );

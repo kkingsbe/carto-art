@@ -6,6 +6,13 @@
         "shadcn@latest",
         "mcp"
       ]
+    },
+    "carto-art": {
+      "command": "npx",
+      "args": [
+        "ts-node",
+        "C:/Users/Kyle/Documents/code/carto-art/mcp-server/index.ts"
+      ]
     }
   }
 }

@@ -14,48 +14,71 @@ interface MapPreviewProps {
   mapStyle: any;
   location: PosterLocation;
   format?: PosterConfig['format'];
+  rendering?: PosterConfig['rendering'];
   showMarker?: boolean;
   markerColor?: string;
   onMapLoad?: (map: any) => void;
   onMove?: (center: [number, number], zoom: number) => void;
+  onError?: (error: any) => void;
   layers?: PosterConfig['layers'];
   layerToggles?: LayerToggle[];
 }
 
-export function MapPreview({ 
-  mapStyle, 
-  location, 
+export function MapPreview({
+  mapStyle,
+  location,
   format,
-  showMarker = true, 
-  markerColor, 
-  onMapLoad, 
-  onMove 
-  , layers, layerToggles
+  rendering,
+  showMarker = true,
+  markerColor,
+  onMapLoad,
+  onMove,
+  onError,
+  layers,
+  layerToggles
 }: MapPreviewProps) {
   const mapRef = useRef<MapRef>(null);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Store event handler references and timeout IDs for cleanup
   const loadingHandlerRef = useRef<(() => void) | null>(null);
   const idleHandlerRef = useRef<(() => void) | null>(null);
   const timeoutHandlerRef = useRef<(() => void) | null>(null);
   const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Calculate effective zoom with overzoom boost for tile detail
+  // Overzoom 2 = +1 zoom level (shows tiles that would appear at next zoom level)
+  const overzoomBoost = Math.log2(rendering?.overzoom ?? 1);
+  const effectiveZoom = location.zoom + overzoomBoost;
+
   // Local viewState for smooth interaction without triggering full app re-renders on every frame
   const [viewState, setViewState] = useState({
     longitude: location.center[0],
     latitude: location.center[1],
-    zoom: location.zoom,
+    zoom: effectiveZoom,
+    pitch: layers?.buildings3DPitch ?? 0,
+    bearing: layers?.buildings3DBearing ?? 0,
   });
 
   // Sync with external location changes (e.g. search, button clicks)
   useEffect(() => {
-    setViewState({
+    const overzoomBoost = Math.log2(rendering?.overzoom ?? 1);
+    setViewState(prev => ({
+      ...prev,
       longitude: location.center[0],
       latitude: location.center[1],
-      zoom: location.zoom,
-    });
-  }, [location.center, location.zoom]);
+      zoom: location.zoom + overzoomBoost,
+    }));
+  }, [location.center, location.zoom, rendering?.overzoom]);
+
+  // Sync pitch/bearing with 3D buildings layer settings
+  useEffect(() => {
+    setViewState(prev => ({
+      ...prev,
+      pitch: layers?.buildings3DPitch ?? 0,
+      bearing: layers?.buildings3DBearing ?? 0,
+    }));
+  }, [layers?.buildings3DPitch, layers?.buildings3DBearing]);
 
 
   const handleLoad = useCallback(() => {
@@ -64,8 +87,12 @@ export function MapPreview({
       onMapLoad(map);
 
       // Create named handler functions for proper cleanup
-      const loadingHandler = () => setIsLoading(true);
+      const loadingHandler = () => {
+        console.log('[MapPreview] Dataloading event received');
+        setIsLoading(true);
+      };
       const idleHandler = () => {
+        console.log('[MapPreview] Idle event received');
         setIsLoading(false);
         // Clear any pending timeout when map becomes idle
         if (timeoutIdRef.current) {
@@ -73,7 +100,7 @@ export function MapPreview({
           timeoutIdRef.current = null;
         }
       };
-      
+
       // Safety timeout: if we're still "loading" after 10 seconds, clear it
       // This prevents being stuck on "Loading Tiles" if some tiles fail silently
       const timeoutHandler = () => {
@@ -82,7 +109,10 @@ export function MapPreview({
           clearTimeout(timeoutIdRef.current);
         }
         // Set new timeout
-        timeoutIdRef.current = setTimeout(() => setIsLoading(false), TIMEOUTS.MAP_LOADING);
+        timeoutIdRef.current = setTimeout(() => {
+          console.warn('[MapPreview] Map loading timed out - forcing idle state');
+          setIsLoading(false);
+        }, TIMEOUTS.MAP_LOADING);
         // Clear timeout when map becomes idle
         map.once('idle', () => {
           if (timeoutIdRef.current) {
@@ -109,7 +139,7 @@ export function MapPreview({
     return () => {
       if (mapRef.current) {
         const map = mapRef.current.getMap();
-        
+
         // Remove event listeners
         if (loadingHandlerRef.current) {
           map.off('dataloading', loadingHandlerRef.current);
@@ -123,7 +153,7 @@ export function MapPreview({
           map.off('dataloading', timeoutHandlerRef.current);
           timeoutHandlerRef.current = null;
         }
-        
+
         // Clear any pending timeouts
         if (timeoutIdRef.current) {
           clearTimeout(timeoutIdRef.current);
@@ -152,7 +182,10 @@ export function MapPreview({
     setHasError(true);
     const msg = e.error?.message || e.message || 'Unable to load map data';
     setErrorMessage(msg);
-  }, []);
+    if (onError) {
+      onError(e);
+    }
+  }, [onError]);
 
   // Check for edge cases (Antarctica, very remote locations)
   const isEdgeCase = location.center[1] < -60 || Math.abs(location.center[0]) > 170;
@@ -167,7 +200,7 @@ export function MapPreview({
               {hasError ? 'Map Loading Error' : 'Limited Map Data'}
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              {hasError 
+              {hasError
                 ? errorMessage || 'Unable to load map data for this location. Try a different area or zoom level.'
                 : 'Map data may be limited for this remote location. Try adjusting the zoom level or selecting a different area.'
               }
@@ -188,7 +221,7 @@ export function MapPreview({
           </div>
         </div>
       ) : null}
-        <Map
+      <Map
         ref={mapRef}
         key={`${format?.aspectRatio}-${format?.orientation}`}
         {...viewState}
@@ -205,19 +238,19 @@ export function MapPreview({
         maxZoom={MAP.MAX_ZOOM}
         minZoom={MAP.MIN_ZOOM}
       >
-      {showMarker && (
-        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-          <MarkerIcon 
-            type={layers?.markerType || 'crosshair'} 
-            color={markerColor} 
-            size={40} 
-          />
-        </div>
-      )}
+        {showMarker && (
+          <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+            <MarkerIcon
+              type={layers?.markerType || 'crosshair'}
+              color={markerColor}
+              size={40}
+            />
+          </div>
+        )}
       </Map>
 
       {/* Tile Loading Indicator */}
-      <div 
+      <div
         className={cn(
           "absolute top-4 left-4 z-30 transition-opacity duration-300 pointer-events-none",
           isLoading ? "opacity-100" : "opacity-0"
@@ -242,7 +275,7 @@ export function MapPreview({
 
       {/* Texture Overlay */}
       {format?.texture && format.texture !== 'none' && (
-        <div 
+        <div
           className="absolute inset-0 pointer-events-none z-20 mix-blend-multiply"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
