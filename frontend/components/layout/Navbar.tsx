@@ -15,11 +15,12 @@ export function Navbar() {
         { href: '/', label: 'Home' },
         { href: '/gallery', label: 'Gallery' },
         { href: '/editor', label: 'Editor' },
+        { href: '/developer', label: 'Developers' },
     ];
 
     return (
-        <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/50">
-            <div className="container flex h-16 items-center justify-between px-4 sm:px-6">
+        <nav className="sticky top-0 z-50 w-full border-b border-border bg-background">
+            <div className="w-full flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center gap-8 md:gap-12">
                     <Link href="/" className="flex items-center space-x-2.5 group">
                         <div className="relative h-8 w-8 transition-transform duration-300 group-hover:scale-105">

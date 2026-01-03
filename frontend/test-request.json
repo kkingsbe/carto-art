@@ -1,0 +1,61 @@
+{
+    "config": {
+        "location": {
+            "center": [
+                -74.006,
+                40.7128
+            ],
+            "zoom": 12,
+            "name": "New York",
+            "city": "United States"
+        },
+        "style": {
+            "id": "minimal"
+        },
+        "palette": {
+            "background": "#FFFFFF",
+            "text": "#000000",
+            "water": "#A8DADC",
+            "parks": "#90EE90",
+            "roads": {
+                "motorway": "#FF6B6B",
+                "primary": "#4ECDC4",
+                "secondary": "#95E1D3"
+            }
+        },
+        "typography": {
+            "titleFont": "Inter",
+            "titleSize": 8,
+            "titleWeight": 700,
+            "subtitleFont": "Inter",
+            "subtitleSize": 3,
+            "position": "bottom",
+            "showTitle": true,
+            "showSubtitle": true,
+            "showCoordinates": true
+        },
+        "format": {
+            "aspectRatio": "2:3",
+            "orientation": "portrait",
+            "margin": 5,
+            "borderStyle": "none"
+        },
+        "layers": {
+            "streets": true,
+            "buildings": true,
+            "water": true,
+            "parks": true,
+            "terrain": false,
+            "labels": true,
+            "marker": true,
+            "markerType": "crosshair",
+            "roadWeight": 1.0,
+            "labelSize": 1.0
+        }
+    },
+    "resolution": {
+        "width": 600,
+        "height": 900,
+        "pixelRatio": 1
+    }
+}

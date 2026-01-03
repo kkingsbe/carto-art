@@ -44,6 +44,19 @@ export interface ColorPalette {
   grid?: string;
   hillshade?: string;
 
+  // 3D building theme (optional)
+  building3D?: {
+    colorLow: string;    // Color for short buildings
+    colorMid: string;    // Color for medium buildings
+    colorHigh: string;   // Color for tall buildings
+    colorRoof?: string;      // NEW: distinct roof color
+    colorEdge?: string;      // NEW: edge/outline tint
+    floodLightColor?: string; // NEW: glow color
+    opacity: number;     // 0-1
+    lightColor?: string;     // NEW: light tint
+    lightIntensity?: number; // NEW: 0-1 brightness
+  };
+
   // Keep for backward compatibility/internal use
   primary?: string; // Main streets/features
   secondary?: string; // Minor streets/features
@@ -127,6 +140,12 @@ export interface PosterConfig {
     markerType?: 'pin' | 'crosshair' | 'dot' | 'ring' | 'heart' | 'home';
     markerColor?: string;
     roadWeight: number; // New: control road line thickness
+    // 3D Buildings
+    buildings3D?: boolean;             // Enable 3D building extrusions
+    buildings3DPitch?: number;         // Camera pitch angle (0-60°)
+    buildings3DBearing?: number;       // Camera bearing/rotation (0-360°)
+    buildings3DHeightScale?: number;   // Height exaggeration (0.5-3x)
+    buildings3DDefaultHeight?: number; // Fallback height for buildings without data (0-30m)
     // Landcover layers (from 'landcover' source-layer)
     landcoverWood?: boolean;
     landcoverGrass?: boolean;

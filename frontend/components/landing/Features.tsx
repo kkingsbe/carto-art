@@ -1,6 +1,6 @@
 'use client';
 
-import { Globe, Palette, Mountain, Printer, Layers, Type } from 'lucide-react';
+import { Globe, Palette, Mountain, Printer, Layers, Type, Code } from 'lucide-react';
 
 const primaryFeatures = [
   {
@@ -40,6 +40,11 @@ const secondaryFeatures = [
     icon: Globe,
     title: 'Zero Friction',
     description: 'No signup, no backend, no cost—runs entirely in your browser',
+  },
+  {
+    icon: Code,
+    title: 'Developer API',
+    description: 'Build your own map-based applications with our powerful and easy-to-use API',
   },
 ];
 

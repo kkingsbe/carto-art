@@ -27,6 +27,8 @@ import type { SavedProject, PosterConfig } from '@/types/poster';
 import type { ExportResolution } from '@/lib/export/resolution';
 import { generateThumbnail } from '@/lib/export/thumbnail';
 import { DEFAULT_CONFIG } from '@/lib/config/defaults';
+import { FeedbackModal, useFeedback } from '@/components/feedback';
+import type { FeedbackFormData } from '@/components/feedback';
 
 export function PosterEditor() {
   const router = useRouter();
@@ -74,14 +76,37 @@ export function PosterEditor() {
   // Keep a reference to the map instance for thumbnail generation
   const mapInstanceRef = useRef<MapLibreGL.Map | null>(null);
 
-  // Wrap exportToPNG to handle errors
+  // Track export count for feedback trigger
+  const [exportCount, setExportCount] = useState(0);
+
+  // Feedback system
+  const {
+    shouldShow: shouldShowFeedback,
+    isSubmitting: isFeedbackSubmitting,
+    hideFeedback,
+    submitFeedback,
+    dismissFeedback,
+  } = useFeedback({
+    triggerType: 'post_export',
+    exportCount,
+    mapId: currentMapId || undefined,
+  });
+
+  // Wrap exportToPNG to handle errors and track export count
   const handleExport = useCallback(async (resolution?: ExportResolution) => {
     try {
       await exportToPNG(resolution);
+      // Increment export count on successful export
+      setExportCount(prev => prev + 1);
     } catch (error) {
       handleError(error);
     }
   }, [exportToPNG, handleError]);
+
+  // Handle feedback submission
+  const handleFeedbackSubmit = useCallback(async (data: FeedbackFormData): Promise<boolean> => {
+    return await submitFeedback(data);
+  }, [submitFeedback]);
 
   // Handle loading a saved project
   const handleLoadProject = useCallback(async (project: SavedProject) => {
@@ -561,6 +586,15 @@ export function PosterEditor() {
           </div>
         </div>
       </main>
+
+      {/* Feedback Modal - triggered after exports */}
+      <FeedbackModal
+        isOpen={shouldShowFeedback}
+        onClose={hideFeedback}
+        onSubmit={handleFeedbackSubmit}
+        isSubmitting={isFeedbackSubmitting}
+        onDismiss={dismissFeedback}
+      />
     </div>
   );
 }

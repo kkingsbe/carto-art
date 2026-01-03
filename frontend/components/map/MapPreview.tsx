@@ -22,19 +22,19 @@ interface MapPreviewProps {
   layerToggles?: LayerToggle[];
 }
 
-export function MapPreview({ 
-  mapStyle, 
-  location, 
+export function MapPreview({
+  mapStyle,
+  location,
   format,
-  showMarker = true, 
-  markerColor, 
-  onMapLoad, 
-  onMove 
+  showMarker = true,
+  markerColor,
+  onMapLoad,
+  onMove
   , layers, layerToggles
 }: MapPreviewProps) {
   const mapRef = useRef<MapRef>(null);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Store event handler references and timeout IDs for cleanup
   const loadingHandlerRef = useRef<(() => void) | null>(null);
   const idleHandlerRef = useRef<(() => void) | null>(null);
@@ -46,16 +46,37 @@ export function MapPreview({
     longitude: location.center[0],
     latitude: location.center[1],
     zoom: location.zoom,
+    pitch: layers?.buildings3D ? (layers.buildings3DPitch ?? 45) : 0,
+    bearing: layers?.buildings3D ? (layers.buildings3DBearing ?? 0) : 0,
   });
 
   // Sync with external location changes (e.g. search, button clicks)
   useEffect(() => {
-    setViewState({
+    setViewState(prev => ({
+      ...prev,
       longitude: location.center[0],
       latitude: location.center[1],
       zoom: location.zoom,
-    });
+    }));
   }, [location.center, location.zoom]);
+
+  // Sync pitch/bearing with 3D buildings layer settings
+  useEffect(() => {
+    if (layers?.buildings3D) {
+      setViewState(prev => ({
+        ...prev,
+        pitch: layers.buildings3DPitch ?? 45,
+        bearing: layers.buildings3DBearing ?? 0,
+      }));
+    } else {
+      // Reset to flat view when 3D is disabled
+      setViewState(prev => ({
+        ...prev,
+        pitch: 0,
+        bearing: 0,
+      }));
+    }
+  }, [layers?.buildings3D, layers?.buildings3DPitch, layers?.buildings3DBearing]);
 
 
   const handleLoad = useCallback(() => {
@@ -73,7 +94,7 @@ export function MapPreview({
           timeoutIdRef.current = null;
         }
       };
-      
+
       // Safety timeout: if we're still "loading" after 10 seconds, clear it
       // This prevents being stuck on "Loading Tiles" if some tiles fail silently
       const timeoutHandler = () => {
@@ -109,7 +130,7 @@ export function MapPreview({
     return () => {
       if (mapRef.current) {
         const map = mapRef.current.getMap();
-        
+
         // Remove event listeners
         if (loadingHandlerRef.current) {
           map.off('dataloading', loadingHandlerRef.current);
@@ -123,7 +144,7 @@ export function MapPreview({
           map.off('dataloading', timeoutHandlerRef.current);
           timeoutHandlerRef.current = null;
         }
-        
+
         // Clear any pending timeouts
         if (timeoutIdRef.current) {
           clearTimeout(timeoutIdRef.current);
@@ -167,7 +188,7 @@ export function MapPreview({
               {hasError ? 'Map Loading Error' : 'Limited Map Data'}
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              {hasError 
+              {hasError
                 ? errorMessage || 'Unable to load map data for this location. Try a different area or zoom level.'
                 : 'Map data may be limited for this remote location. Try adjusting the zoom level or selecting a different area.'
               }
@@ -188,7 +209,7 @@ export function MapPreview({
           </div>
         </div>
       ) : null}
-        <Map
+      <Map
         ref={mapRef}
         key={`${format?.aspectRatio}-${format?.orientation}`}
         {...viewState}
@@ -205,19 +226,19 @@ export function MapPreview({
         maxZoom={MAP.MAX_ZOOM}
         minZoom={MAP.MIN_ZOOM}
       >
-      {showMarker && (
-        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-          <MarkerIcon 
-            type={layers?.markerType || 'crosshair'} 
-            color={markerColor} 
-            size={40} 
-          />
-        </div>
-      )}
+        {showMarker && (
+          <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+            <MarkerIcon
+              type={layers?.markerType || 'crosshair'}
+              color={markerColor}
+              size={40}
+            />
+          </div>
+        )}
       </Map>
 
       {/* Tile Loading Indicator */}
-      <div 
+      <div
         className={cn(
           "absolute top-4 left-4 z-30 transition-opacity duration-300 pointer-events-none",
           isLoading ? "opacity-100" : "opacity-0"
@@ -242,7 +263,7 @@ export function MapPreview({
 
       {/* Texture Overlay */}
       {format?.texture && format.texture !== 'none' && (
-        <div 
+        <div
           className="absolute inset-0 pointer-events-none z-20 mix-blend-multiply"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Map, Heart, Shield, Github } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { FeedbackTrigger } from '@/components/feedback';
 
 export function Footer() {
   return (
@@ -51,6 +52,11 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/developer" className="text-[#d4cfc4] hover:text-[#c9a962] transition-colors text-sm">
+                  Developers
+                </Link>
+              </li>
+              <li>
                 <Link href="/#faq" className="text-[#d4cfc4] hover:text-[#c9a962] transition-colors text-sm">
                   FAQ
                 </Link>
@@ -83,6 +89,12 @@ export function Footer() {
                 >
                   License Info
                 </a>
+              </li>
+              <li>
+                <FeedbackTrigger
+                  label="Give Feedback"
+                  className="text-[#d4cfc4] hover:text-[#c9a962] text-sm"
+                />
               </li>
             </ul>
           </div>

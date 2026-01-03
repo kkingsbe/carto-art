@@ -179,6 +179,179 @@ export interface Database {
           created_at?: string;
         };
       };
+      api_keys: {
+        Row: {
+          id: string;
+          user_id: string;
+          key_prefix: string;
+          key_hash: string;
+          name: string;
+          tier: string;
+          is_active: boolean;
+          last_used_at: string | null;
+          created_at: string;
+          expires_at: string | null;
+          rate_limit_override: Json | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          key_prefix: string;
+          key_hash: string;
+          name: string;
+          tier?: string;
+          is_active?: boolean;
+          last_used_at?: string | null;
+          created_at?: string;
+          expires_at?: string | null;
+          rate_limit_override?: Json | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          key_prefix?: string;
+          key_hash?: string;
+          name?: string;
+          tier?: string;
+          is_active?: boolean;
+          last_used_at?: string | null;
+          created_at?: string;
+          expires_at?: string | null;
+          rate_limit_override?: Json | null;
+        };
+      };
+      api_usage: {
+        Row: {
+          id: string;
+          api_key_id: string;
+          user_id: string;
+          endpoint: string;
+          method: string;
+          status_code: number;
+          resource_type: string | null;
+          credits_used: number;
+          request_metadata: Json | null;
+          response_time_ms: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          api_key_id: string;
+          user_id: string;
+          endpoint: string;
+          method: string;
+          status_code: number;
+          resource_type?: string | null;
+          credits_used?: number;
+          request_metadata?: Json | null;
+          response_time_ms?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          api_key_id?: string;
+          user_id?: string;
+          endpoint?: string;
+          method?: string;
+          status_code?: number;
+          resource_type?: string | null;
+          credits_used?: number;
+          request_metadata?: Json | null;
+          response_time_ms?: number | null;
+          created_at?: string;
+        };
+      };
+      feedback: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          session_id: string | null;
+          trigger_type: string;
+          trigger_context: Json | null;
+          overall_rating: number | null;
+          nps_score: number | null;
+          use_cases: string[] | null;
+          pain_points: string[] | null;
+          feature_ratings: Json | null;
+          open_feedback: string | null;
+          allow_followup: boolean;
+          created_at: string;
+          user_agent: string | null;
+          page_url: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          session_id?: string | null;
+          trigger_type: string;
+          trigger_context?: Json | null;
+          overall_rating?: number | null;
+          nps_score?: number | null;
+          use_cases?: string[] | null;
+          pain_points?: string[] | null;
+          feature_ratings?: Json | null;
+          open_feedback?: string | null;
+          allow_followup?: boolean;
+          created_at?: string;
+          user_agent?: string | null;
+          page_url?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          session_id?: string | null;
+          trigger_type?: string;
+          trigger_context?: Json | null;
+          overall_rating?: number | null;
+          nps_score?: number | null;
+          use_cases?: string[] | null;
+          pain_points?: string[] | null;
+          feature_ratings?: Json | null;
+          open_feedback?: string | null;
+          allow_followup?: boolean;
+          created_at?: string;
+          user_agent?: string | null;
+          page_url?: string | null;
+        };
+      };
+      feedback_tracking: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          session_id: string | null;
+          last_prompt_at: string | null;
+          last_submitted_at: string | null;
+          prompt_count: number;
+          dismiss_count: number;
+          opted_out: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          session_id?: string | null;
+          last_prompt_at?: string | null;
+          last_submitted_at?: string | null;
+          prompt_count?: number;
+          dismiss_count?: number;
+          opted_out?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          session_id?: string | null;
+          last_prompt_at?: string | null;
+          last_submitted_at?: string | null;
+          prompt_count?: number;
+          dismiss_count?: number;
+          opted_out?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;

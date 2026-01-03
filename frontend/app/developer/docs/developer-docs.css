@@ -1,0 +1,89 @@
+/* Scalar API Reference Branding Overrides */
+
+:root {
+    --scalar-primary: #c9a962;
+    --scalar-primary-hover: #b87333;
+    --scalar-background-1: #0a0f1a;
+    --scalar-background-2: #141d2e;
+    --scalar-background-3: #1c2a42;
+    --scalar-color-1: #f5f0e8;
+    --scalar-color-2: #d4cfc4;
+    --scalar-color-3: #a8a29e;
+    --scalar-border-color: rgba(255, 255, 255, 0.08);
+    --scalar-font: 'Geist Sans', sans-serif;
+    --scalar-font-code: 'Geist Mono', monospace;
+}
+
+/* Custom header for the docs */
+.scalar-header {
+    background: var(--scalar-background-1) !important;
+    border-bottom: 1px solid var(--scalar-border-color) !important;
+}
+
+/* Sidebar styling */
+.scalar-sidebar {
+    background: var(--scalar-background-2) !important;
+    border-right: 1px solid var(--scalar-border-color) !important;
+}
+
+.scalar-sidebar-item:hover {
+    background: rgba(201, 169, 98, 0.1) !important;
+}
+
+.scalar-sidebar-item--active {
+    color: var(--scalar-primary) !important;
+    background: rgba(201, 169, 98, 0.15) !important;
+    border-right: 2px solid var(--scalar-primary) !important;
+}
+
+/* Content area */
+.scalar-content {
+    background: var(--scalar-background-1) !important;
+}
+
+/* Code blocks */
+.scalar-code-block {
+    background: #0d1117 !important;
+    border: 1px solid var(--scalar-border-color) !important;
+    border-radius: 8px !important;
+}
+
+/* Method badges */
+.scalar-method--post {
+    color: #c9a962 !important;
+}
+
+.scalar-method--get {
+    color: #4ade80 !important;
+}
+
+.scalar-method--put {
+    color: #fbbf24 !important;
+}
+
+.scalar-method--delete {
+    color: #f87171 !important;
+}
+
+/* Scrollbar */
+.scalar-app::-webkit-scrollbar {
+    width: 8px;
+}
+
+.scalar-app::-webkit-scrollbar-track {
+    background: var(--scalar-background-1);
+}
+
+.scalar-app::-webkit-scrollbar-thumb {
+    background: var(--scalar-border-color);
+    border-radius: 10px;
+}
+
+.scalar-app::-webkit-scrollbar-thumb:hover {
+    background: rgba(201, 169, 98, 0.3);
+}
+
+/* Hide some default scalar elements if needed */
+.scalar-footer {
+    display: none !important;
+}

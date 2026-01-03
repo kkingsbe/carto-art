@@ -1,0 +1,12 @@
+{
+  "config": {
+    "palette": {
+      "background": "#ffffff",
+      "text": "#000000"
+    }
+  },
+  "resolution": {
+    "width": 1000,
+    "height": 1000
+  }
+}

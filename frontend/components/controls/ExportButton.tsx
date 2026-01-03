@@ -5,6 +5,8 @@ import { Download, Loader2, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ExportOptionsModal } from './ExportOptionsModal';
 import { KofiTipModal } from './KofiTipModal';
+import { FeedbackModal } from '@/components/feedback/FeedbackModal';
+import { useFeedback } from '@/components/feedback/useFeedback';
 import { Tooltip } from '@/components/ui/tooltip';
 import { EXPORT_RESOLUTIONS } from '@/lib/export/constants';
 import type { ExportResolution } from '@/lib/export/resolution';
@@ -19,6 +21,20 @@ interface ExportButtonProps {
 export function ExportButton({ onExport, isExporting, format }: ExportButtonProps) {
   const [showKofiModal, setShowKofiModal] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
+  const [localExportCount, setLocalExportCount] = useState(0);
+
+  // Integrate feedback system
+  // We track local exports to decide when to trigger the check
+  const {
+    shouldShow,
+    showFeedback,
+    isSubmitting: isFeedbackSubmitting,
+    submitFeedback,
+    dismissFeedback
+  } = useFeedback({
+    triggerType: 'post_export',
+    exportCount: localExportCount,
+  });
 
   const handleExportClick = () => {
     setShowOptionsModal(true);
@@ -28,6 +44,8 @@ export function ExportButton({ onExport, isExporting, format }: ExportButtonProp
     setShowOptionsModal(false);
     onExport(resolution);
     setShowKofiModal(true);
+    // Increment local export count to potentially trigger feedback check
+    setLocalExportCount(prev => prev + 1);
   };
 
   const handleCloseKofi = () => {
@@ -93,6 +111,15 @@ export function ExportButton({ onExport, isExporting, format }: ExportButtonProp
       <KofiTipModal
         isOpen={showKofiModal}
         onClose={handleCloseKofi}
+      />
+
+      {/* Feedback Modal - Only show if indicated AND donation modal is closed */}
+      <FeedbackModal
+        isOpen={shouldShow && !showKofiModal}
+        onClose={() => dismissFeedback(false)}
+        onDismiss={dismissFeedback}
+        onSubmit={submitFeedback}
+        isSubmitting={isFeedbackSubmitting}
       />
     </>
   );
