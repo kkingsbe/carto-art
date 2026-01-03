@@ -61,9 +61,10 @@ export default function DeveloperPage() {
                             <Button size="lg" className="h-14 px-8 text-lg bg-gradient-to-r from-[#c9a962] to-[#b87333] hover:from-[#d9b972] hover:to-[#c88343] text-[#0a0f1a] font-bold border-none shadow-[0_0_20px_rgba(201,169,98,0.3)] animate-glow" asChild>
                                 <Link href="/developer/dashboard">Get Started Free</Link>
                             </Button>
-                            <Button size="lg" variant="outline" className="h-14 px-8 text-lg border-white/10 hover:bg-white/5 text-[#f5f0e8] backdrop-blur-sm" asChild>
-                                <Link href="/developer/playground">Open Playground</Link>
+                            <Button size="lg" variant="outline" className="h-14 px-8 text-lg border-white/10 bg-transparent hover:bg-white/5 text-[#f5f0e8] hover:text-[#f5f0e8] backdrop-blur-sm" asChild>
+                                <Link href="/developer/docs">Interactive Docs</Link>
                             </Button>
+
                         </div>
 
                         {/* Animated Code Terminal */}
@@ -108,18 +109,14 @@ export default function DeveloperPage() {
                 {/* Performance Stats */}
                 <section className="py-20 border-y border-white/5 bg-white/[0.01]">
                     <div className="container mx-auto px-4 max-w-6xl">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
                             <div className="text-center">
-                                <div className="text-4xl font-bold text-[#c9a962] mb-2">300ms</div>
-                                <div className="text-sm text-gray-500 uppercase tracking-widest">Avg latency</div>
+                                <div className="text-4xl font-bold text-[#c9a962] mb-2">10 sec</div>
+                                <div className="text-sm text-gray-500 uppercase tracking-widest">Avg. HQ Generation</div>
                             </div>
                             <div className="text-center">
                                 <div className="text-4xl font-bold text-[#c9a962] mb-2">300DPI</div>
                                 <div className="text-sm text-gray-500 uppercase tracking-widest">Print Quality</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-4xl font-bold text-[#c9a962] mb-2">99.9%</div>
-                                <div className="text-sm text-gray-500 uppercase tracking-widest">Uptime SLA</div>
                             </div>
                             <div className="text-center">
                                 <div className="text-4xl font-bold text-[#c9a962] mb-2">10k+</div>
@@ -210,9 +207,9 @@ export default function DeveloperPage() {
                                 <Button size="lg" className="h-14 px-10 bg-[#f5f0e8] text-[#0a0f1a] hover:bg-white font-bold" asChild>
                                     <Link href="/developer/dashboard">Claim your API Key</Link>
                                 </Button>
-                                <Button size="lg" variant="ghost" className="h-14 px-10 border border-white/10 hover:bg-white/5" asChild>
+                                <Button size="lg" variant="ghost" className="h-14 px-10 border border-white/10 bg-transparent hover:bg-white/5 text-[#f5f0e8] hover:text-[#f5f0e8]" asChild>
                                     <Link href="/developer/docs" className="flex items-center gap-2">
-                                        Read the Docs <ArrowRight className="w-4 h-4" />
+                                        Interactive Docs <ArrowRight className="w-4 h-4" />
                                     </Link>
                                 </Button>
                             </div>

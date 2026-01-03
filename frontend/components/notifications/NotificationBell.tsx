@@ -120,14 +120,14 @@ export function NotificationBell() {
             <PopoverTrigger asChild>
                 <button
                     className={cn(
-                        "relative p-2 rounded-full transition-all duration-200 outline-none",
+                        "relative p-2.5 rounded-full transition-all duration-200 outline-none group",
                         "hover:bg-muted text-muted-foreground hover:text-foreground",
                         open && "bg-muted text-foreground"
                     )}
                 >
-                    <Bell className="h-5 w-5" />
+                    <Bell className="h-6 w-6 transition-transform group-hover:scale-105" />
                     {unreadCount > 0 && (
-                        <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white shadow-sm ring-2 ring-background">
+                        <span className="absolute top-2 right-2 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-background animate-in zoom-in duration-200">
                             {unreadCount > 99 ? '99+' : unreadCount}
                         </span>
                     )}

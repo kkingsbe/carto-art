@@ -243,18 +243,14 @@ export default function DeveloperDocsPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white" asChild>
-                        <Link href="/developer/playground" className="flex items-center gap-2">
-                            <Play className="w-4 h-4" /> Playground
-                        </Link>
-                    </Button>
+
                     <Button size="sm" className="bg-[#c9a962] text-[#0a0f1a] hover:bg-[#b87333]" asChild>
                         <Link href="/developer/dashboard">Get API Key</Link>
                     </Button>
                 </div>
             </header>
 
-            <div className="flex-1 overflow-hidden relative">
+            <div className="flex-1 overflow-y-auto relative">
                 {/* Decorative background glow */}
                 <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[#c9a962]/5 blur-[100px] pointer-events-none" />
 

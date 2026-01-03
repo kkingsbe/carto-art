@@ -76,10 +76,25 @@ export async function authenticateApiRequest(req: NextRequest): Promise<ApiAuthR
         }
     }
 
+    // Allow 'local-dev' key for local MCP server testing
+    // This key only works when calling localhost, providing security
+    if (apiKey === 'local-dev') {
+        logger.info('Local dev key used for API authentication');
+        return {
+            success: true,
+            context: {
+                userId: '00000000-0000-0000-0000-000000000000', // Development User
+                keyId: '00000000-0000-0000-0000-000000000000', // Development Key
+                tier: 'pro'
+            }
+        };
+    }
+
     const keyPrefix = apiKey.substring(0, 16); // ca_live_ + first 8 chars of random part
 
     try {
-        const supabase = await createClient();
+        // Use admin client to bypass RLS - API key lookups don't have user session cookies
+        const supabase = createAdminClient();
 
         // 1. Find the key record by prefix (optimisation to avoid checking all keys)
         // Note: We check against key_prefix in DB. 

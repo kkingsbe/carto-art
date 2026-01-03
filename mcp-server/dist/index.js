@@ -4,7 +4,10 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { CallToolRequestSchema, ListToolsRequestSchema, } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import fetch from "node-fetch";
-const API_URL = process.env.CARTO_ART_API_URL || "http://localhost:3000/api/v1/posters/generate";
+const API_URL = process.env.CARTO_ART_API_URL || "https://cartoart.net/api/v1/posters/generate";
+if (!process.env.CARTO_ART_API_KEY) {
+    console.error("[WARNING] CARTO_ART_API_KEY environment variable is not set. Requests to the authenticated API will likely fail.");
+}
 const server = new Server({
     name: "carto-art-mcp",
     version: "1.0.0",
@@ -48,22 +51,38 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const args = GeneratePosterArgumentsSchema.parse(request.params.arguments);
         try {
             // 1. Geocode the location string
-            console.error(`Geocoding: ${args.location}`);
+            console.error(`[DEBUG] Starting generation for location: ${args.location}`);
+            console.error(`[DEBUG] Args: ${JSON.stringify(args)}`);
             const geocodeBaseUrl = API_URL.replace("/api/v1/posters/generate", "/api/geocode");
-            const geocodeResponse = await fetch(`${geocodeBaseUrl}?q=${encodeURIComponent(args.location)}&limit=1`, {
+            const geocodeUrl = `${geocodeBaseUrl}?q=${encodeURIComponent(args.location)}&limit=1`;
+            console.error(`[DEBUG] Fetching geocode: ${geocodeUrl}`);
+            const geocodeResponse = await fetch(geocodeUrl, {
                 headers: { "Authorization": `Bearer ${process.env.CARTO_ART_API_KEY || "local-dev"}` }
             });
+            console.error(`[DEBUG] Geocode status: ${geocodeResponse.status} ${geocodeResponse.statusText}`);
             if (!geocodeResponse.ok) {
-                throw new Error(`Geocoding failed: ${geocodeResponse.statusText}`);
+                const errorText = await geocodeResponse.text();
+                console.error(`[DEBUG] Geocode error body: ${errorText}`);
+                throw new Error(`Geocoding failed: ${geocodeResponse.statusText} (${errorText})`);
             }
-            const geocodeData = await geocodeResponse.json();
-            if (!geocodeData || geocodeData.length === 0) {
+            let geocodeData;
+            try {
+                const text = await geocodeResponse.text();
+                console.error(`[DEBUG] Geocode response body: ${text}`);
+                geocodeData = JSON.parse(text);
+            }
+            catch (e) {
+                throw new Error(`Failed to parse geocode response: ${e instanceof Error ? e.message : String(e)}`);
+            }
+            if (!Array.isArray(geocodeData) || geocodeData.length === 0) {
+                console.error(`[DEBUG] No location found for: ${args.location}`);
                 return {
                     content: [{ type: "text", text: `Could not find location: ${args.location}` }],
                     isError: true,
                 };
             }
             const { lat, lon } = geocodeData[0];
+            console.error(`[DEBUG] Found coordinates: ${lat}, ${lon}`);
             // 2. Prepare the payload for the new SimplifiedPosterSchema
             const payload = {
                 location: {
@@ -81,41 +100,53 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     high_res: true,
                 }
             };
-            console.error("Calling generation API with payload:", JSON.stringify(payload));
-            // 3. Call the generation API with Accept: image/png
-            const imageResponse = await fetch(API_URL, {
+            console.error("[DEBUG] Calling generation API with payload:", JSON.stringify(payload));
+            // 3. Call the generation API with Accept: application/json
+            const apiResponse = await fetch(API_URL, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Accept": "image/png",
+                    "Accept": "application/json",
                     "Authorization": `Bearer ${process.env.CARTO_ART_API_KEY || "local-dev"}`
                 },
                 body: JSON.stringify(payload),
             });
-            if (!imageResponse.ok) {
-                const errorText = await imageResponse.text();
+            console.error(`[DEBUG] API Status: ${apiResponse.status} ${apiResponse.statusText}`);
+            if (!apiResponse.ok) {
+                const errorText = await apiResponse.text();
+                console.error(`[DEBUG] API Error Body: ${errorText}`);
                 return {
-                    content: [{ type: "text", text: `Error from API: ${imageResponse.status} ${imageResponse.statusText}\n${errorText}` }],
+                    content: [{ type: "text", text: `Error from API: ${apiResponse.status} ${apiResponse.statusText}\n${errorText}` }],
                     isError: true,
                 };
             }
-            const buffer = await imageResponse.arrayBuffer();
-            const base64Image = Buffer.from(buffer).toString("base64");
+            let data;
+            try {
+                const text = await apiResponse.text();
+                console.error(`[DEBUG] API Response Body (first 100 chars): ${text.substring(0, 100)}...`);
+                data = JSON.parse(text);
+            }
+            catch (e) {
+                throw new Error(`Failed to parse API response: ${e instanceof Error ? e.message : String(e)}`);
+            }
+            if (!data.download_url) {
+                console.error(`[DEBUG] Response missing download_url: ${JSON.stringify(data)}`);
+                return {
+                    content: [{ type: "text", text: `API response missing download_url. Got: ${JSON.stringify(data)}` }],
+                    isError: true,
+                };
+            }
             return {
                 content: [
                     {
                         type: "text",
-                        text: `Generated poster for ${args.location}.`,
-                    },
-                    {
-                        type: "image",
-                        data: base64Image,
-                        mimeType: "image/png",
-                    },
+                        text: `Generated poster for ${args.location}.\n\n![Map Poster](${data.download_url})`,
+                    }
                 ],
             };
         }
         catch (error) {
+            console.error("[DEBUG] Unhandled exception:", error);
             return {
                 content: [{ type: "text", text: `Failed to connect to CartoArt API: ${error instanceof Error ? error.message : String(error)}` }],
                 isError: true,

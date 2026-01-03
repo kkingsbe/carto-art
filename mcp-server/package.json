@@ -1,13 +1,14 @@
 {
   "name": "@kkingsbe/carto-art-mcp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
     "carto-art-mcp": "dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "build": "tsc",
@@ -16,10 +17,18 @@
     "dev": "ts-node index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "map",
+    "cartography",
+    "poster",
+    "agent",
+    "tool"
+  ],
+  "author": "Kyle Kingsbury",
   "license": "ISC",
-  "description": "",
+  "description": "MCP Server for generating map posters with CartoArt",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.1",
     "node-fetch": "^3.3.2",
