@@ -15,24 +15,36 @@ if (!API_KEY) {
 
 const client = new CartoArtClient({
     apiKey: API_KEY,
-    // Optional: Override base URL if needed (e.g. for testing)
-    // baseUrl: 'https://cartoart.net/api/v1' 
+    baseUrl: process.env.CARTOART_API_URL
 });
 
+import * as fs from 'fs';
+
 async function main() {
-    console.log(API_KEY)
+    // console.log(API_KEY) // Removed for security
     const styles = await client.styles.list();
     const style = styles.styles[0];
     console.log('Generating with style:');
     console.log(style);
     const result = await client.posters.generate({
         location: {
-            lat: 0,
-            lng: 0,
+            lat: 34.0522,
+            lng: -118.2437, // LA
         },
         style: style.id,
     });
-    console.log(result);
+    console.log('Generation result:', result);
+
+    if (result.download_url) {
+        console.log(`Downloading image from ${result.download_url}...`);
+        const response = await fetch(result.download_url);
+        const buffer = await response.arrayBuffer();
+        const fileName = 'outputs/basic.png';
+        fs.writeFileSync(path.resolve(__dirname, fileName), Buffer.from(buffer));
+        console.log(`✅ Image saved to ${fileName}`);
+    } else {
+        console.error('❌ No download_url found in the result.');
+    }
 }
 
 main();

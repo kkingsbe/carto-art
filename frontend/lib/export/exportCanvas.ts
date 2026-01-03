@@ -94,8 +94,27 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
       bearing: config.layers.buildings3DBearing ?? 0
     });
 
+    // Robust wait for map to load after resize/jump
     await new Promise<void>(resolve => {
-      map.once('idle', resolve);
+      // Give the map a moment to invalidate its state after resize/jumpTo
+      // This prevents the idle event from firing too early before tile requests are made
+      setTimeout(() => {
+        const checkLoaded = () => {
+          if (map.loaded()) {
+            // Add one final small buffer to ensure tiles are painted
+            // (sometimes loaded returns true but the texture upload is pending in the next frame)
+            requestAnimationFrame(() => resolve());
+          } else {
+            map.once('idle', checkLoaded);
+          }
+        };
+
+        if (map.loaded()) {
+          requestAnimationFrame(() => resolve());
+        } else {
+          map.once('idle', checkLoaded);
+        }
+      }, 250);
     });
 
     const mapCanvas = map.getCanvas();

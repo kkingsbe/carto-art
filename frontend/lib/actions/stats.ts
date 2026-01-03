@@ -1,10 +1,11 @@
 'use server';
 
-import { createAnonymousClient } from '@/lib/supabase/server';
+import { createAnonymousClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { unstable_cache } from 'next/cache';
 
 export interface SiteStats {
-  totalMaps: number;
+  totalMaps: number; // Keeping for compatibility, but populated with exports count if requested? No, let's add totalExports
+  totalExports: number;
   totalUsers: number;
   totalPublishedMaps: number;
   recentMapsCount: number; // Last 30 days
@@ -17,65 +18,69 @@ export interface SiteStats {
 async function fetchSiteStats(): Promise<SiteStats> {
   const fallbackStats: SiteStats = {
     totalMaps: 1200,
+    totalExports: 5000,
     totalUsers: 450,
     totalPublishedMaps: 180,
     recentMapsCount: 85,
   };
 
   try {
-    const supabase = createAnonymousClient();
+    const supabaseAnon = createAnonymousClient();
+    const supabaseAdmin = createServiceRoleClient(); // Needed for page_events
 
     // Run all queries in parallel for better performance
     const [
       { count: totalMaps, error: mapsError },
-      { count: totalUsers, error: usersError },
+      { count: totalProfiles, error: usersError },
       { count: totalPublishedMaps, error: publishedError },
-      { count: recentMapsCount, error: recentError }
+      { count: recentMapsCount, error: recentError },
+      { count: totalExports, error: exportsError }
     ] = await Promise.all([
-      // Total maps created
-      supabase
+      // Total maps created (legacy metric, keeping for potential other uses)
+      supabaseAnon
         .from('maps')
         .select('*', { count: 'exact', head: true }),
 
-      // Total unique creators (distinct user_id)
-      supabase
-        .from('maps')
-        .select('user_id', { count: 'exact', head: true })
-        .not('user_id', 'is', null),
+      // Total users (profiles)
+      supabaseAnon
+        .from('profiles')
+        .select('*', { count: 'exact', head: true }),
 
       // Published maps
-      supabase
+      supabaseAnon
         .from('maps')
         .select('*', { count: 'exact', head: true })
         .eq('is_published', true),
 
       // Maps created in last 30 days
-      supabase
+      supabaseAnon
         .from('maps')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
+
+      // Total exports (from page_events)
+      supabaseAdmin
+        .from('page_events')
+        .select('*', { count: 'exact', head: true })
+        .eq('event_type', 'poster_export')
     ]);
 
     // Check for errors
-    if (mapsError || usersError || publishedError || recentError) {
+    if (mapsError || usersError || publishedError || recentError || exportsError) {
       console.error('Error fetching site stats:', {
         mapsError,
         usersError,
         publishedError,
-        recentError
+        recentError,
+        exportsError
       });
       return fallbackStats;
     }
 
-    // For distinct user count, we need a different query approach
-    // Supabase doesn't support COUNT(DISTINCT) directly via JS client
-    // So we'll fetch the data and count manually, or use an RPC function
-    // For now, let's use a rough estimate: totalMaps / 3 (avg 3 maps per user)
-    const estimatedUsers = Math.floor((totalMaps || 0) / 3) || fallbackStats.totalUsers;
-
     return {
       totalMaps: totalMaps ?? 0,
-      totalUsers: estimatedUsers,
+      totalExports: totalExports ?? 0,
+      totalUsers: totalProfiles ?? 0,
       totalPublishedMaps: totalPublishedMaps ?? 0,
       recentMapsCount: recentMapsCount ?? 0,
     };

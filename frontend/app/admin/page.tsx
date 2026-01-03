@@ -2,19 +2,17 @@ import { isAdmin } from '@/lib/admin-auth';
 import { createClient } from '@/lib/supabase/server';
 import { MetricCard } from '@/components/admin/MetricCard';
 import { ActivityChart } from '@/components/admin/ActivityChart';
-import Link from 'next/link';
 import {
     Users,
     Map as MapIcon,
     Zap,
     MessageSquare,
     TrendingUp,
-    Fingerprint,
     Download,
     Share2,
     Key
 } from 'lucide-react';
-import { TimeDisplay } from '@/components/ui/time-display';
+import { RecentActivityFeed } from '@/components/admin/RecentActivityFeed';
 
 export default async function AdminDashboardPage() {
     const supabase = await createClient();
@@ -106,38 +104,7 @@ export default async function AdminDashboardPage() {
 
                 {/* Activity Feed Section */}
                 <div className="space-y-6">
-                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 md:p-6 flex flex-col h-full">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="font-semibold flex items-center gap-2">
-                                <Fingerprint className="w-4 h-4" />
-                                Recent Activity
-                            </h3>
-                            <Link href="/admin/activity" className="text-xs text-blue-500 hover:underline">View All</Link>
-                        </div>
-
-                        <div className="space-y-6 flex-1">
-                            {recentEvents && recentEvents.length > 0 ? (
-                                recentEvents.map((event: any) => (
-                                    <div key={event.id} className="flex gap-4">
-                                        <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 shrink-0" />
-                                        <div className="min-w-0">
-                                            <p className="text-sm truncate">
-                                                <span className="font-medium">
-                                                    {event.profiles?.display_name || event.profiles?.username || 'Anonymous'}
-                                                </span>
-                                                {' '}{event.event_name?.toLowerCase() || event.event_type}
-                                            </p>
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                <TimeDisplay date={event.created_at} />
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <p className="text-sm text-gray-500 text-center py-8">No recent activity</p>
-                            )}
-                        </div>
-                    </div>
+                    <RecentActivityFeed initialEvents={recentEvents || []} />
                 </div>
             </div>
         </div>

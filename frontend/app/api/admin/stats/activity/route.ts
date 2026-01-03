@@ -28,22 +28,57 @@ export async function GET(request: NextRequest) {
     const msToFetch = days * 24 * 60 * 60 * 1000;
     startDate.setTime(startDate.getTime() - msToFetch);
 
-    // Fetch events in the last period
-    let query = supabase
-        .from('page_events')
-        .select('created_at')
-        .gte('created_at', startDate.toISOString());
+    // Fetch events in the last period with pagination
+    let allEvents: any[] = [];
+    let page = 0;
+    const PAGE_SIZE = 1000;
+    let hasMore = true;
 
-    if (eventType !== 'all') {
-        query = query.eq('event_type', eventType);
+    // We can't use offset pagination efficiently for large datasets, 
+    // but for < 100k rows with this volume, range-based or simple pagination is acceptable.
+    // Given the hard 1000 row limit, we must paginate.
+
+    // Optimize: Count first if too large? 
+    // For this dashboard, we need all timestamps for the graph.
+    // We will loop until we get < PAGE_SIZE or hit the end of our time window (implicit in query)
+
+    while (hasMore) {
+        let query = supabase
+            .from('page_events')
+            .select('created_at')
+            .gte('created_at', startDate.toISOString())
+            .order('created_at', { ascending: true })
+            .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+
+        if (eventType !== 'all') {
+            query = query.eq('event_type', eventType);
+        }
+
+        const { data: events, error } = await query;
+
+        if (error) {
+            return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+
+        if (events) {
+            allEvents = allEvents.concat(events);
+            if (events.length < PAGE_SIZE) {
+                hasMore = false;
+            } else {
+                page++;
+            }
+        } else {
+            hasMore = false;
+        }
+
+        // Safety Break: Stop if we somehow fetch excessively (>100k) to prevent OOM
+        if (allEvents.length > 100000) {
+            console.warn('Analytics: truncated at 100k events');
+            break;
+        }
     }
 
-    const { data: events, error } = await query
-        .order('created_at', { ascending: true });
-
-    if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    const events = allEvents;
 
     // Grouping logic
     const counts: Record<string, number> = {};
@@ -63,13 +98,18 @@ export async function GET(request: NextRequest) {
             counts[t.toISOString()] = 0;
         }
 
+        console.log(`[ActivityStats] Fetching ${days} days (sub-daily). Found ${events?.length} events.`);
+
         (events as any[]).forEach(event => {
             const t = new Date(event.created_at).getTime();
             const rounded = Math.floor(t / intervalMs) * intervalMs;
             const key = new Date(rounded).toISOString();
-            if (counts[key] !== undefined) {
-                counts[key]++;
+
+            // If key doesn't exist (e.g. slight future skew), initialize it
+            if (counts[key] === undefined) {
+                counts[key] = 0;
             }
+            counts[key]++;
         });
     } else {
         // Initialize last X days with 0
@@ -79,11 +119,14 @@ export async function GET(request: NextRequest) {
             counts[d.toISOString().split('T')[0]] = 0;
         }
 
+        console.log(`[ActivityStats] Fetching ${days} days (daily). Found ${events?.length} events.`);
+
         (events as any[]).forEach(event => {
             const date = (event.created_at as string).split('T')[0];
-            if (counts[date] !== undefined) {
-                counts[date]++;
+            if (counts[date] === undefined) {
+                counts[date] = 0;
             }
+            counts[date]++;
         });
     }
 
