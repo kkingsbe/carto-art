@@ -80,9 +80,9 @@ export function ActivityChart() {
 
         fetchData();
 
-        // Set up realtime subscription
-        const channel = supabase
-            .channel('activity_chart')
+        // Set up realtime subscriptions
+        const pageEventsChannel = supabase
+            .channel('page_events_activity')
             .on(
                 'postgres_changes',
                 {
@@ -91,23 +91,44 @@ export function ActivityChart() {
                     table: 'page_events'
                 },
                 async (payload) => {
-                    // Only refetch if the event type matches our filter, or if we're showing all
-                    if (selectedType === 'all' || payload.new.event_type === selectedType) {
-                        console.log('ActivityChart: New event detected, refetching data');
-                        await fetchData(false); // Don't show loading state on realtime updates
+                    // Refetch if the event type matches our filter, or if we're showing all
+                    const isRelevantEvent = selectedType === 'all' || payload.new.event_type === selectedType;
+
+                    // Special case: generation_latency now comes from both api_usage AND page_events (poster_export)
+                    const isUiGenerationLatency = selectedType === 'generation_latency' && payload.new.event_type === 'poster_export';
+
+                    if (isRelevantEvent || isUiGenerationLatency) {
+                        console.log('ActivityChart: New page event detected, refetching data');
+                        await fetchData(false);
                     }
                 }
             )
-            .subscribe((status) => {
-                if (status === 'SUBSCRIBED') {
-                    console.log('ActivityChart: Subscribed to page_events');
-                } else if (status === 'CHANNEL_ERROR') {
-                    console.error('ActivityChart: Subscription error');
+            .subscribe();
+
+        const apiUsageChannel = supabase
+            .channel('api_usage_activity')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'api_usage'
+                },
+                async () => {
+                    // Refetch if viewing generation latency or 'all' (if 'all' includes API usage)
+                    // In current implementation 'all' comes from page_events, but generation_latency 
+                    // comes from api_usage.
+                    if (selectedType === 'all' || selectedType === 'generation_latency') {
+                        console.log('ActivityChart: New API usage detected, refetching data');
+                        await fetchData(false);
+                    }
                 }
-            });
+            )
+            .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            supabase.removeChannel(pageEventsChannel);
+            supabase.removeChannel(apiUsageChannel);
         };
     }, [selectedType, selectedDays]);
 

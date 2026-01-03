@@ -49,59 +49,103 @@ export async function GET(request: NextRequest) {
         }
     }
 
-    // Fetch generation latency from api_usage
+    // Fetch generation latency from api_usage AND page_events
     if (metricType === 'generation' || metricType === 'all') {
-        let page = 0;
-        const PAGE_SIZE = 1000;
-        let hasMore = true;
+        const fetchGenerationLatency = async () => {
+            // 1. Fetch from api_usage (API exports)
+            let page = 0;
+            const PAGE_SIZE = 1000;
+            let hasMore = true;
 
-        while (hasMore) {
-            const { data: apiUsage, error } = await supabase
-                .from('api_usage')
-                .select('created_at, response_time_ms')
-                .gte('created_at', startDate.toISOString())
-                .not('response_time_ms', 'is', null)
-                .order('created_at', { ascending: true })
-                .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            while (hasMore) {
+                const { data: apiUsage, error } = await supabase
+                    .from('api_usage')
+                    .select('created_at, response_time_ms')
+                    .gte('created_at', startDate.toISOString())
+                    .not('response_time_ms', 'is', null)
+                    .order('created_at', { ascending: true })
+                    .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
-            if (error) {
-                return NextResponse.json({ error: error.message }, { status: 500 });
+                if (error) return { error };
+
+                if (apiUsage && apiUsage.length > 0) {
+                    apiUsage.forEach((record: any) => {
+                        const timestamp = new Date(record.created_at).getTime();
+                        let key: string;
+
+                        if (isSubDaily) {
+                            const intervalMs = intervalMinutes * 60 * 1000;
+                            const rounded = Math.floor(timestamp / intervalMs) * intervalMs;
+                            key = new Date(rounded).toISOString();
+                        } else {
+                            key = record.created_at.split('T')[0];
+                        }
+
+                        if (latencies[key] === undefined) {
+                            latencies[key] = { sum: 0, count: 0 };
+                        }
+
+                        latencies[key].sum += record.response_time_ms;
+                        latencies[key].count += 1;
+                    });
+
+                    if (apiUsage.length < PAGE_SIZE) hasMore = false;
+                    else page++;
+                } else hasMore = false;
+
+                if (page > 100) break;
             }
 
-            if (apiUsage && apiUsage.length > 0) {
-                apiUsage.forEach((record: any) => {
-                    if (record.response_time_ms === null) return;
+            // 2. Fetch from page_events (UI exports)
+            page = 0;
+            hasMore = true;
+            while (hasMore) {
+                const { data: uiExports, error } = await supabase
+                    .from('page_events')
+                    .select('created_at, metadata')
+                    .eq('event_type', 'poster_export')
+                    .gte('created_at', startDate.toISOString())
+                    .order('created_at', { ascending: true })
+                    .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
-                    const timestamp = new Date(record.created_at).getTime();
-                    let key: string;
+                if (error) return { error };
 
-                    if (isSubDaily) {
-                        const intervalMs = intervalMinutes * 60 * 1000;
-                        const rounded = Math.floor(timestamp / intervalMs) * intervalMs;
-                        key = new Date(rounded).toISOString();
-                    } else {
-                        key = record.created_at.split('T')[0];
-                    }
+                if (uiExports && uiExports.length > 0) {
+                    uiExports.forEach((record: any) => {
+                        const latencyMs = record.metadata?.render_time_ms;
+                        if (latencyMs === null || latencyMs === undefined) return;
 
-                    if (latencies[key] === undefined) {
-                        latencies[key] = { sum: 0, count: 0 };
-                    }
+                        const timestamp = new Date(record.created_at).getTime();
+                        let key: string;
 
-                    latencies[key].sum += record.response_time_ms;
-                    latencies[key].count += 1;
-                });
+                        if (isSubDaily) {
+                            const intervalMs = intervalMinutes * 60 * 1000;
+                            const rounded = Math.floor(timestamp / intervalMs) * intervalMs;
+                            key = new Date(rounded).toISOString();
+                        } else {
+                            key = record.created_at.split('T')[0];
+                        }
 
-                if (apiUsage.length < PAGE_SIZE) {
-                    hasMore = false;
-                } else {
-                    page++;
-                }
-            } else {
-                hasMore = false;
+                        if (latencies[key] === undefined) {
+                            latencies[key] = { sum: 0, count: 0 };
+                        }
+
+                        latencies[key].sum += latencyMs;
+                        latencies[key].count += 1;
+                    });
+
+                    if (uiExports.length < PAGE_SIZE) hasMore = false;
+                    else page++;
+                } else hasMore = false;
+
+                if (page > 100) break;
             }
+            return {};
+        };
 
-            // Safety break
-            if (page > 100) break;
+        const { error } = await fetchGenerationLatency();
+        if (error) {
+            return NextResponse.json({ error: error.message }, { status: 500 });
         }
     }
 

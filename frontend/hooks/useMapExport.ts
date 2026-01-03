@@ -49,7 +49,7 @@ export function useMapExport(config: PosterConfig) {
 
     const filename = typeof filenameOrEvent === 'string' ? filenameOrEvent : undefined;
 
-    setIsExporting(true);
+    const startTime = Date.now();
     try {
       const blob = await exportMapToPNG({
         map: mapRef.current,
@@ -57,6 +57,7 @@ export function useMapExport(config: PosterConfig) {
         resolution,
       });
 
+      const duration = Date.now() - startTime;
       const exportFilename = filename || `${(config.location.name || 'poster').toString().replace(/[^a-z0-9]/gi, '-').toLowerCase()}-poster.png`;
       downloadBlob(blob, exportFilename);
 
@@ -70,7 +71,8 @@ export function useMapExport(config: PosterConfig) {
           style_id: config.style.id,
           style_name: config.style.name,
           resolution: resolution || { width: 2400, height: 3600, pixelRatio: 1 }, // Default if not provided
-          source: 'in-app'
+          source: 'in-app',
+          render_time_ms: duration
         }
       });
     } catch (error) {
