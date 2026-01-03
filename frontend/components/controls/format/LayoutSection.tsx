@@ -5,6 +5,7 @@ import { Tooltip } from '@/components/ui/tooltip-simple';
 import { Frame } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { PosterConfig } from '@/types/poster';
+import { trackEventAction } from '@/lib/actions/events';
 
 interface LayoutSectionProps {
     format: PosterConfig['format'];
@@ -27,7 +28,15 @@ export function LayoutSection({ format, onFormatChange }: LayoutSectionProps) {
                         max="20"
                         step="0.5"
                         value={format.margin}
-                        onChange={(e) => onFormatChange({ margin: parseFloat(e.target.value) })}
+                        onChange={(e) => {
+                            const margin = parseFloat(e.target.value);
+                            onFormatChange({ margin });
+                            trackEventAction({
+                                eventType: 'format_change',
+                                eventName: 'margin',
+                                metadata: { value: margin }
+                            });
+                        }}
                     />
                 </div>
 
@@ -36,7 +45,14 @@ export function LayoutSection({ format, onFormatChange }: LayoutSectionProps) {
                     <ControlRow>
                         <button
                             type="button"
-                            onClick={() => onFormatChange({ maskShape: 'rectangular' })}
+                            onClick={() => {
+                                onFormatChange({ maskShape: 'rectangular' });
+                                trackEventAction({
+                                    eventType: 'format_change',
+                                    eventName: 'mask_shape',
+                                    metadata: { value: 'rectangular' }
+                                });
+                            }}
                             className={cn(
                                 'flex items-center justify-center gap-2 p-3 border rounded-lg transition-all',
                                 (format.maskShape || 'rectangular') === 'rectangular'
@@ -54,7 +70,14 @@ export function LayoutSection({ format, onFormatChange }: LayoutSectionProps) {
                             <button
                                 type="button"
                                 disabled={!isSquareAspectRatio}
-                                onClick={() => onFormatChange({ maskShape: 'circular' })}
+                                onClick={() => {
+                                    onFormatChange({ maskShape: 'circular' });
+                                    trackEventAction({
+                                        eventType: 'format_change',
+                                        eventName: 'mask_shape',
+                                        metadata: { value: 'circular' }
+                                    });
+                                }}
                                 className={cn(
                                     'flex items-center justify-center gap-2 p-3 border rounded-lg transition-all',
                                     format.maskShape === 'circular'
@@ -97,7 +120,14 @@ export function LayoutSection({ format, onFormatChange }: LayoutSectionProps) {
                             <button
                                 key={style}
                                 type="button"
-                                onClick={() => onFormatChange({ borderStyle: style as PosterConfig['format']['borderStyle'] })}
+                                onClick={() => {
+                                    onFormatChange({ borderStyle: style as PosterConfig['format']['borderStyle'] });
+                                    trackEventAction({
+                                        eventType: 'format_change',
+                                        eventName: 'border_style',
+                                        metadata: { value: style }
+                                    });
+                                }}
                                 className={cn(
                                     'p-2 text-xs font-medium capitalize border rounded-lg transition-all',
                                     format.borderStyle === style

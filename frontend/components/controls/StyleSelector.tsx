@@ -1,10 +1,9 @@
-'use client';
-
 import { useState } from 'react';
 import type { PosterStyle, PosterConfig } from '@/types/poster';
 import { styles } from '@/lib/styles';
 import { cn } from '@/lib/utils';
 import { Check, Sparkles } from 'lucide-react';
+import { trackEventAction } from '@/lib/actions/events';
 
 interface StyleSelectorProps {
   selectedStyleId: string;
@@ -61,7 +60,14 @@ export function StyleSelector({ selectedStyleId, onStyleSelect, currentConfig }:
             <button
               key={style.id}
               type="button"
-              onClick={() => onStyleSelect(style)}
+              onClick={() => {
+                onStyleSelect(style);
+                trackEventAction({
+                  eventType: 'style_change',
+                  eventName: style.name,
+                  metadata: { styleId: style.id }
+                });
+              }}
               className={cn(
                 'group relative flex flex-col gap-2.5 p-3 text-left border rounded-lg transition-all hover:scale-[1.02]',
                 isSelected

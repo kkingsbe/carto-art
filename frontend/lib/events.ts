@@ -8,7 +8,13 @@ export type EventType =
     | 'key_generate'
     | 'page_view'
     | 'click'
-    | 'api_call';
+    | 'api_call'
+    | 'search_location'
+    | 'style_change'
+    | 'layer_toggle'
+    | 'interaction'
+    | 'format_change'
+    | 'palette_change';
 
 /**
  * Tracks a user event in the database for admin analytics.

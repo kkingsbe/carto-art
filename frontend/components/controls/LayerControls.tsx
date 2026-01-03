@@ -5,6 +5,7 @@ import { ControlSection, ControlCheckbox, CollapsibleSection } from '@/component
 import { MarkerControls } from './layers/MarkerControls';
 import { RenderingControls } from './layers/RenderingControls';
 import { LayerToggleItem } from './layers/LayerToggleItem';
+import { trackEventAction } from '@/lib/actions/events';
 
 interface LayerControlsProps {
   layers: PosterConfig['layers'];
@@ -18,7 +19,14 @@ interface LayerControlsProps {
 export function LayerControls({ layers, rendering, onLayersChange, onRenderingChange, availableToggles, palette }: LayerControlsProps) {
 
   const toggleLayer = (key: keyof PosterConfig['layers']) => {
-    onLayersChange({ [key]: !layers[key] });
+    const newValue = !layers[key];
+    onLayersChange({ [key]: newValue });
+
+    trackEventAction({
+      eventType: 'layer_toggle',
+      eventName: key,
+      metadata: { enabled: newValue }
+    });
   };
 
   const isTerrainUnderWaterToggleVisible = availableToggles.some(t => t.id === 'terrainUnderWater');

@@ -1,11 +1,10 @@
-'use client';
-
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Search } from 'lucide-react';
 import { searchLocation, nominatimResultToPosterLocation, type NominatimResult } from '@/lib/geocoding/nominatim';
 import type { PosterLocation } from '@/types/poster';
 import { cn } from '@/lib/utils';
 import { ControlInput } from '@/components/ui/control-components';
+import { trackEventAction } from '@/lib/actions/events';
 
 interface LocationSearchProps {
   onLocationSelect: (location: PosterLocation) => void;
@@ -50,6 +49,16 @@ export function LocationSearch({ onLocationSelect, currentLocation }: LocationSe
     (location: PosterLocation) => {
       onLocationSelect(location);
       setQuery(location.name);
+
+      trackEventAction({
+        eventType: 'search_location',
+        eventName: location.name,
+        metadata: {
+          subtitle: location.subtitle,
+          center: location.center,
+        }
+      });
+
       close();
     },
     [close, onLocationSelect]

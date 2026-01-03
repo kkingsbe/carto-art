@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ArrowRight, Map, Sparkles, ChevronRight, Cpu } from 'lucide-react';
 import { Background3D } from '@/components/landing/3DBackground';
 import { Button } from '@/components/ui/button';
+import { trackEventAction } from '@/lib/actions/events';
 
 export function Hero() {
   return (
@@ -41,6 +42,7 @@ export function Hero() {
             <Link href="/editor">
               <Button
                 size="lg"
+                onClick={() => trackEventAction({ eventType: 'click', eventName: 'hero_create_map' })}
                 className="h-14 px-8 text-lg bg-[#c9a962] hover:bg-[#b87333] text-[#0a0f1a] font-bold rounded-full shadow-[0_0_20px_rgba(201,169,98,0.3)] hover:shadow-[0_0_30px_rgba(201,169,98,0.5)] transition-all duration-300"
               >
                 Create Free Map

@@ -6,6 +6,7 @@ import type { ColorPalette } from '@/types/poster';
 import { cn } from '@/lib/utils';
 import { ControlLabel, ControlInput } from '@/components/ui/control-components';
 import { Check, ChevronDown, Palette, Paintbrush } from 'lucide-react';
+import { trackEventAction } from '@/lib/actions/events';
 import {
   Accordion,
   AccordionContent,
@@ -94,7 +95,14 @@ export function ColorControls({ palette, presets, onPaletteChange }: ColorContro
                 <button
                   key={preset.id}
                   type="button"
-                  onClick={() => onPaletteChange(preset)}
+                  onClick={() => {
+                    onPaletteChange(preset);
+                    trackEventAction({
+                      eventType: 'palette_change',
+                      eventName: preset.name,
+                      metadata: { paletteId: preset.id }
+                    });
+                  }}
                   className={cn(
                     'group relative flex flex-col gap-2 p-2.5 text-left border rounded-lg transition-all hover:scale-[1.02]',
                     isActive

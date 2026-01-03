@@ -4,6 +4,7 @@ import { ControlSection, ControlLabel, ControlRow } from '@/components/ui/contro
 import { cn } from '@/lib/utils';
 import { Crop } from 'lucide-react';
 import type { PosterConfig } from '@/types/poster';
+import { trackEventAction } from '@/lib/actions/events';
 
 interface DimensionSectionProps {
     format: PosterConfig['format'];
@@ -29,6 +30,12 @@ const aspectRatioOptions: Array<{
 
 export function DimensionSection({ format, onFormatChange }: DimensionSectionProps) {
     const handleAspectRatioChange = (newAspectRatio: PosterConfig['format']['aspectRatio']) => {
+        trackEventAction({
+            eventType: 'format_change',
+            eventName: 'aspect_ratio',
+            metadata: { value: newAspectRatio }
+        });
+
         // Auto-reset maskShape to rectangular if changing away from square while circular is active
         if (format.maskShape === 'circular' && newAspectRatio !== '1:1') {
             onFormatChange({ aspectRatio: newAspectRatio, maskShape: 'rectangular' });
@@ -100,7 +107,14 @@ export function DimensionSection({ format, onFormatChange }: DimensionSectionPro
                     <ControlRow>
                         <button
                             type="button"
-                            onClick={() => onFormatChange({ orientation: 'portrait' })}
+                            onClick={() => {
+                                onFormatChange({ orientation: 'portrait' });
+                                trackEventAction({
+                                    eventType: 'format_change',
+                                    eventName: 'orientation',
+                                    metadata: { value: 'portrait' }
+                                });
+                            }}
                             className={cn(
                                 'flex items-center justify-center gap-2 p-3 border rounded-lg transition-all',
                                 format.orientation === 'portrait'
@@ -113,7 +127,14 @@ export function DimensionSection({ format, onFormatChange }: DimensionSectionPro
                         </button>
                         <button
                             type="button"
-                            onClick={() => onFormatChange({ orientation: 'landscape' })}
+                            onClick={() => {
+                                onFormatChange({ orientation: 'landscape' });
+                                trackEventAction({
+                                    eventType: 'format_change',
+                                    eventName: 'orientation',
+                                    metadata: { value: 'landscape' }
+                                });
+                            }}
                             className={cn(
                                 'flex items-center justify-center gap-2 p-3 border rounded-lg transition-all',
                                 format.orientation === 'landscape'

@@ -13,6 +13,7 @@ import { EditorToolbar } from '@/components/editor/EditorToolbar';
 import { applyPaletteToStyle } from '@/lib/styles/applyPalette';
 import { throttle } from '@/lib/utils';
 import { THROTTLE } from '@/lib/constants';
+import { trackEventAction } from '@/lib/actions/events';
 import { getNumericRatio } from '@/lib/styles/dimensions';
 import { TabNavigation, type Tab } from './TabNavigation';
 import { ControlDrawer } from './ControlDrawer';
@@ -118,7 +119,12 @@ export function PosterEditor() {
   // Wrapper for SaveButton that passes current config, to maintain simpler API for EditorToolbar
   const handleSaveClick = useCallback(async (name: string) => {
     await saveProject(name, config);
-  }, [saveProject, config]);
+    trackEventAction({
+      eventType: 'map_publish',
+      eventName: 'save_project',
+      metadata: { name, mapId: currentMapId }
+    });
+  }, [saveProject, config, currentMapId]);
 
   const numericRatio = useMemo(() => {
     return getNumericRatio(config.format.aspectRatio, config.format.orientation);
@@ -159,13 +165,25 @@ export function PosterEditor() {
 
       {/* Top Toolbar - Floating */}
       <EditorToolbar
-        onUndo={undo}
-        onRedo={redo}
+        onUndo={() => {
+          undo();
+          trackEventAction({ eventType: 'interaction', eventName: 'undo' });
+        }}
+        onRedo={() => {
+          redo();
+          trackEventAction({ eventType: 'interaction', eventName: 'redo' });
+        }}
         canUndo={canUndo}
         canRedo={canRedo}
-        onReset={resetProject}
+        onReset={() => {
+          resetProject();
+          trackEventAction({ eventType: 'interaction', eventName: 'reset_project' });
+        }}
         onSave={handleSaveClick}
-        onSaveCopy={saveCopy}
+        onSaveCopy={async (name) => {
+          await saveCopy(name);
+          trackEventAction({ eventType: 'map_publish', eventName: 'save_copy', metadata: { name } });
+        }}
         onExport={handleExport}
         isExporting={isExporting}
         currentMapName={currentMapName}

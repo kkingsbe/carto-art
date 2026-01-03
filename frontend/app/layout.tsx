@@ -6,6 +6,8 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { BuyMeACoffeeWidget } from "@/components/third-party/BuyMeACoffeeWidget";
 import { Navbar } from "@/components/layout/Navbar";
 import { Toaster } from "sonner";
+import { PageViewTracker } from "@/components/analytics/PageViewTracker";
+import { Suspense } from "react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -75,6 +77,9 @@ export default function RootLayout({
         )}
         <BuyMeACoffeeWidget />
         <Navbar />
+        <Suspense fallback={null}>
+          <PageViewTracker />
+        </Suspense>
         <main className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden">
           {children}
         </main>
