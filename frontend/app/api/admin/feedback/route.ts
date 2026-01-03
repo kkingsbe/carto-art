@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
         const limit = parseInt(searchParams.get('limit') || '50');
 
         // Build base query
-        let query = supabase
+        let query = (supabase as any)
             .from('feedback')
             .select(`
                 id,
@@ -74,12 +74,12 @@ export async function GET(request: NextRequest) {
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1);
 
-        const { data: feedback, error, count } = await query;
+        const { data: feedback, error, count } = await query as { data: any[] | null; error: any; count: number | null };
 
         if (error) throw error;
 
         // Calculate statistics
-        const statsQuery = supabase
+        const statsQuery = (supabase as any)
             .from('feedback')
             .select('overall_rating, nps_score');
 
@@ -102,13 +102,13 @@ export async function GET(request: NextRequest) {
             statsQueryFiltered = statsQueryFiltered.eq('trigger_type', triggerType);
         }
 
-        const { data: statsData, error: statsError } = await statsQueryFiltered;
+        const { data: statsData, error: statsError } = await statsQueryFiltered as { data: Array<{ overall_rating: number; nps_score: number | null }> | null; error: any };
 
         if (statsError) throw statsError;
 
         // Calculate aggregates
         const total = statsData?.length || 0;
-        const average_rating = total > 0
+        const average_rating = total > 0 && statsData
             ? statsData.reduce((sum, item) => sum + item.overall_rating, 0) / total
             : 0;
 

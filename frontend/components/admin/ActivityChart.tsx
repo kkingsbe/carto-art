@@ -224,6 +224,12 @@ export function ActivityChart() {
                                         year: 'numeric'
                                     });
                                 }}
+                                formatter={(value: any) => {
+                                    if (isLatencyMetric) {
+                                        return [`${value} ms`, 'Avg Latency'];
+                                    }
+                                    return [value, 'Count'];
+                                }}
                             />
                             <Area
                                 type="monotone"

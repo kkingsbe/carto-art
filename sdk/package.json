@@ -15,7 +15,7 @@
         "maps",
         "generative-art"
     ],
-    "author": "Kyle Kingsbury",
+    "author": "Kyle Kingsberry",
     "license": "MIT",
     "devDependencies": {
         "@types/node": "^20.0.0",
