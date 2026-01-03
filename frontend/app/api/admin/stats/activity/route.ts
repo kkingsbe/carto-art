@@ -1,22 +1,30 @@
 import { createClient } from '@/lib/supabase/server';
 import { isAdmin } from '@/lib/admin-auth';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     if (!(await isAdmin())) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { searchParams } = new URL(request.url);
+    const eventType = searchParams.get('type') || 'all';
 
     const supabase = await createClient();
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    // Fetch all events in the last 30 days
-    // Note: In a high-traffic app, we would use a proper SQL grouping via RPC
-    const { data: events, error } = await supabase
+    // Fetch events in the last 30 days
+    let query = supabase
         .from('page_events')
         .select('created_at')
-        .gte('created_at', thirtyDaysAgo.toISOString())
+        .gte('created_at', thirtyDaysAgo.toISOString());
+
+    if (eventType !== 'all') {
+        query = query.eq('event_type', eventType);
+    }
+
+    const { data: events, error } = await query
         .order('created_at', { ascending: true });
 
     if (error) {
