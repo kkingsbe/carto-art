@@ -9,16 +9,22 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const eventType = searchParams.get('type') || 'all';
+    const days = parseInt(searchParams.get('days') || '30');
+    const isHourly = days <= 1;
 
     const supabase = await createClient();
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const startDate = new Date();
+    if (isHourly) {
+        startDate.setHours(startDate.getHours() - 24);
+    } else {
+        startDate.setDate(startDate.getDate() - days);
+    }
 
-    // Fetch events in the last 30 days
+    // Fetch events in the last period
     let query = supabase
         .from('page_events')
         .select('created_at')
-        .gte('created_at', thirtyDaysAgo.toISOString());
+        .gte('created_at', startDate.toISOString());
 
     if (eventType !== 'all') {
         query = query.eq('event_type', eventType);
@@ -31,22 +37,40 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Group by date
+    // Grouping logic
     const counts: Record<string, number> = {};
 
-    // Initialize last 30 days with 0
-    for (let i = 0; i <= 30; i++) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        counts[d.toISOString().split('T')[0]] = 0;
-    }
-
-    (events as any[]).forEach(event => {
-        const date = (event.created_at as string).split('T')[0];
-        if (counts[date] !== undefined) {
-            counts[date]++;
+    if (isHourly) {
+        // Initialize last 24 hours with 0
+        for (let i = 0; i < 24; i++) {
+            const d = new Date();
+            d.setHours(d.getHours() - i, 0, 0, 0);
+            counts[d.toISOString()] = 0;
         }
-    });
+
+        (events as any[]).forEach(event => {
+            const date = new Date(event.created_at);
+            date.setMinutes(0, 0, 0);
+            const key = date.toISOString();
+            if (counts[key] !== undefined) {
+                counts[key]++;
+            }
+        });
+    } else {
+        // Initialize last X days with 0
+        for (let i = 0; i <= days; i++) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            counts[d.toISOString().split('T')[0]] = 0;
+        }
+
+        (events as any[]).forEach(event => {
+            const date = (event.created_at as string).split('T')[0];
+            if (counts[date] !== undefined) {
+                counts[date]++;
+            }
+        });
+    }
 
     const result = Object.entries(counts)
         .map(([date, count]) => ({ date, count }))

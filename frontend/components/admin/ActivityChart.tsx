@@ -27,16 +27,24 @@ const METRICS = [
     { id: 'style_change', label: 'Styles', color: '#ec4899' },
 ];
 
+const TIMEFRAMES = [
+    { id: '1', label: '24 Hours' },
+    { id: '7', label: '7 Days' },
+    { id: '30', label: '30 Days' },
+    { id: '90', label: '90 Days' },
+];
+
 export function ActivityChart() {
     const [data, setData] = useState<ActivityPoint[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedType, setSelectedType] = useState('all');
+    const [selectedDays, setSelectedDays] = useState('30');
 
     useEffect(() => {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                const res = await fetch(`/api/admin/stats/activity?type=${selectedType}`);
+                const res = await fetch(`/api/admin/stats/activity?type=${selectedType}&days=${selectedDays}`);
                 if (res.ok) {
                     const stats = await res.json();
                     setData(stats);
@@ -49,30 +57,55 @@ export function ActivityChart() {
         };
 
         fetchData();
-    }, [selectedType]);
+    }, [selectedType, selectedDays]);
 
     const activeColor = METRICS.find(m => m.id === selectedType)?.color || '#3b82f6';
+    const isHourly = selectedDays === '1';
 
     return (
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-                <h3 className="text-sm font-semibold flex items-center gap-2">
-                    Platform Activity (30 Days)
-                </h3>
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+                <div>
+                    <h3 className="text-sm font-semibold flex items-center gap-2 mb-1">
+                        Platform Activity
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {isHourly ? 'Last 24 hours (hourly)' : `Last ${selectedDays} days (daily)`}
+                    </p>
+                </div>
 
-                <div className="flex flex-wrap gap-1 p-1 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800">
-                    {METRICS.map((metric) => (
-                        <button
-                            key={metric.id}
-                            onClick={() => setSelectedType(metric.id)}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${selectedType === metric.id
-                                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-200 dark:ring-gray-600'
-                                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                                }`}
-                        >
-                            {metric.label}
-                        </button>
-                    ))}
+                <div className="flex flex-wrap items-center gap-4">
+                    {/* Metric Selector */}
+                    <div className="flex p-1 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800">
+                        {METRICS.map((metric) => (
+                            <button
+                                key={metric.id}
+                                onClick={() => setSelectedType(metric.id)}
+                                className={`px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-tight rounded-md transition-all ${selectedType === metric.id
+                                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-200 dark:ring-gray-600'
+                                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                    }`}
+                            >
+                                {metric.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Timeframe Selector */}
+                    <div className="flex p-1 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100/50 dark:border-blue-800/20">
+                        {TIMEFRAMES.map((tf) => (
+                            <button
+                                key={tf.id}
+                                onClick={() => setSelectedDays(tf.id)}
+                                className={`px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-tight rounded-md transition-all ${selectedDays === tf.id
+                                        ? 'bg-blue-600 text-white shadow-sm'
+                                        : 'text-blue-600/60 hover:text-blue-600 dark:text-blue-400/60 dark:hover:text-blue-400'
+                                    }`}
+                            >
+                                {tf.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
@@ -99,6 +132,9 @@ export function ActivityChart() {
                                 minTickGap={30}
                                 tickFormatter={(str) => {
                                     const date = new Date(str);
+                                    if (isHourly) {
+                                        return date.toLocaleTimeString(undefined, { hour: '2-digit', hour12: false }) + ':00';
+                                    }
                                     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
                                 }}
                             />
@@ -117,6 +153,22 @@ export function ActivityChart() {
                                 }}
                                 itemStyle={{ color: activeColor, fontWeight: 600 }}
                                 labelStyle={{ color: '#6b7280', marginBottom: '4px' }}
+                                labelFormatter={(label) => {
+                                    const date = new Date(label);
+                                    if (isHourly) {
+                                        return date.toLocaleString(undefined, {
+                                            month: 'short',
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        });
+                                    }
+                                    return date.toLocaleDateString(undefined, {
+                                        month: 'long',
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                    });
+                                }}
                             />
                             <Area
                                 type="monotone"
