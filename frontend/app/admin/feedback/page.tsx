@@ -10,7 +10,7 @@ export default function FeedbackPage() {
                 </p>
             </div>
 
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-12 text-center text-gray-500">
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 md:p-12 text-center text-gray-500">
                 <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-700" />
                 <p>Feedback management interface coming soon.</p>
             </div>

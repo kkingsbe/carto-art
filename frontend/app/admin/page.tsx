@@ -59,7 +59,7 @@ export default async function AdminDashboardPage() {
             </div>
 
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 <MetricCard
                     title="Total Users"
                     value={totalUsers?.toLocaleString() || '0'}
@@ -97,7 +97,7 @@ export default async function AdminDashboardPage() {
                 />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
                 {/* Analytics Section */}
                 <div className="lg:col-span-2">
                     <ActivityChart />
@@ -105,7 +105,7 @@ export default async function AdminDashboardPage() {
 
                 {/* Activity Feed Section */}
                 <div className="space-y-6">
-                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 flex flex-col h-full">
+                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 md:p-6 flex flex-col h-full">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="font-semibold flex items-center gap-2">
                                 <Fingerprint className="w-4 h-4" />
