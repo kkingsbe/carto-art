@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Download, Loader2, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ExportOptionsModal } from './ExportOptionsModal';
-import { KofiTipModal } from './KofiTipModal';
+import { BuyMeACoffeeModal } from './BuyMeACoffeeModal';
 import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 import { useFeedback } from '@/components/feedback/useFeedback';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -17,25 +17,19 @@ interface ExportButtonProps {
   isExporting: boolean;
   format: PosterConfig['format'];
   className?: string;
+  showDonationModal: boolean;
+  onDonationModalChange: (show: boolean) => void;
 }
 
-export function ExportButton({ onExport, isExporting, format, className }: ExportButtonProps) {
-  const [showKofiModal, setShowKofiModal] = useState(false);
+export function ExportButton({
+  onExport,
+  isExporting,
+  format,
+  className,
+  showDonationModal,
+  onDonationModalChange
+}: ExportButtonProps) {
   const [showOptionsModal, setShowOptionsModal] = useState(false);
-  const [localExportCount, setLocalExportCount] = useState(0);
-
-  // Integrate feedback system
-  // We track local exports to decide when to trigger the check
-  const {
-    shouldShow,
-    showFeedback,
-    isSubmitting: isFeedbackSubmitting,
-    submitFeedback,
-    dismissFeedback
-  } = useFeedback({
-    triggerType: 'post_export',
-    exportCount: localExportCount,
-  });
 
   const handleExportClick = () => {
     setShowOptionsModal(true);
@@ -44,13 +38,11 @@ export function ExportButton({ onExport, isExporting, format, className }: Expor
   const handleStartExport = (resolution: ExportResolution) => {
     setShowOptionsModal(false);
     onExport(resolution);
-    setShowKofiModal(true);
-    // Increment local export count to potentially trigger feedback check
-    setLocalExportCount(prev => prev + 1);
+    onDonationModalChange(true);
   };
 
-  const handleCloseKofi = () => {
-    setShowKofiModal(false);
+  const handleCloseBmc = () => {
+    onDonationModalChange(false);
   };
 
   return (
@@ -110,18 +102,9 @@ export function ExportButton({ onExport, isExporting, format, className }: Expor
         format={format}
       />
 
-      <KofiTipModal
-        isOpen={showKofiModal}
-        onClose={handleCloseKofi}
-      />
-
-      {/* Feedback Modal - Only show if indicated AND donation modal is closed */}
-      <FeedbackModal
-        isOpen={shouldShow && !showKofiModal}
-        onClose={() => dismissFeedback(false)}
-        onDismiss={dismissFeedback}
-        onSubmit={submitFeedback}
-        isSubmitting={isFeedbackSubmitting}
+      <BuyMeACoffeeModal
+        isOpen={showDonationModal}
+        onClose={handleCloseBmc}
       />
     </>
   );

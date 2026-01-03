@@ -49,7 +49,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         try {
             // 1. Geocode the location string
             console.error(`Geocoding: ${args.location}`);
-            const geocodeBaseUrl = API_URL.replace("/posters/generate", "/geocode");
+            const geocodeBaseUrl = API_URL.replace("/api/v1/posters/generate", "/api/geocode");
             const geocodeResponse = await fetch(`${geocodeBaseUrl}?q=${encodeURIComponent(args.location)}&limit=1`, {
                 headers: { "Authorization": `Bearer ${process.env.CARTO_ART_API_KEY || "local-dev"}` }
             });

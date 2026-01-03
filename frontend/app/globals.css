@@ -139,38 +139,7 @@
   }
 }
 
-/* Ko-fi widget positioning - move to right side */
-.floatingchat-container-wrap,
-[class*="floatingchat"],
-[class*="floating-chat"] {
-  left: unset !important;
-  right: 16px !important;
-}
 
-.floating-chat-kofi-popup-iframe,
-[class*="floating-chat"][class*="popup"],
-[class*="floating-chat"][class*="iframe"],
-[id*="floating-chat"] {
-  left: unset !important;
-  right: 16px !important;
-}
-
-/* Target any Ko-fi widget containers */
-iframe[src*="ko-fi.com"],
-div[class*="kofi"],
-div[id*="kofi"] {
-  left: unset !important;
-  right: 16px !important;
-}
-
-/* Hide Ko-fi floating button on mobile devices (but keep modal accessible) */
-@media (max-width: 768px) {
-  .floatingchat-container-wrap,
-  [class*="floatingchat"]:not([class*="popup"]):not([class*="iframe"]) {
-    display: none !important;
-    visibility: hidden !important;
-  }
-}
 
 /* Masonry grid layout for feed - react-masonry-css */
 .my-masonry-grid {

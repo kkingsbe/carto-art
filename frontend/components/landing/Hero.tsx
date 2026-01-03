@@ -109,7 +109,7 @@ export function Hero() {
                   <span className="text-xs text-white/60">Coordinates</span>
                   <Map className="w-3 h-3 text-[#c9a962]" />
                 </div>
-                <div className="text-xs font-mono text-white">40.7128° N<br />74.0060° W</div>
+                <div className="text-xs font-mono text-white">32.16° N<br />110.96° W</div>
               </div>
             </div>
 

@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { KofiWidget } from "@/components/third-party/KofiWidget";
+import { BuyMeACoffeeWidget } from "@/components/third-party/BuyMeACoffeeWidget";
 import { Navbar } from "@/components/layout/Navbar";
 import { Toaster } from "sonner";
 
@@ -73,7 +73,7 @@ export default function RootLayout({
             </Script>
           </>
         )}
-        <KofiWidget />
+        <BuyMeACoffeeWidget />
         <Navbar />
         <main className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden">
           {children}

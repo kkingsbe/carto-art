@@ -20,7 +20,7 @@ export function CodeGenerator() {
     const [activeTab, setActiveTab] = useState<Language>('curl');
 
     const getSnippet = (lang: Language) => {
-        const url = 'https://carto-art.com/api/v1/posters/generate';
+        const url = 'https://cartoart.net/api/v1/posters/generate';
         const token = apiKey || 'YOUR_API_KEY';
 
         const payload = {

@@ -19,7 +19,8 @@ export default function MCPPage() {
         "@kkingsbe/carto-art-mcp"
       ],
       "env": {
-        "CARTO_ART_API_KEY": "YOUR_API_KEY_HERE"
+        "CARTO_ART_API_KEY": "YOUR_API_KEY_HERE",
+        "CARTO_ART_API_URL": "https://cartoart.net/api/v1/posters/generate"
       }
     }
   }

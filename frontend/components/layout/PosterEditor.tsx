@@ -73,6 +73,9 @@ export function PosterEditor() {
     hasUnsavedChanges: boolean;
   } | null>(null);
 
+  // Modal coordination
+  const [showDonationModal, setShowDonationModal] = useState(false);
+
   const { isExporting, exportToPNG, setMapRef, fitToLocation, zoomIn, zoomOut } = useMapExport(config);
 
   // Keep a reference to the map instance for thumbnail generation
@@ -337,6 +340,8 @@ export function PosterEditor() {
         isAuthenticated={isAuthenticated}
         format={config.format}
         currentMapId={currentMapId}
+        showDonationModal={showDonationModal}
+        onDonationModalChange={setShowDonationModal}
       />
 
       {/* Floating Sidebar Container */}
@@ -552,9 +557,9 @@ export function PosterEditor() {
         </div>
       </main>
 
-      {/* Feedback Modal */}
+      {/* Feedback Modal - Only show if indicated AND donation modal is closed */}
       <FeedbackModal
-        isOpen={shouldShowFeedback}
+        isOpen={shouldShowFeedback && !showDonationModal}
         onClose={hideFeedback}
         onSubmit={handleFeedbackSubmit}
         isSubmitting={isFeedbackSubmitting}

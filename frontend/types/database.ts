@@ -352,6 +352,35 @@ export interface Database {
           updated_at?: string;
         };
       };
+      notifications: {
+        Row: {
+          id: string;
+          recipient_id: string;
+          actor_id: string;
+          type: 'FOLLOW' | 'MAP_POST' | 'COMMENT' | 'LIKE';
+          resource_id: string | null;
+          read_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          recipient_id: string;
+          actor_id: string;
+          type: 'FOLLOW' | 'MAP_POST' | 'COMMENT' | 'LIKE';
+          resource_id?: string | null;
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          recipient_id?: string;
+          actor_id?: string;
+          type?: 'FOLLOW' | 'MAP_POST' | 'COMMENT' | 'LIKE';
+          resource_id?: string | null;
+          read_at?: string | null;
+          created_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;
@@ -360,7 +389,7 @@ export interface Database {
       [_ in never]: never;
     };
     Enums: {
-      [_ in never]: never;
+      notification_type: 'FOLLOW' | 'MAP_POST' | 'COMMENT' | 'LIKE';
     };
   };
 }

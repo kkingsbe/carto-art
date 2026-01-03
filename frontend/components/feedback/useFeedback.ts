@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type {
     FeedbackSubmission,
     FeedbackDismissal,
@@ -35,6 +35,19 @@ export function useFeedback({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [delayMs, setDelayMs] = useState(0);
 
+    const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+    const isMounted = useRef(false);
+    const abortControllerRef = useRef<AbortController | null>(null);
+
+    useEffect(() => {
+        isMounted.current = true;
+        return () => {
+            isMounted.current = false;
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            if (abortControllerRef.current) abortControllerRef.current.abort();
+        };
+    }, []);
+
     // Check if we should show feedback
     const checkShouldShow = useCallback(async () => {
         if (triggerType === 'voluntary') {
@@ -43,6 +56,15 @@ export function useFeedback({
             return;
         }
 
+        // Cancel any pending request
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+
+        // Create new controller for this request
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
         setIsLoading(true);
         try {
             const params = new URLSearchParams({
@@ -50,20 +72,34 @@ export function useFeedback({
                 export_count: exportCount.toString(),
             });
 
-            const response = await fetch(`/api/feedback/should-show?${params}`);
+            const response = await fetch(`/api/feedback/should-show?${params}`, {
+                signal: controller.signal
+            });
+
+            if (!isMounted.current) return;
+
             const data: ShouldShowFeedbackResponse = await response.json();
 
             if (data.should_show && data.delay_ms !== undefined) {
                 setDelayMs(data.delay_ms);
+                // Clear any existing timeout before setting a new one
+                if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
                 // Apply delay before showing
-                setTimeout(() => {
-                    setShouldShow(true);
+                timeoutRef.current = setTimeout(() => {
+                    if (isMounted.current) setShouldShow(true);
                 }, data.delay_ms);
             }
         } catch (error) {
+            if (error instanceof Error && error.name === 'AbortError') {
+                // Ignore abort errors
+                return;
+            }
             console.error('Error checking feedback status:', error);
         } finally {
-            setIsLoading(false);
+            if (isMounted.current && abortControllerRef.current === controller) {
+                setIsLoading(false);
+            }
         }
     }, [triggerType, exportCount]);
 
@@ -103,13 +139,13 @@ export function useFeedback({
                 throw new Error('Failed to submit feedback');
             }
 
-            setShouldShow(false);
+            if (isMounted.current) setShouldShow(false);
             return true;
         } catch (error) {
             console.error('Error submitting feedback:', error);
             return false;
         } finally {
-            setIsSubmitting(false);
+            if (isMounted.current) setIsSubmitting(false);
         }
     }, [triggerType, exportCount, mapId]);
 
@@ -129,7 +165,7 @@ export function useFeedback({
         } catch (error) {
             console.error('Error dismissing feedback:', error);
         } finally {
-            setShouldShow(false);
+            if (isMounted.current) setShouldShow(false);
         }
     }, [triggerType]);
 

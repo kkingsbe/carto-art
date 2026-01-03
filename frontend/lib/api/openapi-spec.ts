@@ -8,7 +8,7 @@ export const openApiSpec = {
         description: 'Programmatically generate beautiful map posters and access cartographic data.',
         contact: {
             name: 'Carto-Art Support',
-            email: 'support@carto-art.com'
+            email: 'support@cartoart.net'
         }
     },
     servers: [

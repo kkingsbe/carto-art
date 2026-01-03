@@ -29,6 +29,8 @@ interface EditorToolbarProps {
     isAuthenticated: boolean;
     format: PosterConfig['format'];
     currentMapId: string | null;
+    showDonationModal: boolean;
+    onDonationModalChange: (show: boolean) => void;
 }
 
 export function EditorToolbar({
@@ -45,7 +47,9 @@ export function EditorToolbar({
     hasUnsavedChanges,
     isAuthenticated,
     format,
-    currentMapId
+    currentMapId,
+    showDonationModal,
+    onDonationModalChange
 }: EditorToolbarProps) {
     return (
         <div className="absolute top-6 right-8 z-50 pointer-events-auto flex items-center gap-3">
@@ -109,6 +113,8 @@ export function EditorToolbar({
                     isExporting={isExporting}
                     format={format}
                     className="shadow-lg backdrop-blur-md"
+                    showDonationModal={showDonationModal}
+                    onDonationModalChange={onDonationModalChange}
                 />
             </div>
         </div>

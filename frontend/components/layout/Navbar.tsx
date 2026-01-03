@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { AuthButton } from '@/components/auth/AuthButton';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { cn } from '@/lib/utils';
 import { ArrowLeft } from 'lucide-react';
 
@@ -72,6 +73,7 @@ export function Navbar() {
                 </div>
 
                 <div className="flex items-center gap-4">
+                    <NotificationBell />
                     <div className="flex items-center pl-2 border-l border-border/50">
                         <AuthButton />
                     </div>
