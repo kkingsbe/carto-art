@@ -9,13 +9,15 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const eventType = searchParams.get('type') || 'all';
-    const days = parseInt(searchParams.get('days') || '30');
+    const days = parseFloat(searchParams.get('days') || '30');
     const isHourly = days <= 1;
 
     const supabase = await createClient();
     const startDate = new Date();
+    const hoursToFetch = Math.round(days * 24);
+
     if (isHourly) {
-        startDate.setHours(startDate.getHours() - 24);
+        startDate.setHours(startDate.getHours() - hoursToFetch);
     } else {
         startDate.setDate(startDate.getDate() - days);
     }
@@ -41,8 +43,8 @@ export async function GET(request: NextRequest) {
     const counts: Record<string, number> = {};
 
     if (isHourly) {
-        // Initialize last 24 hours with 0
-        for (let i = 0; i < 24; i++) {
+        // Initialize last X hours with 0
+        for (let i = 0; i < hoursToFetch; i++) {
             const d = new Date();
             d.setHours(d.getHours() - i, 0, 0, 0);
             counts[d.toISOString()] = 0;

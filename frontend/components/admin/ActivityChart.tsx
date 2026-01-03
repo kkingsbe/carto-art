@@ -28,6 +28,7 @@ const METRICS = [
 ];
 
 const TIMEFRAMES = [
+    { id: '0.25', label: '6 Hours' },
     { id: '1', label: '24 Hours' },
     { id: '7', label: '7 Days' },
     { id: '30', label: '30 Days' },
@@ -60,7 +61,7 @@ export function ActivityChart() {
     }, [selectedType, selectedDays]);
 
     const activeColor = METRICS.find(m => m.id === selectedType)?.color || '#3b82f6';
-    const isHourly = selectedDays === '1';
+    const isHourly = parseFloat(selectedDays) <= 1;
 
     return (
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
@@ -70,7 +71,9 @@ export function ActivityChart() {
                         Platform Activity
                     </h3>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {isHourly ? 'Last 24 hours (hourly)' : `Last ${selectedDays} days (daily)`}
+                        {isHourly
+                            ? (selectedDays === '0.25' ? 'Last 6 hours (hourly)' : 'Last 24 hours (hourly)')
+                            : `Last ${selectedDays} days (daily)`}
                     </p>
                 </div>
 
@@ -82,8 +85,8 @@ export function ActivityChart() {
                                 key={metric.id}
                                 onClick={() => setSelectedType(metric.id)}
                                 className={`px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-tight rounded-md transition-all ${selectedType === metric.id
-                                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-200 dark:ring-gray-600'
-                                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-200 dark:ring-gray-600'
+                                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                                     }`}
                             >
                                 {metric.label}
@@ -98,8 +101,8 @@ export function ActivityChart() {
                                 key={tf.id}
                                 onClick={() => setSelectedDays(tf.id)}
                                 className={`px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-tight rounded-md transition-all ${selectedDays === tf.id
-                                        ? 'bg-blue-600 text-white shadow-sm'
-                                        : 'text-blue-600/60 hover:text-blue-600 dark:text-blue-400/60 dark:hover:text-blue-400'
+                                    ? 'bg-blue-600 text-white shadow-sm'
+                                    : 'text-blue-600/60 hover:text-blue-600 dark:text-blue-400/60 dark:hover:text-blue-400'
                                     }`}
                             >
                                 {tf.label}
