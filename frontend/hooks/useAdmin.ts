@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import type { Database } from '@/types/database';
+
+type Profile = Database['public']['Tables']['profiles']['Row'];
 
 export function useAdmin() {
     const [isAdmin, setIsAdmin] = useState(false);
@@ -22,7 +25,8 @@ export function useAdmin() {
                     .eq('id', user.id)
                     .single();
 
-                setIsAdmin(!!profile?.is_admin);
+                const typedProfile = profile as Pick<Profile, 'is_admin'> | null;
+                setIsAdmin(!!typedProfile?.is_admin);
             } catch (error) {
                 // console.error('Error checking admin status:', error);
                 setIsAdmin(false);
