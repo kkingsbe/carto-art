@@ -23,6 +23,7 @@ export interface Database {
           featured_map_ids: string[] | null;
           created_at: string;
           updated_at: string;
+          is_admin: boolean;
         };
         Insert: {
           id: string;
@@ -32,6 +33,7 @@ export interface Database {
           featured_map_ids?: string[] | null;
           created_at?: string;
           updated_at?: string;
+          is_admin?: boolean;
         };
         Update: {
           id?: string;
@@ -41,6 +43,7 @@ export interface Database {
           featured_map_ids?: string[] | null;
           created_at?: string;
           updated_at?: string;
+          is_admin?: boolean;
         };
       };
       maps: {
@@ -378,6 +381,73 @@ export interface Database {
           type?: 'FOLLOW' | 'MAP_POST' | 'COMMENT' | 'LIKE';
           resource_id?: string | null;
           read_at?: string | null;
+          created_at?: string;
+        };
+      };
+      feature_flags: {
+        Row: {
+          id: string;
+          key: string;
+          name: string;
+          description: string | null;
+          enabled: boolean;
+          enabled_for_users: string[] | null;
+          enabled_percentage: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          key: string;
+          name: string;
+          description?: string | null;
+          enabled?: boolean;
+          enabled_for_users?: string[] | null;
+          enabled_percentage?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          key?: string;
+          name?: string;
+          description?: string | null;
+          enabled?: boolean;
+          enabled_for_users?: string[] | null;
+          enabled_percentage?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      page_events: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          session_id: string | null;
+          event_type: string;
+          event_name: string | null;
+          page_url: string | null;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          session_id?: string | null;
+          event_type: string;
+          event_name?: string | null;
+          page_url?: string | null;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          session_id?: string | null;
+          event_type?: string;
+          event_name?: string | null;
+          page_url?: string | null;
+          metadata?: Json;
           created_at?: string;
         };
       };

@@ -6,6 +6,7 @@ import type { PosterConfig } from '@/types/poster';
 import { exportMapToPNG, downloadBlob } from '@/lib/export/exportCanvas';
 import type { ExportResolution } from '@/lib/export/resolution';
 import { logger } from '@/lib/logger';
+import { trackEventAction } from '@/lib/actions/events';
 
 /**
  * Hook for exporting the map as a high-resolution PNG image.
@@ -28,8 +29,14 @@ import { logger } from '@/lib/logger';
  * ```
  */
 export function useMapExport(config: PosterConfig) {
-  const [isExporting, setIsExporting] = useState(false);
+  const [isExporting, setIsExportingState] = useState(false);
+  const isExportingRef = useRef(false);
   const mapRef = useRef<MapLibreGL.Map | null>(null);
+
+  const setIsExporting = (val: boolean) => {
+    isExportingRef.current = val;
+    setIsExportingState(val);
+  };
 
   const setMapRef = (map: MapLibreGL.Map | null) => {
     mapRef.current = map;
@@ -52,6 +59,20 @@ export function useMapExport(config: PosterConfig) {
 
       const exportFilename = filename || `${(config.location.name || 'poster').toString().replace(/[^a-z0-9]/gi, '-').toLowerCase()}-poster.png`;
       downloadBlob(blob, exportFilename);
+
+      // Track export event
+      await trackEventAction({
+        eventType: 'poster_export',
+        eventName: 'Poster Exported (In-App)',
+        metadata: {
+          location_name: config.location.name,
+          location_coords: config.location.center,
+          style_id: config.style.id,
+          style_name: config.style.name,
+          resolution: resolution || { width: 2400, height: 3600, pixelRatio: 1 }, // Default if not provided
+          source: 'in-app'
+        }
+      });
     } catch (error) {
       logger.error('Export failed:', error);
       throw error;
@@ -81,6 +102,7 @@ export function useMapExport(config: PosterConfig) {
 
   return {
     isExporting,
+    isExportingRef,
     exportToPNG,
     setMapRef,
     fitToLocation,

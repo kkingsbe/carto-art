@@ -166,9 +166,10 @@ export function MapPreview({
   const handleMove = useCallback((evt: any) => {
     setViewState(evt.viewState);
     if (onMove) {
-      onMove([evt.viewState.longitude, evt.viewState.latitude], evt.viewState.zoom);
+      // Subtract overzoomBoost to get the base zoom level that the parent expects
+      onMove([evt.viewState.longitude, evt.viewState.latitude], evt.viewState.zoom - overzoomBoost);
     }
-  }, [onMove]);
+  }, [onMove, overzoomBoost]);
 
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

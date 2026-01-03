@@ -5,6 +5,7 @@ import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
+import { trackEvent } from '@/lib/events';
 
 import { getStyleById, getDefaultStyle } from '@/lib/styles';
 
@@ -322,6 +323,25 @@ export async function POST(req: NextRequest) {
             request_metadata: { resolution: { width, height, pixelRatio } },
         }).then(({ error }: { error: any }) => {
             if (error) logger.error('Failed to log API usage', { error });
+        });
+
+        // Track activity event
+        await trackEvent({
+            eventType: 'poster_export',
+            eventName: 'Poster Exported',
+            userId: authContext.userId,
+            metadata: {
+                poster_id: requestId,
+                location_name: config.location.name,
+                location_coords: config.location.center,
+                style_id: config.style.id,
+                style_name: config.style.name,
+                resolution: { width, height, pixelRatio },
+                render_time_ms: duration,
+                source: 'api',
+                file_size_bytes: screenshotBuffer.length,
+                download_url: publicUrl
+            }
         });
 
         // 6. Return Response

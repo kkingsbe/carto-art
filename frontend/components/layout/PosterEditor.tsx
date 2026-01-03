@@ -56,7 +56,7 @@ export function PosterEditor() {
   // Modal coordination
   const [showDonationModal, setShowDonationModal] = useState(false);
 
-  const { isExporting, exportToPNG, setMapRef, fitToLocation, zoomIn, zoomOut } = useMapExport(config);
+  const { isExporting, isExportingRef, exportToPNG, setMapRef, fitToLocation, zoomIn, zoomOut } = useMapExport(config);
 
   // Keep a reference to the map instance for thumbnail generation
   const mapInstanceRef = useRef<MapLibreGL.Map | null>(null);
@@ -148,8 +148,10 @@ export function PosterEditor() {
   );
 
   const handleMapMove = useCallback((center: [number, number], zoom: number) => {
+    // Ignore map movements during export to prevent programmatic zooms from leaking into state
+    if (isExportingRef.current) return;
     throttledUpdateLocation(center, zoom);
-  }, [throttledUpdateLocation]);
+  }, [throttledUpdateLocation, isExportingRef]);
 
   return (
     <div className="relative h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden selection:bg-blue-500/30">

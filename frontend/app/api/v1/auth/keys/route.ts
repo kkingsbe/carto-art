@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { generateApiKey } from '@/lib/auth/api-keys';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
+import { trackEvent } from '@/lib/events';
 
 // Schema for key creation
 const CreateKeySchema = z.object({
@@ -78,6 +79,14 @@ export async function POST(req: NextRequest) {
             logger.error('Failed to create API key', { error, userId: user.id });
             return NextResponse.json({ error: 'Failed to create API key' }, { status: 500 });
         }
+
+        // Track activity
+        await trackEvent({
+            eventType: 'key_generate',
+            eventName: 'API Key Generated',
+            userId: user.id,
+            metadata: { keyId: newKey.id, keyName: newKey.name }
+        });
 
         // Return the full key ONLY ONCE
         return NextResponse.json({

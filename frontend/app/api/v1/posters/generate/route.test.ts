@@ -16,17 +16,28 @@ jest.mock('@/lib/rendering/browser', () => ({
 }));
 jest.mock('@/lib/supabase/server', () => ({
     createClient: jest.fn(),
+    createServiceRoleClient: jest.fn(),
+    createAnonymousClient: jest.fn(),
 }));
 jest.mock('@/lib/logger', () => ({
     logger: {
         error: jest.fn(),
         info: jest.fn(),
+        warn: jest.fn(),
     },
+}));
+jest.mock('@/lib/events', () => ({
+    trackEvent: jest.fn().mockResolvedValue(undefined),
+}));
+jest.mock('@/lib/styles', () => ({
+    getStyleById: jest.fn(),
+    getDefaultStyle: jest.fn(),
 }));
 
 import { authenticateApiRequest } from '@/lib/auth/api-middleware';
 import { getBrowser } from '@/lib/rendering/browser';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
+import { getStyleById, getDefaultStyle } from '@/lib/styles';
 
 describe('POST /api/v1/posters/generate', () => {
     let mockBrowser: any;
@@ -38,12 +49,15 @@ describe('POST /api/v1/posters/generate', () => {
 
         // Mock Browser & Page
         mockPage = {
-            setViewport: jest.fn(),
-            goto: jest.fn(),
-            waitForFunction: jest.fn(),
-            evaluate: jest.fn(),
+            setViewport: jest.fn().mockResolvedValue(undefined),
+            goto: jest.fn().mockResolvedValue(undefined),
+            waitForFunction: jest.fn().mockResolvedValue(undefined),
+            evaluate: jest.fn().mockResolvedValue('ZmFrZS1zY3JlZW5zaG90'), // 'fake-screenshot' in base64
             on: jest.fn(),
-            waitForSelector: jest.fn(),
+            waitForSelector: jest.fn((selector) => {
+                if (selector === '#render-complete') return Promise.resolve({});
+                return new Promise(() => { }); // Never resolve others in the test
+            }),
             screenshot: jest.fn().mockResolvedValue(Buffer.from('fake-screenshot')),
         };
         mockBrowser = {
@@ -63,6 +77,16 @@ describe('POST /api/v1/posters/generate', () => {
             insert: jest.fn().mockResolvedValue({ error: null }),
         };
         (createClient as jest.Mock).mockResolvedValue(mockSupabase);
+        (createServiceRoleClient as jest.Mock).mockReturnValue(mockSupabase);
+
+        // Mock Style
+        (getDefaultStyle as jest.Mock).mockReturnValue({
+            id: 'minimal',
+            name: 'Minimal',
+            defaultPalette: { background: '#fff', text: '#000' },
+            recommendedFonts: ['Inter']
+        });
+        (getStyleById as jest.Mock).mockReturnValue(null);
     });
 
     // ============================================================
@@ -111,56 +135,33 @@ describe('POST /api/v1/posters/generate', () => {
             expect(body.error).toBe('Invalid request');
         });
 
-        it('should return 400 if config is missing', async () => {
+        it('should return 400 if location is missing', async () => {
             const req = new NextRequest('http://localhost:3000/api/v1/posters/generate', {
                 method: 'POST',
-                body: JSON.stringify({ resolution: { width: 800, height: 600 } }),
+                body: JSON.stringify({ style: 'minimal' }),
             });
 
             const res = await POST(req);
             expect(res.status).toBe(400);
             const body = await res.json();
             expect(body.error).toBe('Invalid request');
-            expect(body.details.fieldErrors.config).toBeDefined();
+            expect(body.details.fieldErrors.location).toBeDefined();
         });
 
-        it('should return 400 if palette is missing (sandbox scenario)', async () => {
-            const sandboxPayload = {
-                config: {
-                    location: { center: [0, 0], zoom: 10 },
-                    style: { id: 'minimal' },
-                    format: { orientation: 'portrait' }
-                    // Missing: palette
-                },
-                resolution: { width: 800, height: 600 }
+        it('should return 400 if lat/lng are missing', async () => {
+            const invalidPayload = {
+                location: {} // Missing lat, lng
             };
 
             const req = new NextRequest('http://localhost:3000/api/v1/posters/generate', {
                 method: 'POST',
-                body: JSON.stringify(sandboxPayload),
+                body: JSON.stringify(invalidPayload),
             });
 
             const res = await POST(req);
             expect(res.status).toBe(400);
             const body = await res.json();
             expect(body.error).toBe('Invalid request');
-        });
-
-        it('should return 400 if palette.background is missing', async () => {
-            const payload = {
-                config: {
-                    palette: { text: '#000000' }  // Missing background
-                },
-                resolution: { width: 800, height: 600 }
-            };
-
-            const req = new NextRequest('http://localhost:3000/api/v1/posters/generate', {
-                method: 'POST',
-                body: JSON.stringify(payload),
-            });
-
-            const res = await POST(req);
-            expect(res.status).toBe(400);
         });
     });
 
@@ -177,13 +178,9 @@ describe('POST /api/v1/posters/generate', () => {
 
         it('should generate a poster with minimal valid payload', async () => {
             const validPayload = {
-                config: {
-                    palette: { background: '#fff', text: '#000' }
-                },
-                resolution: {
-                    width: 800,
-                    height: 600,
-                    pixelRatio: 1
+                location: {
+                    lat: 48.8566,
+                    lng: 2.3522
                 }
             };
 
@@ -215,10 +212,10 @@ describe('POST /api/v1/posters/generate', () => {
             (getBrowser as jest.Mock).mockRejectedValue(new Error('Browser failed'));
 
             const validPayload = {
-                config: {
-                    palette: { background: '#fff', text: '#000' }
-                },
-                resolution: { width: 800, height: 600 }
+                location: {
+                    lat: 0,
+                    lng: 0
+                }
             };
 
             const req = new NextRequest('http://localhost:3000/api/v1/posters/generate', {

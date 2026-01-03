@@ -2,6 +2,7 @@ import type { ColorPalette, PosterConfig, PosterStyle } from '@/types/poster';
 import { isColorDark, hexToRgb, rgbToHex, adjustColorHue, lightenColor, darkenColor, desaturateColor, saturateColor, mixColor } from '@/lib/utils/color';
 import { getContourTileJsonUrl } from '@/lib/styles/tileUrl';
 import { logger } from '@/lib/logger';
+import { VisibilityManager } from './palette/VisibilityManager';
 
 
 
@@ -61,7 +62,8 @@ export function applyPaletteToStyle(
   reorderLayersForWater(updatedStyle.layers);
 
   if (layers && layerToggles) {
-    applyVisibilityToggles(updatedStyle.layers, layers, layerToggles);
+    const visibilityManager = new VisibilityManager();
+    visibilityManager.apply(updatedStyle.layers, layers, layerToggles);
   } else if (layers) {
     // Even without layerToggles, we should still handle terrainUnderWater for bathymetry layers
     updatedStyle.layers.forEach((layer: any) => {

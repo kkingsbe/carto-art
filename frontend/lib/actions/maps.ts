@@ -12,6 +12,7 @@ import { checkRateLimit } from '@/lib/middleware/rateLimit';
 import { RATE_LIMITS } from '@/lib/constants/limits';
 import { z } from 'zod';
 import { sanitizeText } from '@/lib/utils/sanitize';
+import { trackEvent } from '@/lib/events';
 
 export interface SavedMap {
   id: string;
@@ -94,6 +95,11 @@ export async function saveMap(config: PosterConfig, title: string) {
   }
 
   revalidatePath('/profile');
+  await trackEvent({
+    eventType: 'map_create',
+    eventName: 'Map Created',
+    metadata: { mapId: (data as any).id, title: (data as any).title }
+  });
   return data as SavedMap;
 }
 
