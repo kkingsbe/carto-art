@@ -14,6 +14,7 @@ import {
     Share2,
     Key
 } from 'lucide-react';
+import { TimeDisplay } from '@/components/ui/time-display';
 
 export default async function AdminDashboardPage() {
     const supabase = await createClient();
@@ -127,7 +128,7 @@ export default async function AdminDashboardPage() {
                                                 {' '}{event.event_name?.toLowerCase() || event.event_type}
                                             </p>
                                             <p className="text-xs text-gray-500 mt-1">
-                                                {new Date(event.created_at).toLocaleTimeString()}
+                                                <TimeDisplay date={event.created_at} />
                                             </p>
                                         </div>
                                     </div>

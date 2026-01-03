@@ -15,6 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { TimeDisplay } from '@/components/ui/time-display';
 
 interface PageEvent {
     id: string;
@@ -123,7 +124,7 @@ export default function ActivityPage() {
                                                 {event.event_name || event.event_type.replace('_', ' ')}
                                             </p>
                                             <span className="text-xs text-gray-400 whitespace-nowrap">
-                                                {new Date(event.created_at).toLocaleString()}
+                                                <TimeDisplay date={event.created_at} format="datetime" />
                                             </span>
                                         </div>
 

@@ -39,7 +39,7 @@ export function ActivityChart() {
     const [data, setData] = useState<ActivityPoint[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedType, setSelectedType] = useState('all');
-    const [selectedDays, setSelectedDays] = useState('30');
+    const [selectedDays, setSelectedDays] = useState('1');
 
     useEffect(() => {
         const fetchData = async () => {
