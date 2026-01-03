@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { cache } from 'react';
+import type { Database } from '@/types/database';
 
 /**
  * Fetches all enabled feature flags.
@@ -32,20 +33,23 @@ export async function isFeatureEnabled(key: string, userId?: string, sessionId?:
         .single();
 
     if (!flag) return false;
-    if (!flag.enabled) return false;
+    
+    // Type assertion to help TypeScript understand the type
+    const typedFlag: Database['public']['Tables']['feature_flags']['Row'] = flag;
+    if (!typedFlag.enabled) return false;
 
     // Check targeted users
-    if (userId && flag.enabled_for_users?.includes(userId)) {
+    if (userId && typedFlag.enabled_for_users?.includes(userId)) {
         return true;
     }
 
     // Check percentage rollout
-    if (flag.enabled_percentage && flag.enabled_percentage > 0) {
-        if (flag.enabled_percentage === 100) return true;
+    if (typedFlag.enabled_percentage && typedFlag.enabled_percentage > 0) {
+        if (typedFlag.enabled_percentage === 100) return true;
 
         const identifier = userId || sessionId || 'anonymous';
         const hash = getSimpleHash(identifier + key);
-        return (hash % 100) < flag.enabled_percentage;
+        return (hash % 100) < typedFlag.enabled_percentage;
     }
 
     return true; // Global enabled and no other restrictions

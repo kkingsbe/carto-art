@@ -24,7 +24,7 @@ export async function POST(req: Request) {
         const body = await req.json();
         const supabase = await createClient();
 
-        const { data: flag, error } = await supabase
+        const { data: flag, error } = await (supabase as any)
             .from('feature_flags')
             .insert([{
                 key: body.key,
@@ -51,7 +51,7 @@ export async function PATCH(req: Request) {
         const { id, ...updates } = body;
         const supabase = await createClient();
 
-        const { data: flag, error } = await supabase
+        const { data: flag, error } = await (supabase as any)
             .from('feature_flags')
             .update(updates)
             .eq('id', id)

@@ -32,7 +32,7 @@ export async function trackEvent(params: {
             finalUserId = user?.id;
         }
 
-        const { error } = await supabase
+        const { error } = await (supabase as any)
             .from('page_events')
             .insert([{
                 user_id: finalUserId,

@@ -4,15 +4,15 @@ import { NextResponse } from 'next/server';
 
 export async function PATCH(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         await ensureAdmin();
-        const { id } = params;
+        const { id } = await params;
         const { is_admin } = await req.json();
 
         const supabase = await createClient();
-        const { data: user, error } = await supabase
+        const { data: user, error } = await (supabase as any)
             .from('profiles')
             .update({ is_admin })
             .eq('id', id)

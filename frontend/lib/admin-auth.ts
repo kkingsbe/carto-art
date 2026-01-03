@@ -11,7 +11,7 @@ export async function isAdmin(): Promise<boolean> {
 
     if (!user) return false;
 
-    const { data: profile } = await supabase
+    const { data: profile } = await (supabase as any)
         .from('profiles')
         .select('is_admin')
         .eq('id', user.id)
@@ -43,7 +43,7 @@ export async function protectAdminPage() {
         redirect('/auth/login?next=/admin');
     }
 
-    const { data: profile } = await supabase
+    const { data: profile } = await (supabase as any)
         .from('profiles')
         .select('is_admin')
         .eq('id', user.id)
