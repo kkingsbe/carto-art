@@ -37,7 +37,7 @@ function drawHeartMarker(
   color: string
 ) {
   ctx.save();
-  
+
   const scale = (size * 0.8) / 24;
   ctx.translate(x - 12 * scale, y - 12 * scale);
   ctx.scale(scale, scale);
@@ -68,7 +68,7 @@ function drawHomeMarker(
   color: string
 ) {
   ctx.save();
-  
+
   const scale = (size * 0.8) / 24;
   ctx.translate(x - 12 * scale, y - 12 * scale);
   ctx.scale(scale, scale);
@@ -153,7 +153,7 @@ function drawPinMarker(
   color: string
 ) {
   ctx.save();
-  
+
   // Apply a drop shadow
   ctx.shadowColor = 'rgba(0,0,0,0.3)';
   ctx.shadowBlur = Math.round(size * 0.1);
@@ -161,7 +161,7 @@ function drawPinMarker(
 
   // Scaling factor from the SVG viewBox 24x28
   const scale = size / 24;
-  
+
   // Translate to center point (bottom of pin tip)
   // The pin in SVG is centered at 12 horizontally, and its tip is around 25.7
   ctx.translate(x - 12 * scale, y - 25.7 * scale);
@@ -197,17 +197,17 @@ function drawDotMarker(
 ) {
   ctx.save();
   ctx.fillStyle = color;
-  
+
   // Simple solid dot
   ctx.beginPath();
   ctx.arc(x, y, size * 0.25, 0, Math.PI * 2);
   ctx.fill();
-  
+
   // Optional ring around it
   ctx.strokeStyle = 'white';
   ctx.lineWidth = Math.max(1, size * 0.05);
   ctx.stroke();
-  
+
   ctx.restore();
 }
 
@@ -221,18 +221,18 @@ function drawRingMarker(
   ctx.save();
   ctx.strokeStyle = color;
   ctx.lineWidth = Math.max(2, size * 0.1);
-  
+
   ctx.beginPath();
   ctx.arc(x, y, size * 0.35, 0, Math.PI * 2);
   ctx.stroke();
-  
+
   // Inner white border for contrast
   ctx.strokeStyle = 'white';
   ctx.lineWidth = Math.max(1, size * 0.02);
   ctx.beginPath();
   ctx.arc(x, y, size * 0.35 - (size * 0.06), 0, Math.PI * 2);
   ctx.stroke();
-  
+
   ctx.restore();
 }
 
@@ -262,55 +262,101 @@ export function drawTextWithHalo(
     haloColor,
     textColor,
     showHalo = true,
-    haloBlur,
-    haloOffsetY,
   } = options;
 
   ctx.save();
   ctx.font = `${weight} ${fontSizePx}px "${fontFamily}"`;
   ctx.globalAlpha = opacity;
-  
-  const outlinePx = Math.max(2, Math.min(8, Math.round(fontSizePx * 0.12)));
-  
-  if (showHalo) {
-    ctx.strokeStyle = haloColor;
-    ctx.lineWidth = outlinePx;
-    ctx.lineJoin = 'round';
-    
-    ctx.shadowColor = 'rgba(0,0,0,0.14)';
-    ctx.shadowBlur = haloBlur ?? Math.max(6, Math.round(outlinePx * 4));
-    ctx.shadowOffsetY = haloOffsetY ?? Math.max(2, Math.round(outlinePx * 1.2));
-    
-    if (letterSpacing) {
-      const tracking = letterSpacing * fontSizePx;
-      const metrics = ctx.measureText(text);
-      let currentX = x - (metrics.width + (text.length - 1) * tracking) / 2;
-      for (let i = 0; i < text.length; i++) {
-        const char = text[i];
-        const charWidth = ctx.measureText(char).width;
-        ctx.strokeText(char, currentX + charWidth / 2, y);
-        currentX += charWidth + tracking;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Try to use native letterSpacing if available (modern browsers)
+  // This preserves ligatures and kerning better than manual loops
+  let useNativeSpacing = false;
+  if ('letterSpacing' in ctx) {
+    try {
+      if (letterSpacing) {
+        // @ts-ignore
+        ctx.letterSpacing = `${letterSpacing * fontSizePx}px`;
+        useNativeSpacing = true;
       }
-    } else {
-      ctx.strokeText(text, x, y);
+    } catch (e) {
+      // Fallback if property exists but assignment fails
     }
   }
 
-  ctx.shadowColor = 'transparent';
-  ctx.fillStyle = textColor;
-  if (letterSpacing) {
-    const tracking = letterSpacing * fontSizePx;
-    const metrics = ctx.measureText(text);
-    let currentX = x - (metrics.width + (text.length - 1) * tracking) / 2;
-    for (let i = 0; i < text.length; i++) {
-      const char = text[i];
-      const charWidth = ctx.measureText(char).width;
-      ctx.fillText(char, currentX + charWidth / 2, y);
-      currentX += charWidth + tracking;
+  // Calculate halo radius to match the subtle CSS text-shadow in TextOverlay.tsx
+  // In CSS it's roughly 2px on a typical screen. relative to width, 2px/1000px = 0.002
+  // Previous logic: fontSizePx * 0.12 (too thick, resulting in ~14px halo)
+  // New logic: fontSizePx * 0.025 (roughly 2.5px at 100px font size)
+  const outlinePx = Math.max(2, Math.round(fontSizePx * 0.025));
+
+  const drawPass = (isHalo: boolean) => {
+    if (isHalo) {
+      ctx.fillStyle = haloColor;
+      const r = outlinePx;
+      // 8-point offset pattern to simulate CSS text-shadow
+      const offsets = [
+        [-r, 0], [r, 0], [0, -r], [0, r],
+        [-r, -r], [r, -r], [-r, r], [r, r]
+      ];
+
+      offsets.forEach(([ox, oy]) => {
+        if (useNativeSpacing || !letterSpacing) {
+          ctx.fillText(text, x + ox, y + oy);
+        } else {
+          // Manual spacing fallback for halo
+          const tracking = letterSpacing * fontSizePx;
+          const totalWidth = ctx.measureText(text).width + (text.length - 1) * tracking;
+          let currentX = (x + ox) - totalWidth / 2;
+
+          for (let i = 0; i < text.length; i++) {
+            const char = text[i];
+            const charWidth = ctx.measureText(char).width;
+            // Center the character in its allotted space (charWidth) ? No, standard placement
+            ctx.fillText(char, currentX + charWidth / 2, y + oy);
+            currentX += charWidth + tracking;
+          }
+        }
+      });
+    } else {
+      ctx.fillStyle = textColor;
+      if (useNativeSpacing || !letterSpacing) {
+        ctx.fillText(text, x, y);
+      } else {
+        // Manual spacing fallback for text
+        const tracking = letterSpacing * fontSizePx;
+        // Approximation of total width for centering
+        // Note: This is an approximation. Ideally we'd measure each char sum.
+        let totalMeasuredWidth = 0;
+        for (let i = 0; i < text.length; i++) {
+          totalMeasuredWidth += ctx.measureText(text[i]).width;
+        }
+        totalMeasuredWidth += (text.length - 1) * tracking;
+
+        let currentX = x - totalMeasuredWidth / 2;
+
+        for (let i = 0; i < text.length; i++) {
+          const char = text[i];
+          const charWidth = ctx.measureText(char).width;
+          ctx.fillText(char, currentX + charWidth / 2, y);
+          currentX += charWidth + tracking;
+        }
+      }
     }
-  } else {
-    ctx.fillText(text, x, y);
+  };
+
+  if (showHalo) {
+    drawPass(true);
   }
+
+  // Clean shadow for main text
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+
+  drawPass(false);
+
   ctx.restore();
 }
 
@@ -326,7 +372,7 @@ export function applyTexture(
   noiseCanvas.width = tileSize;
   noiseCanvas.height = tileSize;
   const noiseCtx = noiseCanvas.getContext('2d');
-  
+
   if (!noiseCtx) return;
 
   const idata = noiseCtx.createImageData(tileSize, tileSize);
@@ -359,13 +405,13 @@ export function drawCompassRose(
   fontSize: number
 ) {
   ctx.save();
-  
+
   // Position well outside the border edge with spacing
   const spacing = fontSize * 0.6; // Spacing between border and compass
   const compassRadius = borderOuterRadius + spacing;
   const tickLength = fontSize * 0.4; // Length of tick marks
   const longTickLength = fontSize * 0.8; // Longer ticks for cardinal directions
-  
+
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
   ctx.lineWidth = lineWidth;
@@ -373,7 +419,7 @@ export function drawCompassRose(
   ctx.textBaseline = 'middle';
   ctx.font = `bold ${fontSize}px sans-serif`;
   ctx.globalAlpha = 0.8;
-  
+
   // Draw 32 points (8 cardinal/intercardinal + 24 intermediate)
   const directions = [
     { angle: 0, label: 'N', isCardinal: true },
@@ -385,41 +431,41 @@ export function drawCompassRose(
     { angle: 270, label: 'W', isCardinal: true },
     { angle: 315, label: 'NW', isCardinal: false },
   ];
-  
+
   // Draw intermediate ticks (every 11.25 degrees for 32 points)
   for (let i = 0; i < 32; i++) {
     const angle = (i * 11.25 - 90) * (Math.PI / 180); // -90 to align N at top
     const isCardinalOrIntercardinal = (i % 4 === 0);
     const tickLen = isCardinalOrIntercardinal ? longTickLength : tickLength;
-    
+
     const x1 = centerX + Math.cos(angle) * compassRadius;
     const y1 = centerY + Math.sin(angle) * compassRadius;
     const x2 = centerX + Math.cos(angle) * (compassRadius - tickLen);
     const y2 = centerY + Math.sin(angle) * (compassRadius - tickLen);
-    
+
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
     ctx.stroke();
   }
-  
+
   // Draw labels for cardinal and intercardinal directions
   const labelRadius = compassRadius + fontSize * 0.8;
   directions.forEach(({ angle, label, isCardinal }) => {
     const rad = (angle - 90) * (Math.PI / 180); // -90 to align N at top
     const labelX = centerX + Math.cos(rad) * labelRadius;
     const labelY = centerY + Math.sin(rad) * labelRadius;
-    
+
     ctx.globalAlpha = isCardinal ? 1.0 : 0.7;
-    
+
     // Draw text with slight halo for visibility
     ctx.strokeStyle = color;
     ctx.lineWidth = Math.max(1, fontSize * 0.15);
     ctx.strokeText(label, labelX, labelY);
-    
+
     ctx.fillStyle = color;
     ctx.fillText(label, labelX, labelY);
   });
-  
+
   ctx.restore();
 }

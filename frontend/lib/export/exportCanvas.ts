@@ -176,8 +176,11 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
         // Compass Rose
         if (config.format.compassRose) {
           const compassColor = config.palette.accent || config.palette.text;
-          const compassLineWidth = Math.max(1, exportResolution.width * 0.002);
-          const compassFontSize = exportResolution.width * 0.018;
+          // Tune to match CompassRose.tsx (SVG units relative to 108% container)
+          // SVG 0.15 units ~= 0.0016 width
+          const compassLineWidth = Math.max(1, exportResolution.width * 0.0016);
+          // SVG 1.2 units ~= 0.013 width
+          const compassFontSize = exportResolution.width * 0.013;
 
           let borderOuterRadius = radius;
           if (borderStyle === 'thin') {

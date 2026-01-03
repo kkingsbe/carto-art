@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Search } from 'lucide-react';
-import { searchLocation, nominatimResultToPosterLocation, type NominatimResult } from '@/lib/geocoding/nominatim';
+import { searchLocation } from '@/lib/geocoding/nominatim';
 import type { PosterLocation } from '@/types/poster';
 import { cn } from '@/lib/utils';
 import { ControlInput } from '@/components/ui/control-components';
@@ -97,18 +97,15 @@ export function LocationSearch({ onLocationSelect, currentLocation }: LocationSe
     setError(null);
 
     try {
-      const nominatimResults = await searchLocation(q, { limit: 5 }, controller.signal);
+      const locations = await searchLocation(q, { limit: 5 }, controller.signal);
 
       // If another request started since this one began, ignore this response
       if (seq !== requestSeq.current) return;
 
-      const hits: SearchHit[] = (nominatimResults as NominatimResult[])
-        .map((r) => {
-          const loc = nominatimResultToPosterLocation(r);
-          if (!loc) return null;
-          return { id: r.place_id, location: loc };
-        })
-        .filter(Boolean) as SearchHit[];
+      const hits: SearchHit[] = locations.map((loc, index) => ({
+        id: index,
+        location: loc
+      }));
 
       cacheRef.current.set(cacheKey, { storedAt: Date.now(), hits });
 

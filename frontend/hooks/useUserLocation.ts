@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import type { PosterLocation } from '@/types/poster';
-import { reverseGeocode, nominatimResultToPosterLocation } from '@/lib/geocoding/nominatim';
+import { reverseGeocode } from '@/lib/geocoding/nominatim';
 import { TIMEOUTS, GEOLOCATION } from '@/lib/constants';
 import { logger } from '@/lib/logger';
 
@@ -53,13 +53,10 @@ export function useUserLocation(onLocationFound: (location: PosterLocation) => v
 
         try {
           const { latitude, longitude } = position.coords;
-          const result = await reverseGeocode(latitude, longitude);
-          
-          if (result && isMounted) {
-            const location = nominatimResultToPosterLocation(result);
-            if (location) {
-              onLocationFound(location);
-            }
+          const location = await reverseGeocode(latitude, longitude);
+
+          if (location && isMounted) {
+            onLocationFound(location);
           }
         } catch (err) {
           if (isMounted) {
@@ -74,19 +71,19 @@ export function useUserLocation(onLocationFound: (location: PosterLocation) => v
       },
       (err) => {
         if (!isMounted) return;
-        
+
         // Clear the watch on error
         if (watchIdRef.current !== null) {
           navigator.geolocation.clearWatch(watchIdRef.current);
           watchIdRef.current = null;
         }
-        
+
         // Clear timeout
         if (timeoutIdRef.current) {
           clearTimeout(timeoutIdRef.current);
           timeoutIdRef.current = null;
         }
-        
+
         setIsLoading(false);
         if (err.code !== err.PERMISSION_DENIED) {
           logger.warn('Geolocation error:', err.message);
@@ -110,13 +107,13 @@ export function useUserLocation(onLocationFound: (location: PosterLocation) => v
 
     return () => {
       isMounted = false;
-      
+
       // Clear geolocation watch
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
         watchIdRef.current = null;
       }
-      
+
       // Clear timeout
       if (timeoutIdRef.current) {
         clearTimeout(timeoutIdRef.current);

@@ -18,7 +18,8 @@
     "author": "Kyle Kingsbury",
     "license": "MIT",
     "devDependencies": {
-        "typescript": "^5.0.0",
-        "@types/node": "^20.0.0"
+        "@types/node": "^20.0.0",
+        "dotenv": "^17.2.3",
+        "typescript": "^5.0.0"
     }
 }
