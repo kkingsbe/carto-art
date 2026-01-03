@@ -10,17 +10,23 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const eventType = searchParams.get('type') || 'all';
     const days = parseFloat(searchParams.get('days') || '30');
-    const isHourly = days <= 1;
+
+    // Determine interval in minutes
+    // <= 0.25 days (6h) -> 15 min
+    // <= 1.0 days (24h) -> 30 min
+    // > 1.0 days -> Daily (handled by else block)
+    let intervalMinutes = 1440;
+    if (days <= 0.25) intervalMinutes = 15;
+    else if (days <= 1.0) intervalMinutes = 30;
+
+    const isSubDaily = days <= 1;
 
     const supabase = await createClient();
     const startDate = new Date();
-    const hoursToFetch = Math.round(days * 24);
 
-    if (isHourly) {
-        startDate.setHours(startDate.getHours() - hoursToFetch);
-    } else {
-        startDate.setDate(startDate.getDate() - days);
-    }
+    // Calculate start date based on exact time needed
+    const msToFetch = days * 24 * 60 * 60 * 1000;
+    startDate.setTime(startDate.getTime() - msToFetch);
 
     // Fetch events in the last period
     let query = supabase
@@ -42,18 +48,25 @@ export async function GET(request: NextRequest) {
     // Grouping logic
     const counts: Record<string, number> = {};
 
-    if (isHourly) {
-        // Initialize last X hours with 0
-        for (let i = 0; i < hoursToFetch; i++) {
-            const d = new Date();
-            d.setHours(d.getHours() - i, 0, 0, 0);
-            counts[d.toISOString()] = 0;
+    if (isSubDaily) {
+        const intervalMs = intervalMinutes * 60 * 1000;
+        const now = new Date();
+        // Round down current time to nearest interval
+        const roundedNow = Math.floor(now.getTime() / intervalMs) * intervalMs;
+
+        // Initialize buckets
+        const minutesToCover = days * 24 * 60;
+        const numBuckets = Math.ceil(minutesToCover / intervalMinutes);
+
+        for (let i = 0; i <= numBuckets; i++) {
+            const t = new Date(roundedNow - (i * intervalMs));
+            counts[t.toISOString()] = 0;
         }
 
         (events as any[]).forEach(event => {
-            const date = new Date(event.created_at);
-            date.setMinutes(0, 0, 0);
-            const key = date.toISOString();
+            const t = new Date(event.created_at).getTime();
+            const rounded = Math.floor(t / intervalMs) * intervalMs;
+            const key = new Date(rounded).toISOString();
             if (counts[key] !== undefined) {
                 counts[key]++;
             }
