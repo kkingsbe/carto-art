@@ -7,6 +7,15 @@ export interface PosterCamera {
     bearing?: number;
     zoom?: number;
 }
+export interface PosterText {
+    title?: string;
+    subtitle?: string;
+    show_title?: boolean;
+    show_subtitle?: boolean;
+    show_coordinates?: boolean;
+    position?: 'top' | 'bottom' | 'center';
+    color?: string;
+}
 export interface PosterOptions {
     buildings_3d?: boolean;
     high_res?: boolean;
@@ -16,11 +25,28 @@ export interface PosterOptions {
     buildings?: boolean;
     labels?: boolean;
     background?: boolean;
+    terrain?: boolean;
+    terrain_under_water?: boolean;
+    contours?: boolean;
+    boundaries?: boolean;
+    population?: boolean;
+    pois?: boolean;
+    marker?: boolean;
+    landcover_wood?: boolean;
+    landcover_grass?: boolean;
+    landcover_farmland?: boolean;
+    landcover_ice?: boolean;
+    landuse_forest?: boolean;
+    landuse_orchard?: boolean;
+    landuse_vineyard?: boolean;
+    landuse_cemetery?: boolean;
+    landuse_grass?: boolean;
 }
 export interface CreatePosterRequest {
     location: PosterLocation;
     style?: string;
     camera?: PosterCamera;
+    text?: PosterText;
     options?: PosterOptions;
 }
 export interface PosterResponse {

@@ -8,9 +8,12 @@ import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { cn } from '@/lib/utils';
 import { ArrowLeft } from 'lucide-react';
 
+import { useAdmin } from '@/hooks/useAdmin';
+
 export function Navbar() {
     const pathname = usePathname();
     const isMapDetailPage = pathname?.startsWith('/map/');
+    const { isAdmin } = useAdmin();
 
     const navLinks = [
         { href: '/', label: 'Home' },
@@ -18,6 +21,10 @@ export function Navbar() {
         { href: '/editor', label: 'Editor' },
         { href: '/developer', label: 'Developers' },
     ];
+
+    if (isAdmin) {
+        navLinks.push({ href: '/admin', label: 'Admin' });
+    }
 
     return (
         <nav className="sticky top-0 z-50 w-full border-b border-border bg-background">

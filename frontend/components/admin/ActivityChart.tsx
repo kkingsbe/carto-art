@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import {
     LineChart,
     Line,
@@ -16,7 +17,8 @@ import { Loader2 } from 'lucide-react';
 
 interface ActivityPoint {
     date: string;
-    count: number;
+    count?: number;
+    value?: number;
 }
 
 const METRICS = [
@@ -26,6 +28,8 @@ const METRICS = [
     { id: 'api_request', label: 'API Requests', color: '#06b6d4' },
     { id: 'search_location', label: 'Searches', color: '#8b5cf6' },
     { id: 'style_change', label: 'Styles', color: '#ec4899' },
+    { id: 'generation_latency', label: 'Generation Latency', color: '#ef4444' },
+    { id: 'search_latency', label: 'Search Latency', color: '#f97316' },
 ];
 
 const TIMEFRAMES = [
@@ -41,12 +45,26 @@ export function ActivityChart() {
     const [isLoading, setIsLoading] = useState(true);
     const [selectedType, setSelectedType] = useState('all');
     const [selectedDays, setSelectedDays] = useState('1');
+    const supabase = createClient();
 
     useEffect(() => {
-        const fetchData = async () => {
-            setIsLoading(true);
+        const fetchData = async (showLoading = true) => {
+            if (showLoading) {
+                setIsLoading(true);
+            }
             try {
-                const res = await fetch(`/api/admin/stats/activity?type=${selectedType}&days=${selectedDays}`);
+                // Determine if this is a latency metric
+                const isLatencyMetric = selectedType === 'generation_latency' || selectedType === 'search_latency';
+
+                let res;
+                if (isLatencyMetric) {
+                    // Map to API type
+                    const latencyType = selectedType === 'generation_latency' ? 'generation' : 'search';
+                    res = await fetch(`/api/admin/stats/latency?type=${latencyType}&days=${selectedDays}`);
+                } else {
+                    res = await fetch(`/api/admin/stats/activity?type=${selectedType}&days=${selectedDays}`);
+                }
+
                 if (res.ok) {
                     const stats = await res.json();
                     setData(stats);
@@ -54,15 +72,48 @@ export function ActivityChart() {
             } catch (err) {
                 console.error('Failed to fetch activity stats');
             } finally {
-                setIsLoading(false);
+                if (showLoading) {
+                    setIsLoading(false);
+                }
             }
         };
 
         fetchData();
+
+        // Set up realtime subscription
+        const channel = supabase
+            .channel('activity_chart')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'page_events'
+                },
+                async (payload) => {
+                    // Only refetch if the event type matches our filter, or if we're showing all
+                    if (selectedType === 'all' || payload.new.event_type === selectedType) {
+                        console.log('ActivityChart: New event detected, refetching data');
+                        await fetchData(false); // Don't show loading state on realtime updates
+                    }
+                }
+            )
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('ActivityChart: Subscribed to page_events');
+                } else if (status === 'CHANNEL_ERROR') {
+                    console.error('ActivityChart: Subscription error');
+                }
+            });
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [selectedType, selectedDays]);
 
     const activeColor = METRICS.find(m => m.id === selectedType)?.color || '#3b82f6';
     const isHourly = parseFloat(selectedDays) <= 1;
+    const isLatencyMetric = selectedType === 'generation_latency' || selectedType === 'search_latency';
 
     return (
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
@@ -176,7 +227,7 @@ export function ActivityChart() {
                             />
                             <Area
                                 type="monotone"
-                                dataKey="count"
+                                dataKey={isLatencyMetric ? "value" : "count"}
                                 stroke={activeColor}
                                 strokeWidth={2}
                                 fillOpacity={1}

@@ -43,7 +43,13 @@ export function RecentActivityFeed({ initialEvents }: RecentActivityFeedProps) {
                     }
                 }
             )
-            .subscribe();
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('RecentActivityFeed: Subscribed to page_events');
+                } else if (status === 'CHANNEL_ERROR') {
+                    console.error('RecentActivityFeed: Subscription error');
+                }
+            });
 
         return () => {
             supabase.removeChannel(channel);

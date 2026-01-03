@@ -10,7 +10,8 @@ import {
     TrendingUp,
     Download,
     Share2,
-    Key
+    Key,
+    Eye
 } from 'lucide-react';
 import { RecentActivityFeed } from '@/components/admin/RecentActivityFeed';
 
@@ -18,6 +19,8 @@ export default async function AdminDashboardPage() {
     const supabase = await createClient();
 
     // Fetch baseline stats
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
     const [
         { count: totalUsers },
         { count: totalMaps },
@@ -26,6 +29,7 @@ export default async function AdminDashboardPage() {
         { count: totalExports },
         { count: publishedMaps },
         { count: activeApiKeys },
+        { count: views24h },
         { data: recentEvents }
     ] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
@@ -35,6 +39,7 @@ export default async function AdminDashboardPage() {
         supabase.from('page_events').select('*', { count: 'exact', head: true }).eq('event_type', 'poster_export'),
         supabase.from('maps').select('*', { count: 'exact', head: true }).eq('is_published', true),
         supabase.from('api_keys').select('*', { count: 'exact', head: true }).eq('is_active', true),
+        supabase.from('page_events').select('*', { count: 'exact', head: true }).eq('event_type', 'page_view').gte('created_at', twentyFourHoursAgo),
         supabase
             .from('page_events')
             .select(`
@@ -78,6 +83,11 @@ export default async function AdminDashboardPage() {
                     title="Total Exports"
                     value={totalExports?.toLocaleString() || '0'}
                     icon={Download}
+                />
+                <MetricCard
+                    title="Views (24h)"
+                    value={views24h?.toLocaleString() || '0'}
+                    icon={Eye}
                 />
                 <MetricCard
                     title="API Requests"

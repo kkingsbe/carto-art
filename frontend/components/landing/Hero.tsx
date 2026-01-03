@@ -54,7 +54,7 @@ export function Hero() {
               <Button
                 variant="outline"
                 size="lg"
-                className="h-14 px-8 text-lg border-[#d4cfc4]/30 text-[#d4cfc4] hover:bg-white/5 hover:text-[#f5f0e8] rounded-full backdrop-blur-sm transition-all duration-300"
+                className="h-14 px-8 text-lg bg-transparent border-[#d4cfc4]/30 text-[#d4cfc4] hover:bg-white/5 hover:text-[#f5f0e8] rounded-full backdrop-blur-sm transition-all duration-300"
               >
                 Explore Gallery
               </Button>

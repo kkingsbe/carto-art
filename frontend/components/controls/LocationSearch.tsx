@@ -56,6 +56,7 @@ export function LocationSearch({ onLocationSelect, currentLocation }: LocationSe
         metadata: {
           subtitle: location.subtitle,
           center: location.center,
+          latency_ms: lastSearchLatencyRef.current,
         }
       });
 
@@ -63,6 +64,8 @@ export function LocationSearch({ onLocationSelect, currentLocation }: LocationSe
     },
     [close, onLocationSelect]
   );
+
+  const lastSearchLatencyRef = useRef<number | null>(null);
 
   const performSearch = useCallback(async (searchQuery: string) => {
     const q = searchQuery.trim();
@@ -84,6 +87,8 @@ export function LocationSearch({ onLocationSelect, currentLocation }: LocationSe
       setActiveIndex(cached.hits.length > 0 ? 0 : -1);
       setError(null);
       setIsLoading(false);
+      // Cache hit - no latency to track
+      lastSearchLatencyRef.current = null;
       return;
     }
 
@@ -96,8 +101,15 @@ export function LocationSearch({ onLocationSelect, currentLocation }: LocationSe
     setIsLoading(true);
     setError(null);
 
+    // Track search latency
+    const startTime = Date.now();
+
     try {
       const locations = await searchLocation(q, { limit: 5 }, controller.signal);
+
+      // Calculate latency
+      const latency = Date.now() - startTime;
+      lastSearchLatencyRef.current = latency;
 
       // If another request started since this one began, ignore this response
       if (seq !== requestSeq.current) return;
@@ -117,6 +129,7 @@ export function LocationSearch({ onLocationSelect, currentLocation }: LocationSe
       setError(err instanceof Error ? err.message : 'Search failed');
       setResults([]);
       close();
+      lastSearchLatencyRef.current = null;
     } finally {
       if (seq === requestSeq.current) setIsLoading(false);
     }
