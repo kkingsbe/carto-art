@@ -15,12 +15,22 @@ const SimplifiedPosterSchema = z.object({
         lng: z.number()
     }),
     style: z.string().optional().default('minimal'),
+    text: z.object({
+        title: z.string().optional(),
+        subtitle: z.string().optional(),
+        show_title: z.boolean().default(true),
+        show_subtitle: z.boolean().default(true),
+        show_coordinates: z.boolean().default(true),
+        position: z.enum(['top', 'bottom', 'center']).default('bottom'),
+        color: z.string().optional(), // Optional override
+    }).optional(),
     camera: z.object({
         pitch: z.number().min(0).max(60).default(0),
         bearing: z.number().min(0).max(360).default(0),
         zoom: z.number().min(0).max(20).default(12),
     }).optional().default({ pitch: 0, bearing: 0, zoom: 12 }),
     options: z.object({
+        // Core Layers
         buildings_3d: z.boolean().default(false),
         high_res: z.boolean().default(false),
         streets: z.boolean().default(true),
@@ -29,6 +39,28 @@ const SimplifiedPosterSchema = z.object({
         buildings: z.boolean().default(true),
         labels: z.boolean().default(true),
         background: z.boolean().default(true),
+
+        // Advanced Layers
+        terrain: z.boolean().default(false),
+        terrain_under_water: z.boolean().default(false),
+        contours: z.boolean().default(false),
+        boundaries: z.boolean().default(false),
+        population: z.boolean().default(false),
+        pois: z.boolean().default(false),
+        marker: z.boolean().default(false),
+
+        // Landcover
+        landcover_wood: z.boolean().default(false),
+        landcover_grass: z.boolean().default(false),
+        landcover_farmland: z.boolean().default(false),
+        landcover_ice: z.boolean().default(false),
+
+        // Landuse
+        landuse_forest: z.boolean().default(false),
+        landuse_orchard: z.boolean().default(false),
+        landuse_vineyard: z.boolean().default(false),
+        landuse_cemetery: z.boolean().default(false),
+        landuse_grass: z.boolean().default(false),
     }).optional().default({
         buildings_3d: false,
         high_res: false,
@@ -37,7 +69,23 @@ const SimplifiedPosterSchema = z.object({
         parks: true,
         buildings: true,
         labels: true,
-        background: true
+        background: true,
+        terrain: false,
+        terrain_under_water: false,
+        contours: false,
+        boundaries: false,
+        population: false,
+        pois: false,
+        marker: false,
+        landcover_wood: false,
+        landcover_grass: false,
+        landcover_farmland: false,
+        landcover_ice: false,
+        landuse_forest: false,
+        landuse_orchard: false,
+        landuse_vineyard: false,
+        landuse_cemetery: false,
+        landuse_grass: false,
     })
 });
 
@@ -93,12 +141,17 @@ export async function POST(req: NextRequest) {
         // 3. Map simplified input to full PosterConfig
         const selectedStyle = getStyleById(data.style) || getDefaultStyle();
 
+        // Determine title
+        const mapTitle = data.text?.title || "API Request";
+        const mapSubtitle = data.text?.subtitle || "";
+
         const config: any = {
             location: {
                 center: [data.location.lng, data.location.lat],
                 zoom: data.camera.zoom,
-                name: "API Request", // Default name
-                bounds: [[data.location.lng - 0.1, data.location.lat - 0.1], [data.location.lng + 0.1, data.location.lat + 0.1]] // Dummy bounds, renderer uses center/zoom
+                name: mapTitle,
+                city: mapSubtitle, // Use city field for subtitle text if needed by renderer, or just allow typography settings to handle it
+                bounds: [[data.location.lng - 0.1, data.location.lat - 0.1], [data.location.lng + 0.1, data.location.lat + 0.1]] // Dummy bounds
             },
             style: {
                 id: selectedStyle.id,
@@ -114,9 +167,30 @@ export async function POST(req: NextRequest) {
                 buildings3D: data.options.buildings_3d,
                 buildings3DPitch: data.camera.pitch,
                 buildings3DBearing: data.camera.bearing,
-                // defaults for others
-                terrain: false,
-                marker: false,
+
+                // Advanced Layers
+                terrain: data.options.terrain,
+                terrainUnderWater: data.options.terrain_under_water,
+                contours: data.options.contours,
+                boundaries: data.options.boundaries,
+                population: data.options.population,
+                pois: data.options.pois,
+                marker: data.options.marker,
+
+                // Landcover
+                landcoverWood: data.options.landcover_wood,
+                landcoverGrass: data.options.landcover_grass,
+                landcoverFarmland: data.options.landcover_farmland,
+                landcoverIce: data.options.landcover_ice,
+
+                // Landuse
+                landuseForest: data.options.landuse_forest,
+                landuseOrchard: data.options.landuse_orchard,
+                landuseVineyard: data.options.landuse_vineyard,
+                landuseCemetery: data.options.landuse_cemetery,
+                landuseGrass: data.options.landuse_grass,
+
+                // Defaults
                 labelSize: 1,
                 roadWeight: 1,
                 labelsCities: data.options.labels
@@ -137,10 +211,10 @@ export async function POST(req: NextRequest) {
                 subtitleSize: 2.5,
                 subtitleWeight: 400,
                 subtitleLetterSpacing: 0.2,
-                showTitle: true,
-                showSubtitle: true,
-                showCoordinates: true,
-                position: 'bottom'
+                showTitle: data.text?.show_title ?? true,
+                showSubtitle: data.text?.show_subtitle ?? true,
+                showCoordinates: data.text?.show_coordinates ?? true,
+                position: data.text?.position || 'bottom'
             } : undefined
         };
 

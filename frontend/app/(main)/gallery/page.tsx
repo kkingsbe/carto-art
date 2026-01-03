@@ -1,5 +1,6 @@
 import { FeedClient } from '@/components/feed/FeedClient';
 import GalleryHero from '@/components/gallery/GalleryHero';
+import { getSiteStats } from '@/lib/actions/stats';
 
 export const metadata = {
   title: 'Community Gallery | Carto Art',
@@ -13,11 +14,12 @@ interface GalleryPageProps {
 export default async function GalleryPage({ searchParams }: GalleryPageProps) {
   const params = await searchParams;
   const sort = (params.sort || 'fresh') as 'fresh' | 'top';
+  const stats = await getSiteStats();
 
   return (
     <>
       {/* Hero Section */}
-      <GalleryHero />
+      <GalleryHero stats={stats} />
 
       {/* Filter Bar + Content */}
       <div className="min-h-screen bg-[#0a0f1a]">

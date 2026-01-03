@@ -1,7 +1,12 @@
 import { Background3D } from '@/components/landing/3DBackground';
 import { Sparkles } from 'lucide-react';
+import { SiteStats } from '@/lib/actions/stats';
 
-export default function GalleryHero() {
+interface GalleryHeroProps {
+  stats?: SiteStats;
+}
+
+export default function GalleryHero({ stats }: GalleryHeroProps) {
   return (
     <section className="relative min-h-[50vh] flex items-center justify-center overflow-hidden bg-[#0a0f1a]">
       <Background3D />
@@ -35,11 +40,15 @@ export default function GalleryHero() {
         {/* Stats Badges */}
         <div className="flex flex-wrap gap-4 md:gap-8 justify-center animate-fade-in-up">
           <div className="flex flex-col items-center bg-white/5 border border-white/10 backdrop-blur-md rounded-2xl px-8 py-4 min-w-[140px] hover:bg-white/10 transition-colors">
-            <span className="text-3xl font-bold text-[#c9a962]">500+</span>
+            <span className="text-3xl font-bold text-[#c9a962]">
+              {stats ? stats.totalExports.toLocaleString() : '500+'}
+            </span>
             <span className="text-sm text-[#d4cfc4]/60 uppercase tracking-wider mt-1">Maps Created</span>
           </div>
           <div className="flex flex-col items-center bg-white/5 border border-white/10 backdrop-blur-md rounded-2xl px-8 py-4 min-w-[140px] hover:bg-white/10 transition-colors">
-            <span className="text-3xl font-bold text-[#c9a962]">100+</span>
+            <span className="text-3xl font-bold text-[#c9a962]">
+              {stats ? stats.totalUsers.toLocaleString() : '100+'}
+            </span>
             <span className="text-sm text-[#d4cfc4]/60 uppercase tracking-wider mt-1">Active Creators</span>
           </div>
           <div className="flex flex-col items-center bg-white/5 border border-white/10 backdrop-blur-md rounded-2xl px-8 py-4 min-w-[140px] hover:bg-white/10 transition-colors">

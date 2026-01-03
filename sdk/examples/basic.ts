@@ -32,6 +32,17 @@ async function main() {
             lng: -118.2437, // LA
         },
         style: style.id,
+        text: {
+            title: "LOS ANGELES",
+            subtitle: "California, USA",
+            position: "bottom"
+        },
+        options: {
+            buildings_3d: true,
+            parks: true,
+            water: true,
+            marker: true, // New toggle
+        }
     });
     console.log('Generation result:', result);
 
