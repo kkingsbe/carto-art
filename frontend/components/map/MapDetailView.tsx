@@ -10,7 +10,7 @@ import { VoteButtons } from '@/components/voting/VoteButtons';
 import { CommentList } from '@/components/comments/CommentList';
 import { CommentForm } from '@/components/comments/CommentForm';
 import { Button } from '@/components/ui/control-components';
-import { Edit, EyeOff } from 'lucide-react';
+import { Edit, EyeOff, Copy } from 'lucide-react';
 import type { SavedMap } from '@/lib/actions/maps';
 import type { Comment } from '@/lib/actions/comments';
 
@@ -218,14 +218,23 @@ export function MapDetailView({ map, comments: initialComments, userVote, isOwne
                   <VoteButtons mapId={map.id} initialVote={userVote} initialScore={map.vote_score} />
                 </div>
 
-                {isOwner && (
-                  <Link href="/profile">
+                <div className="flex items-center gap-2">
+                  <Link href={`/editor?remix=${map.id}`}>
                     <Button variant="outline" size="sm">
-                      <Edit className="w-4 h-4 mr-2" />
-                      Edit
+                      <Copy className="w-4 h-4 mr-2" />
+                      Edit Copy
                     </Button>
                   </Link>
-                )}
+
+                  {isOwner && (
+                    <Link href="/profile">
+                      <Button variant="outline" size="sm">
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit
+                      </Button>
+                    </Link>
+                  )}
+                </div>
               </div>
             </div>
           </div>

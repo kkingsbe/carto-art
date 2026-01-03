@@ -26,6 +26,7 @@ interface ControlDrawerProps {
   updateTypography: (typography: Partial<PosterConfig['typography']>) => void;
   updateFormat: (format: Partial<PosterConfig['format']>) => void;
   updateLayers: (layers: Partial<PosterConfig['layers']>) => void;
+  updateRendering: (rendering: Partial<NonNullable<PosterConfig['rendering']>>) => void;
   setConfig: (config: PosterConfig) => void;
   savedProjects: SavedProject[];
   deleteProject: (id: string) => Promise<void>;
@@ -52,6 +53,7 @@ export function ControlDrawer({
   updateTypography,
   updateFormat,
   updateLayers,
+  updateRendering,
   setConfig,
   savedProjects,
   deleteProject,
@@ -66,156 +68,169 @@ export function ControlDrawer({
 
   return (
     <aside className={cn(
-      "fixed inset-x-0 bottom-16 md:relative md:bottom-auto md:w-80 bg-white dark:bg-gray-800 border-t md:border-t-0 md:border-r border-gray-200 dark:border-gray-700 overflow-y-auto flex flex-col z-50 transition-all duration-300 ease-in-out shadow-2xl md:shadow-none",
-      isDrawerOpen ? "h-[50vh] md:h-full translate-y-0" : "h-0 md:h-full translate-y-full md:translate-y-0"
+      "relative bg-transparent h-full overflow-hidden transition-all duration-500 ease-out",
+      isDrawerOpen ? "w-[340px] opacity-100" : "w-0 opacity-0"
     )}>
-      <div className="p-4 md:p-6 space-y-6">
-        <div className="flex items-center justify-between md:hidden mb-2">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">{activeTab}</h2>
-          <button 
-            onClick={() => setIsDrawerOpen(false)}
-            className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-          >
-            <Minus className="w-5 h-5" />
-          </button>
-        </div>
+      <div className="h-full overflow-y-auto w-[340px]"> {/* Fixed width inner container to prevent reflow during transition */}
+        <div className="p-6 space-y-6 pb-24">
+          <div className="flex items-center justify-between md:hidden mb-2">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">{activeTab}</h2>
+            <button
+              onClick={() => setIsDrawerOpen(false)}
+              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            >
+              <Minus className="w-5 h-5" />
+            </button>
+          </div>
 
-        {activeTab === 'library' && (
-          <div className="space-y-6">
-            <div className="flex p-1 bg-gray-100 dark:bg-gray-700/50 rounded-lg">
-              <button
-                onClick={() => setLibraryTab('examples')}
-                className={cn(
-                  "flex-1 py-1.5 text-xs font-medium rounded-md transition-all",
-                  libraryTab === 'examples'
-                    ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                )}
-              >
-                Examples
-              </button>
-              <button
-                onClick={() => setLibraryTab('saved')}
-                className={cn(
-                  "flex-1 py-1.5 text-xs font-medium rounded-md transition-all",
-                  libraryTab === 'saved'
-                    ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                )}
-              >
-                Saved
-              </button>
+          {activeTab === 'library' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Library</h3>
+              </div>
+              <div className="flex p-1 bg-gray-100/50 dark:bg-gray-800/50 rounded-xl">
+                <button
+                  onClick={() => setLibraryTab('examples')}
+                  className={cn(
+                    "flex-1 py-2 text-xs font-medium rounded-lg transition-all",
+                    libraryTab === 'examples'
+                      ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                  )}
+                >
+                  Examples
+                </button>
+                <button
+                  onClick={() => setLibraryTab('saved')}
+                  className={cn(
+                    "flex-1 py-2 text-xs font-medium rounded-lg transition-all",
+                    libraryTab === 'saved'
+                      ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                  )}
+                >
+                  Saved Maps
+                </button>
+              </div>
+
+              {libraryTab === 'examples' ? (
+                <ExamplesGallery
+                  onSelect={setConfig}
+                  currentConfig={config}
+                />
+              ) : (
+                <SavedProjects
+                  projects={savedProjects}
+                  onLoad={onLoadProject}
+                  onDelete={deleteProject}
+                  onRename={renameProject}
+                />
+              )}
             </div>
+          )}
 
-            {libraryTab === 'examples' ? (
-              <ExamplesGallery
-                onSelect={setConfig}
+          {activeTab === 'location' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Location</h3>
+              </div>
+              <div className="space-y-2">
+                <LocationSearch
+                  onLocationSelect={updateLocation}
+                  currentLocation={config.location}
+                />
+              </div>
+
+              <div className="bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-xl text-xs text-blue-800 dark:text-blue-200 border border-blue-100 dark:border-blue-900/20">
+                <p className="font-medium mb-1">Tip: Fine-tune your view</p>
+                <p className="opacity-90 leading-relaxed">Drag the map to reposition. Hold <kbd className="px-1 py-0.5 bg-white dark:bg-black rounded text-[10px]">Ctrl</kbd> to rotate and tilt the view.</p>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'style' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Map Style</h3>
+              </div>
+              <StyleSelector
+                selectedStyleId={config.style.id}
+                onStyleSelect={updateStyle}
                 currentConfig={config}
               />
-            ) : (
-              <SavedProjects
-                projects={savedProjects}
-                onLoad={onLoadProject}
-                onDelete={deleteProject}
-                onRename={renameProject}
-              />
-            )}
-          </div>
-        )}
 
-        {activeTab === 'location' && (
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Search Location
-              </h3>
-              <LocationSearch
-                onLocationSelect={updateLocation}
-                currentLocation={config.location}
-              />
+              <div className="pt-6 border-t border-gray-100 dark:border-gray-700/50">
+                <ColorControls
+                  palette={config.palette}
+                  presets={config.style.palettes}
+                  onPaletteChange={updatePalette}
+                />
+              </div>
             </div>
+          )}
 
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg text-xs text-blue-800 dark:text-blue-200">
-              <p className="font-medium mb-1">Tip: Fine-tune your view</p>
-              <p className="opacity-90">Drag the map to adjust position, or use the zoom controls to get the perfect framing.</p>
+          {activeTab === 'layers' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Layers</h3>
+              </div>
+              <div className="space-y-4">
+                <LayerControls
+                  layers={config.layers}
+                  rendering={config.rendering}
+                  onLayersChange={updateLayers}
+                  onRenderingChange={updateRendering}
+                  availableToggles={config.style.layerToggles}
+                  palette={config.palette}
+                />
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {activeTab === 'style' && (
-          <div className="space-y-6">
-            <StyleSelector
-              selectedStyleId={config.style.id}
-              onStyleSelect={updateStyle}
-              currentConfig={config}
-            />
-
-            <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
-              <ColorControls
-                palette={config.palette}
-                presets={config.style.palettes}
-                onPaletteChange={updatePalette}
-              />
+          {activeTab === 'text' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Typography</h3>
+              </div>
+              <div className="space-y-4">
+                <TypographyControls
+                  config={config}
+                  onTypographyChange={updateTypography}
+                  onLocationChange={updateLocation}
+                  onLayersChange={updateLayers}
+                />
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {activeTab === 'layers' && (
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Layer Controls
-              </h3>
-              <LayerControls
-                layers={config.layers}
-                onLayersChange={updateLayers}
-                availableToggles={config.style.layerToggles}
-                palette={config.palette}
-              />
+          {activeTab === 'frame' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Frame & Format</h3>
+              </div>
+              <div className="space-y-4">
+                <FormatControls
+                  format={config.format}
+                  onFormatChange={updateFormat}
+                />
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {activeTab === 'text' && (
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Typography
-              </h3>
-              <TypographyControls
-                config={config}
-                onTypographyChange={updateTypography}
-                onLocationChange={updateLocation}
-                onLayersChange={updateLayers}
+          {activeTab === 'account' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Account</h3>
+              </div>
+              <AccountPanel
+                currentMapId={currentMapId}
+                currentMapName={currentMapName}
+                currentMapStatus={currentMapStatus}
+                onPublishSuccess={onPublishSuccess}
               />
             </div>
-          </div>
-        )}
-
-        {activeTab === 'frame' && (
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Format & Layout
-              </h3>
-              <FormatControls
-                format={config.format}
-                onFormatChange={updateFormat}
-              />
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'account' && (
-          <div className="space-y-6">
-            <AccountPanel
-              currentMapId={currentMapId}
-              currentMapName={currentMapName}
-              currentMapStatus={currentMapStatus}
-              onPublishSuccess={onPublishSuccess}
-            />
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </aside>
   );

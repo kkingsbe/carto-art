@@ -4,13 +4,15 @@ import { PosterConfig, LayerToggle, ColorPalette } from '@/types/poster';
 import { cn } from '@/lib/utils';
 import { HexColorPicker } from 'react-colorful';
 import { useState, useMemo } from 'react';
-import { Type, Palette, Heart, Home, MapPin, Target, Circle, Radio, Check, Box, Compass, ArrowUp } from 'lucide-react';
+import { Type, Palette, Heart, Home, MapPin, Target, Circle, Radio, Check, Box, Compass, ArrowUp, Sparkles } from 'lucide-react';
 import { ControlSection, ControlCheckbox, ControlSlider, ControlLabel, ControlInput, CollapsibleSection } from '@/components/ui/control-components';
 import { Tooltip } from '@/components/ui/tooltip';
 
 interface LayerControlsProps {
   layers: PosterConfig['layers'];
+  rendering?: PosterConfig['rendering'];
   onLayersChange: (layers: Partial<PosterConfig['layers']>) => void;
+  onRenderingChange?: (rendering: Partial<NonNullable<PosterConfig['rendering']>>) => void;
   availableToggles: LayerToggle[];
   palette: ColorPalette;
 }
@@ -24,7 +26,7 @@ const markerTypes = [
   { id: 'home', icon: Home, label: 'Home' },
 ] as const;
 
-export function LayerControls({ layers, onLayersChange, availableToggles, palette }: LayerControlsProps) {
+export function LayerControls({ layers, rendering, onLayersChange, onRenderingChange, availableToggles, palette }: LayerControlsProps) {
   const [showMarkerColorPicker, setShowMarkerColorPicker] = useState(false);
 
   const effectiveMarkerColor = useMemo(() => {
@@ -426,6 +428,52 @@ export function LayerControls({ layers, onLayersChange, availableToggles, palett
           </CollapsibleSection>
         )}
       </ControlSection>
+
+      {/* Rendering Quality Section */}
+      {onRenderingChange && (
+        <ControlSection title="Rendering Quality">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <ControlLabel
+                className="text-[10px] uppercase text-gray-500"
+                action={
+                  <Tooltip content="Higher detail captures more tile data (buildings, roads) when zoomed out. Uses more memory and takes longer to export.">
+                    <Sparkles className="h-3 w-3 text-gray-400" />
+                  </Tooltip>
+                }
+              >
+                Tile Detail Level
+              </ControlLabel>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: 1, label: 'Standard', description: 'Normal detail' },
+                  { id: 2, label: 'High', description: '2× detail' },
+                ].map(({ id, label, description }) => {
+                  const isActive = (rendering?.overzoom ?? 1) === id;
+                  return (
+                    <button
+                      key={id}
+                      onClick={() => onRenderingChange({ overzoom: id as 1 | 2 })}
+                      className={cn(
+                        "flex flex-col items-center gap-1 py-3 px-2 rounded-lg border transition-all text-center",
+                        isActive
+                          ? "bg-white dark:bg-gray-700 border-blue-500 text-blue-600 dark:text-blue-400 shadow-sm ring-1 ring-blue-500/20"
+                          : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300 dark:hover:border-gray-600"
+                      )}
+                    >
+                      <span className="text-xs font-medium">{label}</span>
+                      <span className="text-[9px] text-gray-400">{description}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[9px] text-gray-400 italic">
+                High detail shows buildings and fine roads when zoomed out for large prints.
+              </p>
+            </div>
+          </div>
+        </ControlSection>
+      )}
     </div>
   );
 }

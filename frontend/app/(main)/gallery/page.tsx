@@ -20,7 +20,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
       <GalleryHero />
 
       {/* Filter Bar + Content */}
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-[#0a0f1a]">
         <FeedClient initialSort={sort} />
       </div>
     </>

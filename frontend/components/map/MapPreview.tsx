@@ -14,10 +14,12 @@ interface MapPreviewProps {
   mapStyle: any;
   location: PosterLocation;
   format?: PosterConfig['format'];
+  rendering?: PosterConfig['rendering'];
   showMarker?: boolean;
   markerColor?: string;
   onMapLoad?: (map: any) => void;
   onMove?: (center: [number, number], zoom: number) => void;
+  onError?: (error: any) => void;
   layers?: PosterConfig['layers'];
   layerToggles?: LayerToggle[];
 }
@@ -26,11 +28,14 @@ export function MapPreview({
   mapStyle,
   location,
   format,
+  rendering,
   showMarker = true,
   markerColor,
   onMapLoad,
-  onMove
-  , layers, layerToggles
+  onMove,
+  onError,
+  layers,
+  layerToggles
 }: MapPreviewProps) {
   const mapRef = useRef<MapRef>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,24 +46,30 @@ export function MapPreview({
   const timeoutHandlerRef = useRef<(() => void) | null>(null);
   const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Calculate effective zoom with overzoom boost for tile detail
+  // Overzoom 2 = +1 zoom level (shows tiles that would appear at next zoom level)
+  const overzoomBoost = Math.log2(rendering?.overzoom ?? 1);
+  const effectiveZoom = location.zoom + overzoomBoost;
+
   // Local viewState for smooth interaction without triggering full app re-renders on every frame
   const [viewState, setViewState] = useState({
     longitude: location.center[0],
     latitude: location.center[1],
-    zoom: location.zoom,
+    zoom: effectiveZoom,
     pitch: layers?.buildings3D ? (layers.buildings3DPitch ?? 45) : 0,
     bearing: layers?.buildings3D ? (layers.buildings3DBearing ?? 0) : 0,
   });
 
   // Sync with external location changes (e.g. search, button clicks)
   useEffect(() => {
+    const overzoomBoost = Math.log2(rendering?.overzoom ?? 1);
     setViewState(prev => ({
       ...prev,
       longitude: location.center[0],
       latitude: location.center[1],
-      zoom: location.zoom,
+      zoom: location.zoom + overzoomBoost,
     }));
-  }, [location.center, location.zoom]);
+  }, [location.center, location.zoom, rendering?.overzoom]);
 
   // Sync pitch/bearing with 3D buildings layer settings
   useEffect(() => {
@@ -85,8 +96,12 @@ export function MapPreview({
       onMapLoad(map);
 
       // Create named handler functions for proper cleanup
-      const loadingHandler = () => setIsLoading(true);
+      const loadingHandler = () => {
+        console.log('[MapPreview] Dataloading event received');
+        setIsLoading(true);
+      };
       const idleHandler = () => {
+        console.log('[MapPreview] Idle event received');
         setIsLoading(false);
         // Clear any pending timeout when map becomes idle
         if (timeoutIdRef.current) {
@@ -103,7 +118,10 @@ export function MapPreview({
           clearTimeout(timeoutIdRef.current);
         }
         // Set new timeout
-        timeoutIdRef.current = setTimeout(() => setIsLoading(false), TIMEOUTS.MAP_LOADING);
+        timeoutIdRef.current = setTimeout(() => {
+          console.warn('[MapPreview] Map loading timed out - forcing idle state');
+          setIsLoading(false);
+        }, TIMEOUTS.MAP_LOADING);
         // Clear timeout when map becomes idle
         map.once('idle', () => {
           if (timeoutIdRef.current) {
@@ -173,7 +191,10 @@ export function MapPreview({
     setHasError(true);
     const msg = e.error?.message || e.message || 'Unable to load map data';
     setErrorMessage(msg);
-  }, []);
+    if (onError) {
+      onError(e);
+    }
+  }, [onError]);
 
   // Check for edge cases (Antarctica, very remote locations)
   const isEdgeCase = location.center[1] < -60 || Math.abs(location.center[0]) > 170;

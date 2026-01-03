@@ -82,5 +82,8 @@ export const DEFAULT_CONFIG: PosterConfig = {
     landuseCemetery: false,
     landuseGrass: false,
   },
+  rendering: {
+    overzoom: 1,
+  },
 };
 

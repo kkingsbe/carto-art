@@ -1,6 +1,7 @@
 import { ProfileStats, UserProfile } from '@/lib/actions/user';
 import { FollowButton } from '@/components/profile/FollowButton';
-import { MapPin, Calendar, Eye, Heart, Users } from 'lucide-react';
+import { Background3D } from '@/components/landing/3DBackground';
+import { Calendar, Eye, Heart, Users } from 'lucide-react';
 import Image from 'next/image';
 
 interface ProfileHeaderProps {
@@ -16,90 +17,113 @@ export function ProfileHeader({ profile, stats, isOwnProfile }: ProfileHeaderPro
     });
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 mb-8">
-            <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-start md:items-center">
-                {/* Avatar */}
-                <div className="relative shrink-0">
-                    <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-white dark:border-gray-700 bg-gray-100 dark:bg-gray-900 shadow-md">
-                        {profile.avatar_url ? (
-                            <Image
-                                src={profile.avatar_url}
-                                alt={profile.display_name || profile.username}
-                                fill
-                                className="object-cover"
-                            />
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-indigo-100 dark:bg-indigo-900 text-indigo-500 dark:text-indigo-300 text-3xl font-bold">
-                                {(profile.display_name || profile.username || '?')[0].toUpperCase()}
-                            </div>
-                        )}
-                    </div>
-                </div>
+        <div className="relative overflow-hidden mb-8">
+            {/* Background Layer */}
+            <div className="absolute inset-0 z-0 h-[500px] bg-gradient-to-b from-[#0a0f1a] to-[#0a0f1a]/50">
+                <Background3D />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#0a0f1a]" />
+            </div>
 
-                {/* Info */}
-                <div className="flex-grow min-w-0">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                        <div>
-                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white truncate">
-                                {profile.display_name || profile.username}
-                            </h1>
-                            <p className="text-gray-500 dark:text-gray-400 font-medium">@{profile.username}</p>
-                        </div>
+            {/* Ambient Glow Effects */}
+            <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse pointer-events-none" />
+            <div className="absolute top-20 right-1/4 w-96 h-96 bg-[#c9a962]/10 rounded-full blur-3xl animate-pulse delay-1000 pointer-events-none" />
 
-                        {/* Action Buttons */}
-                        <div>
-                            {!isOwnProfile && (
-                                <div className="group">
-                                    <FollowButton
-                                        targetUserId={profile.id}
-                                        isFollowing={stats.is_following}
+            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-24">
+                <div className="glass-card rounded-2xl p-8 backdrop-blur-xl border border-white/5 bg-white/5">
+                    <div className="flex flex-col md:flex-row gap-8 items-start md:items-center">
+                        {/* Avatar */}
+                        <div className="relative shrink-0">
+                            <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-[#c9a962]/20 shadow-[0_0_20px_rgba(201,169,98,0.2)] bg-[#0a0f1a]">
+                                {profile.avatar_url ? (
+                                    <Image
+                                        src={profile.avatar_url}
+                                        alt={profile.display_name || profile.username}
+                                        fill
+                                        className="object-cover"
                                     />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-[#141d2e] text-[#c9a962] text-3xl font-bold">
+                                        {(profile.display_name || profile.username || '?')[0].toUpperCase()}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-grow min-w-0">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                                <div>
+                                    <h1 className="text-3xl md:text-4xl font-bold text-[#f5f0e8] truncate tracking-tight animate-fade-in">
+                                        {profile.display_name || profile.username}
+                                    </h1>
+                                    <p className="text-[#c9a962] font-medium tracking-wide">@{profile.username}</p>
                                 </div>
-                            )}
-                            {isOwnProfile && (
-                                <a
-                                    href="/profile/edit" // Assuming we might add this later or it redirects to settings
-                                    className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-full text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                                >
-                                    Edit Profile
-                                </a>
-                            )}
-                        </div>
-                    </div>
 
-                    {/* Stats Grid */}
-                    <div className="flex flex-wrap gap-4 md:gap-8 text-sm text-gray-600 dark:text-gray-300 border-t border-gray-100 dark:border-gray-700 pt-4 mt-2">
-                        <div className="flex items-center gap-1.5" title="Total Map Views">
-                            <Eye className="w-4 h-4 text-gray-400" />
-                            <span className="font-semibold text-gray-900 dark:text-white">{stats.total_views.toLocaleString()}</span>
-                            <span>Views</span>
-                        </div>
-                        <div className="flex items-center gap-1.5" title="Total Likes Received">
-                            <Heart className="w-4 h-4 text-gray-400" />
-                            <span className="font-semibold text-gray-900 dark:text-white">{stats.total_likes.toLocaleString()}</span>
-                            <span>Likes</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            <Users className="w-4 h-4 text-gray-400" />
-                            <span className="font-semibold text-gray-900 dark:text-white">{stats.followers.toLocaleString()}</span>
-                            <span>Followers</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            <span className="font-semibold text-gray-900 dark:text-white ml-5">{stats.following.toLocaleString()}</span>
-                            <span>Following</span>
-                        </div>
-                    </div>
+                                {/* Action Buttons */}
+                                <div>
+                                    {!isOwnProfile && (
+                                        <div className="group">
+                                            <FollowButton
+                                                targetUserId={profile.id}
+                                                isFollowing={stats.is_following}
+                                            />
+                                        </div>
+                                    )}
+                                    {isOwnProfile && (
+                                        <a
+                                            href="/profile/edit"
+                                            className="inline-flex items-center justify-center px-6 py-2.5 border border-[#c9a962]/30 rounded-full text-sm font-medium text-[#f5f0e8] hover:bg-[#c9a962]/10 hover:border-[#c9a962]/50 transition-all duration-300"
+                                        >
+                                            Edit Profile
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
 
-                    <div className="mt-4 flex flex-wrap gap-y-2 gap-x-6 text-xs text-gray-500 dark:text-gray-400">
-                        <div className="flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5" />
-                            Joined {joinDate}
+                            {/* Stats Grid */}
+                            <div className="flex flex-wrap gap-4 md:gap-12 text-sm text-[#d4cfc4]/60 border-t border-white/5 pt-6 mt-2">
+                                <div className="flex items-center gap-2 group" title="Total Map Views">
+                                    <div className="p-2 rounded-lg bg-white/5 group-hover:bg-white/10 transition-colors">
+                                        <Eye className="w-4 h-4 text-[#c9a962]" />
+                                    </div>
+                                    <div>
+                                        <span className="block font-bold text-lg text-[#f5f0e8]">{stats.total_views.toLocaleString()}</span>
+                                        <span className="text-xs uppercase tracking-wider">Views</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 group" title="Total Likes Received">
+                                    <div className="p-2 rounded-lg bg-white/5 group-hover:bg-white/10 transition-colors">
+                                        <Heart className="w-4 h-4 text-[#c9a962]" />
+                                    </div>
+                                    <div>
+                                        <span className="block font-bold text-lg text-[#f5f0e8]">{stats.total_likes.toLocaleString()}</span>
+                                        <span className="text-xs uppercase tracking-wider">Likes</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 group">
+                                    <div className="p-2 rounded-lg bg-white/5 group-hover:bg-white/10 transition-colors">
+                                        <Users className="w-4 h-4 text-[#c9a962]" />
+                                    </div>
+                                    <div>
+                                        <span className="block font-bold text-lg text-[#f5f0e8]">{stats.followers.toLocaleString()}</span>
+                                        <span className="text-xs uppercase tracking-wider">Followers</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 group">
+                                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5">
+                                        <span className="font-bold text-[#f5f0e8]">{stats.following.toLocaleString()}</span>
+                                        <span className="text-xs uppercase tracking-wider">Following</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex flex-wrap gap-y-2 gap-x-6 text-xs text-[#d4cfc4]/40 font-mono">
+                                <div className="flex items-center gap-1.5">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    MEMBER SINCE {joinDate.toUpperCase()}
+                                </div>
+                            </div>
                         </div>
-                        {/* Placeholder for location if we add it later */}
-                        {/* <div className="flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5" />
-              Earth
-            </div> */}
                     </div>
                 </div>
             </div>

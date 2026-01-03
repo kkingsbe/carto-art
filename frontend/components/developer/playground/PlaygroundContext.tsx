@@ -92,14 +92,28 @@ export function PlaygroundProvider({ children }: { children: React.ReactNode }) 
                 body: JSON.stringify(payload)
             });
 
-            const data = await res.json();
-
             if (!res.ok) {
-                throw new Error(data.message || 'Failed to generate poster');
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.message || errorData.error || `Failed to generate poster (${res.status})`);
             }
 
-            setResponse(data);
+            const contentType = res.headers.get('content-type');
+            if (contentType && contentType.includes('image/')) {
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                setResponse({
+                    download_url: url,
+                    content_type: contentType,
+                    size: blob.size,
+                    is_local_blob: true
+                });
+            } else {
+                const data = await res.json();
+                setResponse(data);
+                console.log('[Playground] Response stored in state:', data);
+            }
         } catch (err: any) {
+            console.error('[Playground] Generation error:', err);
             setError(err.message || 'An unexpected error occurred');
         } finally {
             setIsLoading(false);

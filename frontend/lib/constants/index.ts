@@ -8,7 +8,7 @@
  */
 export const TIMEOUTS = {
   /** Map loading timeout - prevents being stuck on "Loading Tiles" */
-  MAP_LOADING: 10000,
+  MAP_LOADING: 5000,
   /** Geolocation request timeout */
   GEOLOCATION: 10000,
   /** Geolocation safety timeout (longer than request timeout) */

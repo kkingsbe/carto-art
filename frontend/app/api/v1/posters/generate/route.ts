@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateApiRequest } from '@/lib/auth/api-middleware';
 import { getBrowser } from '@/lib/rendering/browser';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
@@ -93,11 +93,22 @@ export async function POST(req: NextRequest) {
             const page = await browser.newPage();
             console.log(`[PosterDebug] New page opened for ${requestId}`);
 
-            // Set viewport to target resolution
+            // Forward console logs from the browser to the node console EARLY
+            page.on('console', msg => {
+                const type = msg.type();
+                const text = msg.text();
+                console.log(`[Browser Console] ${type.toUpperCase()}: ${text}`);
+            });
+
+            page.on('pageerror', (err: unknown) => {
+                console.error(`[Browser Error] ${String(err)}`);
+            });
+
+            // Set viewport to a reasonable default - actual rendering size is handled by exportMapToPNG's own canvas
             await page.setViewport({
-                width: Math.round(width / pixelRatio),
-                height: Math.round(height / pixelRatio),
-                deviceScaleFactor: pixelRatio,
+                width: 1920,
+                height: 1080,
+                deviceScaleFactor: 1,
             });
 
             // Construct URL for renderer page
@@ -118,31 +129,35 @@ export async function POST(req: NextRequest) {
                 window.renderPoster(cfg);
             }, config as any);
 
-            // Forward console logs from the browser to the node console
-            page.on('console', msg => {
-                const type = msg.type();
-                const text = msg.text();
-                // Filter out some noise if needed, but for now we want everything
-                console.log(`[Browser Console] ${type.toUpperCase()}: ${text}`);
-            });
-
-            page.on('pageerror', (err: unknown) => {
-                console.error(`[Browser Error] ${String(err)}`);
-            });
-
             // Wait for rendering to complete (or timeout)
-            // We assume the renderer appends <div id="render-complete"></div>
-            console.log(`[PosterDebug] Config injected, waiting for #render-complete for ${requestId}`);
-            await page.waitForSelector('#render-complete', { timeout: 60000 });
-            console.log(`[PosterDebug] Render complete selector found for ${requestId}`);
+            // We race between success marker and error marker
+            console.log(`[PosterDebug] Config injected, waiting for #render-complete or #render-error for ${requestId}`);
 
-            // Screenshot
-            console.log(`[PosterDebug] Taking screenshot for ${requestId}`);
-            screenshotBuffer = await page.screenshot({
-                type: 'png',
-                fullPage: true,
-                omitBackground: false
-            }) as Buffer;
+            // Wait for map to be idle and fonts to be loaded
+            console.log(`[PosterDebug] Waiting for renderer signal for ${requestId}`);
+
+            const result = await Promise.race([
+                page.waitForSelector('#render-complete', { timeout: 45000 }).then(() => 'complete'),
+                page.waitForSelector('#render-error', { timeout: 45000 }).then(() => 'error')
+            ]);
+
+            if (result === 'error') {
+                throw new Error('Renderer reported a configuration error');
+            }
+
+            await page.waitForFunction(() => {
+                return (window as any).generatePosterImage !== undefined;
+            }, { timeout: 5000 });
+
+            console.log(`[PosterDebug] Renderer ready, executing generatePosterImage for ${requestId}`);
+
+            // Execute export
+            const base64Image = await page.evaluate(async (res) => {
+                return await window.generatePosterImage(res);
+            }, { width, height, dpi: 72 * pixelRatio, name: 'poster' }); // dpi is approximate, exportCanvas handles resolution
+
+            console.log(`[PosterDebug] Image generated, decoding base64 for ${requestId}`);
+            screenshotBuffer = Buffer.from(base64Image, 'base64');
 
         } catch (renderError) {
             console.error(`[PosterDebug] Render error for ${requestId}:`, renderError);
@@ -163,21 +178,54 @@ export async function POST(req: NextRequest) {
         console.log(`[PosterDebug] Screenshot taken (${screenshotBuffer.length} bytes), uploading for ${requestId}`);
 
         // 4. Upload to Supabase
-        const supabase = await createClient();
+        // Use service role to bypass policies and avoid cookie issues/RLS
+        const supabase = createServiceRoleClient();
         const fileName = `${requestId}.png`;
         const filePath = `api-posters/${fileName}`;
 
-        const { error: uploadError } = await supabase.storage
-            .from('posters')
-            .upload(filePath, screenshotBuffer, {
-                contentType: 'image/png',
-                cacheControl: '3600',
-                upsert: false
-            });
+        let uploadError = null;
+        let attempt = 0;
+        const maxRetries = 3;
+
+        while (attempt < maxRetries) {
+            try {
+                attempt++;
+                if (attempt > 1) console.log(`[PosterDebug] Upload attempt ${attempt}/${maxRetries} for ${requestId} (prev error: ${uploadError?.message})`);
+
+                const { error } = await supabase.storage
+                    .from('posters')
+                    .upload(filePath, screenshotBuffer, {
+                        contentType: 'image/png',
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+
+                if (!error) {
+                    uploadError = null;
+                    console.log(`[PosterDebug] Upload successful on attempt ${attempt}`);
+                    break;
+                }
+
+                uploadError = error;
+                console.error(`[PosterDebug] Upload failed on attempt ${attempt}:`, error);
+
+                // Wait before retry (exponential backoff: 500ms, 1000ms)
+                if (attempt < maxRetries) await new Promise(r => setTimeout(r, 500 * attempt));
+
+            } catch (e: any) {
+                console.error(`[PosterDebug] Upload exception on attempt ${attempt}:`, e);
+                uploadError = e;
+                // Wait before retry
+                if (attempt < maxRetries) await new Promise(r => setTimeout(r, 500 * attempt));
+            }
+        }
 
         if (uploadError) {
-            logger.error('Upload failed', { error: uploadError, requestId });
-            return NextResponse.json({ error: 'Storage upload failed' }, { status: 500 });
+            logger.error('Upload failed after retries', { error: uploadError, requestId });
+            return NextResponse.json({
+                error: 'Storage upload failed',
+                details: (uploadError as any)?.message || String(uploadError)
+            }, { status: 500 });
         }
 
         // Get Public URL
@@ -188,7 +236,11 @@ export async function POST(req: NextRequest) {
         // 5. Track Usage
         // Fire and forget
         const duration = Date.now() - startTime;
-        (supabase as any).from('api_usage').insert({
+
+        // Use service role client to bypass RLS for administrative logging
+        const adminSupabase = createServiceRoleClient();
+
+        (adminSupabase as any).from('api_usage').insert({
             api_key_id: authContext.keyId,
             user_id: authContext.userId,
             endpoint: '/api/v1/posters/generate',

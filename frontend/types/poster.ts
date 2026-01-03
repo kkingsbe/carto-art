@@ -158,6 +158,16 @@ export interface PosterConfig {
     landuseCemetery?: boolean;
     landuseGrass?: boolean;
   };
+  // Rendering quality settings
+  rendering?: {
+    /**
+     * Overzoom factor for capturing high-resolution tile data at lower zoom levels.
+     * - 1: Standard (default) - uses current zoom level
+     * - 2: High - renders at 1 zoom level higher with 2x viewport, then downscales
+     * Higher values capture more tile detail (buildings, roads) when zoomed out.
+     */
+    overzoom?: 1 | 2;
+  };
 }
 
 export interface SavedProject {

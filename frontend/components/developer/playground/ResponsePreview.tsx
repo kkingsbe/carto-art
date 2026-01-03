@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Loader2, AlertCircle, Image as ImageIcon, Map as MapIcon, Code, Download, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PosterImagePreview } from './PosterImagePreview';
 
 export function ResponsePreview() {
     const {
@@ -17,6 +18,8 @@ export function ResponsePreview() {
         isLoading,
         error
     } = usePlayground();
+
+    console.log('[ResponsePreview] Current response state:', response);
 
     const [mapLocalStyle, setMapLocalStyle] = useState<any>(null);
     const [styleLoading, setStyleLoading] = useState(false);
@@ -44,9 +47,18 @@ export function ResponsePreview() {
         setLocation({ center, zoom });
     };
 
+    const [activeTab, setActiveTab] = useState('preview');
+
+    useEffect(() => {
+        if (response) {
+            console.log('[ResponsePreview] Response detected, switching tab');
+            setActiveTab('response');
+        }
+    }, [response]);
+
     return (
         <div className="flex flex-col h-full glass-card rounded-2xl overflow-hidden border-[#c9a962]/5 shadow-2xl">
-            <Tabs defaultValue="preview" className="flex flex-col h-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
                 <div className="px-6 py-3 border-b border-white/5 bg-white/5 flex justify-between items-center shrink-0">
                     <TabsList className="bg-transparent p-0 gap-6 h-auto">
                         <TabsTrigger
@@ -152,20 +164,21 @@ export function ResponsePreview() {
                                                 <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px] text-[#c9a962]" onClick={() => window.open(response.download_url)}>
                                                     <ExternalLink className="w-3 h-3 mr-1" /> View Full
                                                 </Button>
-                                                <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px] text-[#c9a962]">
+                                                <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px] text-[#c9a962]" onClick={() => {
+                                                    const link = document.createElement('a');
+                                                    link.href = response.download_url;
+                                                    link.download = `poster-${Date.now()}.png`;
+                                                    document.body.appendChild(link);
+                                                    link.click();
+                                                    document.body.removeChild(link);
+                                                }}>
                                                     <Download className="w-3 h-3 mr-1" /> Download
                                                 </Button>
                                             </div>
                                         </div>
 
                                         {response.download_url ? (
-                                            <div className="relative group rounded-xl overflow-hidden shadow-2xl bg-white/5 p-4 border border-white/5">
-                                                <img
-                                                    src={response.download_url}
-                                                    alt="Generated Map"
-                                                    className="max-h-[500px] w-auto mx-auto rounded shadow-lg transition-transform duration-700 group-hover:scale-[1.02]"
-                                                />
-                                            </div>
+                                            <PosterImagePreview key={response.download_url} url={response.download_url} />
                                         ) : (
                                             <div className="h-48 glass-card rounded-xl flex flex-col items-center justify-center text-gray-600">
                                                 <ImageIcon className="w-8 h-8 mb-2 opacity-30" />
@@ -181,7 +194,12 @@ export function ResponsePreview() {
                                         </h3>
                                         <div className="relative group">
                                             <pre className="p-5 rounded-xl bg-black/40 border border-white/5 text-xs font-mono text-gray-400 overflow-x-auto">
-                                                {JSON.stringify(response, null, 2)}
+                                                {response.is_local_blob ? JSON.stringify({
+                                                    status: "success",
+                                                    type: response.content_type,
+                                                    size_bytes: response.size,
+                                                    url: "blob:..."
+                                                }, null, 2) : JSON.stringify(response, null, 2)}
                                             </pre>
                                         </div>
                                     </div>

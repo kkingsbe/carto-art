@@ -24,7 +24,9 @@ export function createBuilding3DLayer(
         heightScale = 1,
         defaultHeight = 6,
         opacity = 1.0,
-        minZoom = 8,
+        // minZoom 13 matches OpenMapTiles building data availability
+        // Buildings are only included in tiles at zoom 13+
+        minZoom = 13,
     } = options;
 
     // Get colors from palette's 3D config or fall back to building color

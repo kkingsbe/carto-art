@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import type { Database } from '@/types/database';
-import { SUPABASE_URL, SUPABASE_ANON_KEY, getRequiredEnv } from '@/lib/utils/env';
+import { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, getRequiredEnv } from '@/lib/utils/env';
 
 export async function createClient() {
   const cookieStore = await cookies();
@@ -46,5 +46,22 @@ export function createAnonymousClient() {
   const key = SUPABASE_ANON_KEY || getRequiredEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY');
 
   return createSupabaseClient<Database>(url, key);
+}
+
+/**
+ * Create a Supabase client with the SERVICE_ROLE key
+ * Use this ONLY for server-side admin tasks that need to bypass RLS
+ * NEVER expose this client or the key to the client-side
+ */
+export function createServiceRoleClient() {
+  const url = SUPABASE_URL || getRequiredEnv('NEXT_PUBLIC_SUPABASE_URL');
+  const key = SUPABASE_SERVICE_ROLE_KEY || getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY');
+
+  return createSupabaseClient<Database>(url, key, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
 }
 

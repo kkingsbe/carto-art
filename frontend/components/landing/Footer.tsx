@@ -1,134 +1,97 @@
 'use client';
 
 import Link from 'next/link';
-import { Map, Heart, Shield, Github } from 'lucide-react';
+import { Map, Heart, Shield, Github, Twitter, Instagram } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { FeedbackTrigger } from '@/components/feedback';
 
 export function Footer() {
   return (
-    <footer className="bg-[#0a0f1a] border-t border-[#d4cfc4]/20 py-16">
+    <footer className="bg-[#05080f] border-t border-white/5 pt-20 pb-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main footer content */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-16">
+
           {/* Brand Column */}
-          <div className="md:col-span-1">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 shadow-lg flex items-center justify-center">
-                <Map className="w-5 h-5 text-white" />
+          <div className="md:col-span-4 space-y-6">
+            <Link href="/" className="inline-flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#c9a962] to-[#b87333] shadow-lg shadow-[#c9a962]/20 flex items-center justify-center">
+                <Map className="w-5 h-5 text-[#0a0f1a]" />
               </div>
-              <span className="text-xl font-bold text-[#f5f0e8]">Carto-Art</span>
-            </div>
-            <p className="text-sm text-[#d4cfc4]/70 leading-relaxed mb-4">
-              Free map poster creator. Turn any location into personalized wall art.
+              <span className="text-2xl font-bold text-[#f5f0e8] tracking-tight">Carto-Art</span>
+            </Link>
+
+            <p className="text-[#d4cfc4]/60 leading-relaxed max-w-sm">
+              The professional map poster creator. Turn your favorite memories into museum-quality wall art.
+              <br />Open source and free forever.
             </p>
-            {/* Trust badges */}
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="outline" className="text-[#d4cfc4] border-[#d4cfc4]/30 text-xs">
-                <Shield className="w-3 h-3 mr-1" />
-                Privacy First
-              </Badge>
-              <Badge variant="outline" className="text-[#d4cfc4] border-[#d4cfc4]/30 text-xs">
-                <Github className="w-3 h-3 mr-1" />
-                Open Source
-              </Badge>
+
+            <div className="flex gap-4 pt-2">
+              <a href="#" className="p-2 rounded-lg bg-white/5 hover:bg-white/10 hover:text-[#c9a962] text-[#d4cfc4] transition-colors">
+                <Github className="w-5 h-5" />
+              </a>
+              <a href="#" className="p-2 rounded-lg bg-white/5 hover:bg-white/10 hover:text-[#c9a962] text-[#d4cfc4] transition-colors">
+                <Twitter className="w-5 h-5" />
+              </a>
+              <a href="#" className="p-2 rounded-lg bg-white/5 hover:bg-white/10 hover:text-[#c9a962] text-[#d4cfc4] transition-colors">
+                <Instagram className="w-5 h-5" />
+              </a>
             </div>
           </div>
 
-          {/* Product Column */}
-          <div>
-            <h3 className="text-sm font-bold text-[#f5f0e8] uppercase tracking-wider mb-4">
-              Product
-            </h3>
-            <ul className="space-y-3">
-              <li>
-                <Link href="/editor" className="text-[#d4cfc4] hover:text-[#c9a962] transition-colors text-sm">
-                  Editor
-                </Link>
-              </li>
-              <li>
-                <Link href="/gallery" className="text-[#d4cfc4] hover:text-[#c9a962] transition-colors text-sm">
-                  Gallery
-                </Link>
-              </li>
-              <li>
-                <Link href="/developer" className="text-[#d4cfc4] hover:text-[#c9a962] transition-colors text-sm">
-                  Developers
-                </Link>
-              </li>
-              <li>
-                <Link href="/#faq" className="text-[#d4cfc4] hover:text-[#c9a962] transition-colors text-sm">
-                  FAQ
-                </Link>
-              </li>
+          {/* Links Columns */}
+          <div className="md:col-span-2 md:col-start-6">
+            <h3 className="text-sm font-bold text-[#f5f0e8] uppercase tracking-wider mb-6">Product</h3>
+            <ul className="space-y-4">
+              <li><Link href="/editor" className="text-[#d4cfc4]/70 hover:text-[#c9a962] transition-colors">Editor</Link></li>
+              <li><Link href="/gallery" className="text-[#d4cfc4]/70 hover:text-[#c9a962] transition-colors">Gallery</Link></li>
+              <li><Link href="/showcase" className="text-[#d4cfc4]/70 hover:text-[#c9a962] transition-colors">Showcase</Link></li>
             </ul>
           </div>
 
-          {/* Resources Column */}
-          <div>
-            <h3 className="text-sm font-bold text-[#f5f0e8] uppercase tracking-wider mb-4">
-              Resources
-            </h3>
-            <ul className="space-y-3">
-              <li>
-                <a
-                  href="https://www.openstreetmap.org/about"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#d4cfc4] hover:text-[#c9a962] transition-colors text-sm"
-                >
-                  OpenStreetMap
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://wiki.openstreetmap.org/wiki/Legal_FAQ"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#d4cfc4] hover:text-[#c9a962] transition-colors text-sm"
-                >
-                  License Info
-                </a>
-              </li>
-              <li>
-                <FeedbackTrigger
-                  label="Give Feedback"
-                  className="text-[#d4cfc4] hover:text-[#c9a962] text-sm"
-                />
-              </li>
+          <div className="md:col-span-2">
+            <h3 className="text-sm font-bold text-[#f5f0e8] uppercase tracking-wider mb-6">Resources</h3>
+            <ul className="space-y-4">
+              <li><Link href="/developer" className="text-[#d4cfc4]/70 hover:text-[#c9a962] transition-colors">Developers</Link></li>
+              <li><Link href="/docs" className="text-[#d4cfc4]/70 hover:text-[#c9a962] transition-colors">Documentation</Link></li>
+              <li><Link href="/blog" className="text-[#d4cfc4]/70 hover:text-[#c9a962] transition-colors">Blog</Link></li>
             </ul>
           </div>
 
-          {/* Built With Column */}
-          <div>
-            <h3 className="text-sm font-bold text-[#f5f0e8] uppercase tracking-wider mb-4">
-              Built With
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {['Next.js', 'MapLibre', 'Supabase', 'Tailwind'].map((tech) => (
-                <span
-                  key={tech}
-                  className="px-2 py-1 bg-[#141d2e] rounded text-[#d4cfc4] text-xs border border-[#d4cfc4]/10"
-                >
-                  {tech}
-                </span>
-              ))}
+          <div className="md:col-span-3">
+            <h3 className="text-sm font-bold text-[#f5f0e8] uppercase tracking-wider mb-6">Stay Updated</h3>
+            <p className="text-sm text-[#d4cfc4]/60 mb-4">Get the latest features and styles delivered to your inbox.</p>
+            <div className="flex gap-2">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-[#f5f0e8] placeholder:text-[#d4cfc4]/30 w-full focus:outline-none focus:border-[#c9a962]/50"
+              />
+              <button className="px-4 py-2 bg-[#c9a962] text-[#0a0f1a] font-bold rounded-lg hover:bg-[#b87333] transition-colors text-sm">
+                Join
+              </button>
             </div>
           </div>
         </div>
 
         {/* Bottom bar */}
-        <div className="pt-8 border-t border-[#d4cfc4]/10 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="text-sm text-[#d4cfc4]/50">
+        <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="text-sm text-[#d4cfc4]/40">
             © {new Date().getFullYear()} Carto-Art. All rights reserved.
           </div>
-          <div className="flex items-center gap-2 text-[#d4cfc4] text-sm">
-            Built with
-            <Heart className="w-4 h-4 text-red-400 fill-current" />
-            and OpenStreetMap data
+
+          <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-[#d4cfc4]/40">
+            <Link href="/privacy" className="hover:text-[#d4cfc4] transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-[#d4cfc4] transition-colors">Terms of Service</Link>
+            <div className="flex items-center gap-2 pl-6 border-l border-white/10">
+              <span>Made with</span>
+              <Heart className="w-3 h-3 text-red-500 fill-current animate-pulse" />
+              <span>and OpenStreetMap</span>
+            </div>
           </div>
         </div>
       </div>
     </footer>
   );
 }
+

@@ -11,6 +11,7 @@ import { TextOverlay } from '@/components/map/TextOverlay';
 import { ExportButton } from '@/components/controls/ExportButton';
 import { SaveButton } from '@/components/controls/SaveButton';
 import { SaveCopyButton } from '@/components/controls/SaveCopyButton';
+import { EditorToolbar } from '@/components/editor/EditorToolbar';
 import { applyPaletteToStyle } from '@/lib/styles/applyPalette';
 import { throttle, cn } from '@/lib/utils';
 import { THROTTLE } from '@/lib/constants';
@@ -44,6 +45,7 @@ export function PosterEditor() {
     updateTypography,
     updateFormat,
     updateLayers,
+    updateRendering,
     setConfig,
     undo,
     redo,
@@ -279,315 +281,278 @@ export function PosterEditor() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [canUndo, canRedo, undo, redo]);
 
+  // Handle Remix from URL
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const remixId = searchParams.get('remix');
+
+    if (remixId) {
+      const loadRemix = async () => {
+        try {
+          const mapData = await getMapById(remixId);
+          if (mapData) {
+            setConfig(mapData.config);
+            setCurrentMapName(`${mapData.title} (Remix)`);
+            setCurrentMapId(null); // Force it to be a new project on save
+            setOriginalConfig(null); // Mark as dirty
+            setCurrentMapStatus({
+              isSaved: false,
+              isPublished: false,
+              hasUnsavedChanges: true
+            });
+
+            // Clear the remix param from URL
+            const newParams = new URLSearchParams(window.location.search);
+            newParams.delete('remix');
+            const newUrl = `${pathname}${newParams.toString() ? '?' + newParams.toString() : ''}`;
+            router.replace(newUrl, { scroll: false });
+          }
+        } catch (error) {
+          console.error('Failed to load remix map:', error);
+          handleError(new Error('Failed to load the map for remixing.'));
+        }
+      };
+
+      loadRemix();
+    }
+  }, [setConfig, pathname, router, handleError]);
+
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+    <div className="relative h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden selection:bg-blue-500/30">
       <ErrorToastContainer errors={errors} onDismiss={clearError} />
-      {/* Mobile Header */}
-      <div className="md:hidden h-14 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 z-40 shadow-sm">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 shadow-lg" />
-          <span className="font-bold text-gray-900 dark:text-white">CartoArt</span>
-        </Link>
-        <div className="flex items-center gap-2">
-          <SaveButton
-            onSave={handleSaveClick}
-            currentMapName={currentMapName}
-            hasUnsavedChanges={currentMapStatus?.hasUnsavedChanges}
-            isAuthenticated={isAuthenticated}
-            disabled={isExporting}
+
+      {/* Top Toolbar - Floating */}
+      <EditorToolbar
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onReset={handleReset}
+        onSave={handleSaveClick}
+        onSaveCopy={handleSaveCopy}
+        onExport={handleExport}
+        isExporting={isExporting}
+        currentMapName={currentMapName}
+        hasUnsavedChanges={currentMapStatus?.hasUnsavedChanges}
+        isAuthenticated={isAuthenticated}
+        format={config.format}
+        currentMapId={currentMapId}
+      />
+
+      {/* Floating Sidebar Container */}
+      <div className="absolute top-4 left-4 bottom-4 z-40 flex flex-row pointer-events-none">
+        <div className="pointer-events-auto flex flex-row h-full shadow-2xl rounded-2xl overflow-hidden bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200 dark:border-gray-700/50">
+          <TabNavigation
+            activeTab={activeTab}
+            isDrawerOpen={isDrawerOpen}
+            onTabChange={setActiveTab}
+            onToggleDrawer={setIsDrawerOpen}
           />
-          <SaveCopyButton
-            onSave={handleSaveCopy}
+
+          <ControlDrawer
+            activeTab={activeTab}
+            isDrawerOpen={isDrawerOpen}
+            setIsDrawerOpen={setIsDrawerOpen}
+            config={config}
+            updateLocation={updateLocation}
+            updateStyle={updateStyle}
+            updatePalette={updatePalette}
+            updateTypography={updateTypography}
+            updateFormat={updateFormat}
+            updateLayers={updateLayers}
+            updateRendering={updateRendering}
+            setConfig={setConfig}
+            savedProjects={projects}
+            deleteProject={deleteProject}
+            renameProject={renameProject}
+            currentMapId={currentMapId}
             currentMapName={currentMapName}
-            isAuthenticated={isAuthenticated}
-            disabled={isExporting}
+            currentMapStatus={currentMapStatus}
+            onLoadProject={handleLoadProject}
+            onPublishSuccess={handlePublishSuccess}
           />
-          <button
-            onClick={handleReset}
-            className="p-2 rounded-md transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700"
-            title={currentMapId ? "Exit saved map and start new" : "Reset to default"}
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
-          <ExportButton onExport={handleExport} isExporting={isExporting} format={config.format} />
         </div>
       </div>
 
-      <TabNavigation
-        activeTab={activeTab}
-        isDrawerOpen={isDrawerOpen}
-        onTabChange={setActiveTab}
-        onToggleDrawer={setIsDrawerOpen}
-      />
-
-      <ControlDrawer
-        activeTab={activeTab}
-        isDrawerOpen={isDrawerOpen}
-        setIsDrawerOpen={setIsDrawerOpen}
-        config={config}
-        updateLocation={updateLocation}
-        updateStyle={updateStyle}
-        updatePalette={updatePalette}
-        updateTypography={updateTypography}
-        updateFormat={updateFormat}
-        updateLayers={updateLayers}
-        setConfig={setConfig}
-        savedProjects={projects}
-        deleteProject={deleteProject}
-        renameProject={renameProject}
-        currentMapId={currentMapId}
-        currentMapName={currentMapName}
-        currentMapStatus={currentMapStatus}
-        onLoadProject={handleLoadProject}
-        onPublishSuccess={handlePublishSuccess}
-      />
-
-      {/* Main Content */}
+      {/* Main Content Area - Full Screen with Centered Poster */}
       <main
-        className="flex-1 relative bg-gray-100 dark:bg-gray-950 flex flex-col overflow-hidden pb-16 md:pb-0"
+        className="absolute inset-0 flex items-center justify-center p-4 md:p-12 overflow-hidden"
         style={{ containerType: 'size' }}
       >
-        {/* Top Actions Overlay - Desktop Only */}
-        <div className="absolute top-6 right-8 z-50 pointer-events-auto hidden md:flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-1">
-            <button
-              onClick={undo}
-              disabled={!canUndo}
-              className={cn(
-                "p-2 rounded-md transition-colors",
-                canUndo
-                  ? "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700"
-                  : "text-gray-300 dark:text-gray-600 cursor-not-allowed"
-              )}
-              title="Undo (Ctrl+Z)"
-            >
-              <Undo2 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={redo}
-              disabled={!canRedo}
-              className={cn(
-                "p-2 rounded-md transition-colors",
-                canRedo
-                  ? "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700"
-                  : "text-gray-300 dark:text-gray-600 cursor-not-allowed"
-              )}
-              title="Redo (Ctrl+Shift+Z)"
-            >
-              <Redo2 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleReset}
-              className="p-2 rounded-md transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700"
-              title={currentMapId ? "Exit saved map and start new" : "Reset to default"}
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-          </div>
-          <SaveButton
-            onSave={handleSaveClick}
-            currentMapName={currentMapName}
-            hasUnsavedChanges={currentMapStatus?.hasUnsavedChanges}
-            isAuthenticated={isAuthenticated}
-            disabled={isExporting}
-          />
-          <SaveCopyButton
-            onSave={handleSaveCopy}
-            currentMapName={currentMapName}
-            isAuthenticated={isAuthenticated}
-            disabled={isExporting}
-          />
-          <ExportButton onExport={handleExport} isExporting={isExporting} format={config.format} />
-        </div>
-
-        {/* Map Canvas */}
-        <div className="flex-1 relative flex items-center justify-center p-4 md:p-8">
+        {/* Map Canvas / Poster Paper */}
+        <div
+          className="relative shadow-2xl bg-white flex flex-col transition-all duration-500 ease-out ring-1 ring-black/5"
+          style={{
+            aspectRatio: getAspectRatioCSS(config.format.aspectRatio, config.format.orientation),
+            backgroundColor: config.palette.background,
+            width: `min(calc(100% - 4rem), calc((100cqh - 4rem) * ${numericRatio}))`,
+            height: 'auto',
+            maxHeight: 'calc(100cqh - 4rem)',
+            boxShadow: '0 50px 100px -20px rgba(0, 0, 0, 0.25), 0 30px 60px -30px rgba(0, 0, 0, 0.3)',
+            containerType: 'size',
+          }}
+        >
+          {/* The masked map area */}
           <div
-            className="relative shadow-2xl bg-white flex flex-col transition-all duration-300 ease-in-out ring-1 ring-black/5"
+            className="absolute overflow-hidden min-h-0 min-w-0"
             style={{
-              aspectRatio: getAspectRatioCSS(config.format.aspectRatio, config.format.orientation),
-              backgroundColor: config.palette.background,
-              width: `min(calc(100% - 2rem), calc((100cqh - 2rem) * ${numericRatio}))`,
-              height: 'auto',
-              maxHeight: 'calc(100cqh - 2rem)',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-              containerType: 'size',
+              top: `${config.format.margin}cqw`,
+              left: `${config.format.margin}cqw`,
+              right: `${config.format.margin}cqw`,
+              bottom: `${config.format.margin}cqw`,
+              borderRadius: (config.format.maskShape || 'rectangular') === 'circular' ? '50%' : '0',
             }}
           >
-            {/* The Map Window */}
+            <MapPreview
+              mapStyle={mapStyle}
+              location={config.location}
+              format={config.format}
+              rendering={config.rendering}
+              showMarker={config.layers.marker}
+              markerColor={config.layers.markerColor || config.palette.primary || config.palette.accent || config.palette.text}
+              onMapLoad={handleMapLoad}
+              onMove={handleMapMove}
+              layers={config.layers}
+              layerToggles={config.style.layerToggles}
+            />
+
+            {/* Floating Map Controls - Inside the paper */}
+            <div className="absolute bottom-4 right-4 flex flex-col items-center gap-1 z-10">
+              <div className="flex flex-col bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <button
+                  onClick={zoomIn}
+                  className="p-2 hover:bg-gray-50 transition-colors text-gray-700 active:bg-gray-100"
+                  title="Zoom In"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+                <div className="h-px w-full bg-gray-200" />
+                <button
+                  onClick={zoomOut}
+                  className="p-2 hover:bg-gray-50 transition-colors text-gray-700 active:bg-gray-100"
+                  title="Zoom Out"
+                >
+                  <Minus className="h-4 w-4" />
+                </button>
+              </div>
+
+              <button
+                onClick={fitToLocation}
+                className="p-2 bg-white/90 hover:bg-gray-50 backdrop-blur-sm border border-gray-200 rounded-lg shadow-sm transition-colors text-gray-700 mt-1"
+                title="Snap map to original bounds"
+              >
+                <Maximize className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Text Overlay */}
+          <TextOverlay config={config} />
+
+          {/* Border Overlay */}
+          {config.format.borderStyle !== 'none' && (
             <div
-              className="absolute overflow-hidden min-h-0 min-w-0"
+              className="absolute pointer-events-none z-30"
               style={{
                 top: `${config.format.margin}cqw`,
                 left: `${config.format.margin}cqw`,
                 right: `${config.format.margin}cqw`,
                 bottom: `${config.format.margin}cqw`,
-                borderRadius: (config.format.maskShape || 'rectangular') === 'circular' ? '50%' : '0',
+                padding: config.format.borderStyle === 'inset' ? '2cqw' : '0',
               }}
             >
-              <MapPreview
-                mapStyle={mapStyle}
-                location={config.location}
-                format={config.format}
-                showMarker={config.layers.marker}
-                markerColor={config.layers.markerColor || config.palette.primary || config.palette.accent || config.palette.text}
-                onMapLoad={handleMapLoad}
-                onMove={handleMapMove}
-                layers={config.layers}
-                layerToggles={config.style.layerToggles}
+              <div
+                className="w-full h-full"
+                style={{
+                  border: `${config.format.borderStyle === 'thick' ? '1.5cqw' : '0.5cqw'} solid ${config.palette.accent || config.palette.text}`,
+                  borderRadius: (config.format.maskShape || 'rectangular') === 'circular' ? '50%' : '0',
+                }}
               />
 
-              {/* Floating Map Controls */}
-              <div className="absolute bottom-4 right-4 flex flex-row gap-2 z-10">
-                <button
-                  onClick={zoomOut}
-                  className="p-2 bg-white/90 hover:bg-white border border-gray-200 rounded-md shadow-sm transition-colors text-gray-600 hover:text-blue-600 pointer-events-auto"
-                  title="Zoom Out"
-                >
-                  <Minus className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={zoomIn}
-                  className="p-2 bg-white/90 hover:bg-white border border-gray-200 rounded-md shadow-sm transition-colors text-gray-600 hover:text-blue-600 pointer-events-auto"
-                  title="Zoom In"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={fitToLocation}
-                  className="p-2 bg-white/90 hover:bg-white border border-gray-200 rounded-md shadow-sm transition-colors text-gray-600 hover:text-blue-600 pointer-events-auto"
-                  title="Snap map to original bounds"
-                >
-                  <Maximize className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Text Overlay */}
-            <TextOverlay config={config} />
-
-            {/* Border Overlay - Now drawn AFTER TextOverlay to stay on top of gradients */}
-            {config.format.borderStyle !== 'none' && (
-              <div
-                className="absolute pointer-events-none z-30"
-                style={{
-                  top: `${config.format.margin}cqw`,
-                  left: `${config.format.margin}cqw`,
-                  right: `${config.format.margin}cqw`,
-                  bottom: `${config.format.margin}cqw`,
-                  padding: config.format.borderStyle === 'inset' ? '2cqw' : '0',
-                }}
-              >
-                <div
-                  className="w-full h-full"
+              {/* Compass Rose Preview */}
+              {(config.format.maskShape || 'rectangular') === 'circular' && config.format.compassRose && (
+                <svg
+                  className="absolute"
                   style={{
-                    border: `${config.format.borderStyle === 'thick' ? '1.5cqw' : '0.5cqw'
-                      } solid ${config.palette.accent || config.palette.text}`,
-                    borderRadius: (config.format.maskShape || 'rectangular') === 'circular' ? '50%' : '0',
+                    pointerEvents: 'none',
+                    overflow: 'visible',
+                    top: '-4cqw',
+                    left: '-4cqw',
+                    right: '-4cqw',
+                    bottom: '-4cqw',
+                    width: 'calc(100% + 8cqw)',
+                    height: 'calc(100% + 8cqw)',
                   }}
-                />
-
-                {/* Compass Rose Preview (SVG) */}
-                {(config.format.maskShape || 'rectangular') === 'circular' && config.format.compassRose && (
-                  <svg
-                    className="absolute"
-                    style={{
-                      pointerEvents: 'none',
-                      overflow: 'visible',
-                      top: '-4cqw',
-                      left: '-4cqw',
-                      right: '-4cqw',
-                      bottom: '-4cqw',
-                      width: 'calc(100% + 8cqw)',
-                      height: 'calc(100% + 8cqw)',
-                    }}
-                    viewBox="0 0 100 100"
+                  viewBox="0 0 100 100"
+                >
+                  {/* Compass implementation ... (kept same logic, just cleaner) */}
+                  <g
+                    stroke={config.palette.accent || config.palette.text}
+                    fill={config.palette.accent || config.palette.text}
+                    strokeWidth="0.15"
+                    opacity="0.8"
                   >
-                    <g
-                      stroke={config.palette.accent || config.palette.text}
-                      fill={config.palette.accent || config.palette.text}
-                      strokeWidth="0.15"
-                      opacity="0.8"
-                    >
-                      {/* Draw 8 main directions */}
-                      {[
-                        { angle: 0, label: 'N' },
-                        { angle: 45, label: 'NE' },
-                        { angle: 90, label: 'E' },
-                        { angle: 135, label: 'SE' },
-                        { angle: 180, label: 'S' },
-                        { angle: 225, label: 'SW' },
-                        { angle: 270, label: 'W' },
-                        { angle: 315, label: 'NW' },
-                      ].map(({ angle, label }) => {
-                        const rad = ((angle - 90) * Math.PI) / 180;
-                        const centerX = 50;
-                        const centerY = 50;
-                        // Border is at the edge of the original 100x100 viewBox
-                        // Position ticks starting at the border edge
-                        const borderOuterRadius = 49.5; // Outer edge of border in 100x100 coordinate system
-                        const tickLen = label === 'N' || label === 'S' || label === 'E' || label === 'W' ? 1.2 : 0.6;
-                        // Ticks start at the border edge and extend outward
-                        const tickStartRadius = borderOuterRadius;
-                        const tickEndRadius = borderOuterRadius + tickLen;
+                    {[
+                      { angle: 0, label: 'N' },
+                      { angle: 45, label: 'NE' },
+                      { angle: 90, label: 'E' },
+                      { angle: 135, label: 'SE' },
+                      { angle: 180, label: 'S' },
+                      { angle: 225, label: 'SW' },
+                      { angle: 270, label: 'W' },
+                      { angle: 315, label: 'NW' },
+                    ].map(({ angle, label }) => {
+                      const rad = ((angle - 90) * Math.PI) / 180;
+                      const centerX = 50;
+                      const centerY = 50;
+                      const borderOuterRadius = 49.5;
+                      const tickLen = label === 'N' || label === 'S' || label === 'E' || label === 'W' ? 1.2 : 0.6;
+                      const tickStartRadius = borderOuterRadius;
+                      const tickEndRadius = borderOuterRadius + tickLen;
+                      const x1 = centerX + Math.cos(rad) * tickStartRadius;
+                      const y1 = centerY + Math.sin(rad) * tickStartRadius;
+                      const x2 = centerX + Math.cos(rad) * tickEndRadius;
+                      const y2 = centerY + Math.sin(rad) * tickEndRadius;
+                      const labelRadius = borderOuterRadius + tickLen + 1.0;
+                      const labelX = centerX + Math.cos(rad) * labelRadius;
+                      const labelY = centerY + Math.sin(rad) * labelRadius;
 
-                        const x1 = centerX + Math.cos(rad) * tickStartRadius;
-                        const y1 = centerY + Math.sin(rad) * tickStartRadius;
-                        const x2 = centerX + Math.cos(rad) * tickEndRadius;
-                        const y2 = centerY + Math.sin(rad) * tickEndRadius;
-
-                        // Position labels further out from the border
-                        const labelRadius = borderOuterRadius + tickLen + 1.0;
-                        const labelX = centerX + Math.cos(rad) * labelRadius;
-                        const labelY = centerY + Math.sin(rad) * labelRadius;
-
-                        return (
-                          <g key={angle}>
-                            <line x1={x1} y1={y1} x2={x2} y2={y2} />
-                            <text
-                              x={labelX}
-                              y={labelY}
-                              fontSize="1.2"
-                              fontWeight="bold"
-                              textAnchor="middle"
-                              dominantBaseline="middle"
-                              opacity={label === 'N' || label === 'S' || label === 'E' || label === 'W' ? 1 : 0.7}
-                            >
-                              {label}
-                            </text>
-                          </g>
-                        );
-                      })}
-
-                      {/* Draw intermediate ticks */}
-                      {Array.from({ length: 24 }, (_, i) => {
-                        if (i % 3 === 0) return null; // Skip positions where we have main directions
-                        const angle = (i * 15 - 90) * (Math.PI / 180);
-                        const centerX = 50;
-                        const centerY = 50;
-                        const borderOuterRadius = 49.5;
-                        const tickLen = 0.4;
-                        // Ticks start at the border edge and extend outward
-                        const tickStartRadius = borderOuterRadius;
-                        const tickEndRadius = borderOuterRadius + tickLen;
-
-                        const x1 = centerX + Math.cos(angle) * tickStartRadius;
-                        const y1 = centerY + Math.sin(angle) * tickStartRadius;
-                        const x2 = centerX + Math.cos(angle) * tickEndRadius;
-                        const y2 = centerY + Math.sin(angle) * tickEndRadius;
-
-                        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} opacity="0.6" />;
-                      })}
-                    </g>
-                  </svg>
-                )}
-              </div>
-            )}
-          </div>
+                      return (
+                        <g key={angle}>
+                          <line x1={x1} y1={y1} x2={x2} y2={y2} />
+                          {/* Simplified Text for cleaner code, relying on original logic if complex props weren't supported, 
+                               but here we trust React to render SVG text correctly */}
+                          <text
+                            x={labelX}
+                            y={labelY}
+                            fontSize="1.2"
+                            fontWeight="bold"
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            opacity={['N', 'S', 'E', 'W'].includes(label) ? 1 : 0.7}
+                          >
+                            {label}
+                          </text>
+                        </g>
+                      );
+                    })}
+                    {/* Intermediate ticks */}
+                    {Array.from({ length: 24 }, (_, i) => {
+                      if (i % 3 === 0) return null;
+                      const angle = (i * 15 - 90) * (Math.PI / 180);
+                      const r1 = 49.5;
+                      const r2 = 49.9;
+                      return <line key={i} x1={50 + Math.cos(angle) * r1} y1={50 + Math.sin(angle) * r1} x2={50 + Math.cos(angle) * r2} y2={50 + Math.sin(angle) * r2} opacity="0.6" />;
+                    })}
+                  </g>
+                </svg>
+              )}
+            </div>
+          )}
         </div>
       </main>
 
-      {/* Feedback Modal - triggered after exports */}
+      {/* Feedback Modal */}
       <FeedbackModal
         isOpen={shouldShowFeedback}
         onClose={hideFeedback}

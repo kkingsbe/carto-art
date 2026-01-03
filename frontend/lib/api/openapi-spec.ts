@@ -79,6 +79,46 @@ export const openApiSpec = {
                             orientation: { type: 'string', enum: ['portrait', 'landscape'], example: 'portrait' },
                             aspectRatio: { type: 'string', example: '2:3' }
                         }
+                    },
+                    layers: {
+                        type: 'object',
+                        description: 'Layer visibility and configuration options',
+                        properties: {
+                            buildings3D: { type: 'boolean', description: 'Enable 3D building extrusions', example: true },
+                            buildings3DPitch: {
+                                type: 'number',
+                                description: 'Camera pitch/tilt angle in degrees (0 = top-down, 60 = near-horizon)',
+                                minimum: 0,
+                                maximum: 60,
+                                example: 45
+                            },
+                            buildings3DBearing: {
+                                type: 'number',
+                                description: 'Camera bearing/azimuth rotation in degrees (0 = north, 90 = east)',
+                                minimum: 0,
+                                maximum: 360,
+                                example: 45
+                            },
+                            buildings3DHeightScale: {
+                                type: 'number',
+                                description: 'Height exaggeration multiplier (0.5 = half height, 3 = triple height)',
+                                minimum: 0.5,
+                                maximum: 3,
+                                example: 1
+                            }
+                        }
+                    },
+                    rendering: {
+                        type: 'object',
+                        description: 'Rendering quality settings',
+                        properties: {
+                            overzoom: {
+                                type: 'integer',
+                                enum: [1, 2],
+                                description: 'Overzoom factor for high-resolution tile detail (1 = standard, 2 = high detail)',
+                                example: 1
+                            }
+                        }
                     }
                 }
             },
@@ -131,7 +171,7 @@ export const openApiSpec = {
                                     properties: {
                                         id: { type: 'string' },
                                         status: { type: 'string', example: 'completed' },
-                                        download_url: { type: 'string' },
+                                        download_url: { type: 'string', example: 'https://example.com/storage/posters/poster-id.png' },
                                         metadata: { type: 'object' }
                                     }
                                 }

@@ -16,6 +16,7 @@ type PosterAction =
   | { type: 'UPDATE_TYPOGRAPHY'; payload: Partial<PosterConfig['typography']> }
   | { type: 'UPDATE_FORMAT'; payload: Partial<PosterConfig['format']> }
   | { type: 'UPDATE_LAYERS'; payload: Partial<PosterConfig['layers']> }
+  | { type: 'UPDATE_RENDERING'; payload: Partial<NonNullable<PosterConfig['rendering']>> }
   | { type: 'SET_LOCATION'; payload: PosterLocation }
   | { type: 'SET_CONFIG'; payload: PosterConfig };
 
@@ -24,13 +25,13 @@ function posterReducer(state: PosterConfig, action: PosterAction): PosterConfig 
     case 'SET_CONFIG':
       return action.payload;
     case 'UPDATE_LOCATION':
-      const zoom = action.payload.zoom !== undefined 
+      const zoom = action.payload.zoom !== undefined
         ? Math.min(MAP.MAX_ZOOM_CLAMPED, Math.max(MAP.MIN_ZOOM_CLAMPED, action.payload.zoom))
         : undefined;
       return {
         ...state,
-        location: { 
-          ...state.location, 
+        location: {
+          ...state.location,
           ...action.payload,
           ...(zoom !== undefined ? { zoom } : {})
         },
@@ -70,6 +71,11 @@ function posterReducer(state: PosterConfig, action: PosterAction): PosterConfig 
       return {
         ...state,
         layers: { ...state.layers, ...action.payload },
+      };
+    case 'UPDATE_RENDERING':
+      return {
+        ...state,
+        rendering: { ...state.rendering, ...action.payload },
       };
     default:
       return state;
@@ -117,7 +123,7 @@ export function usePosterConfig() {
   // Initialize from URL on mount
   useEffect(() => {
     if (isInitialized.current) return;
-    
+
     const stateParam = searchParams.get('s');
     if (stateParam) {
       const decoded = decodeConfig(stateParam);
@@ -198,19 +204,19 @@ export function usePosterConfig() {
     urlUpdateTimeoutRef.current = setTimeout(() => {
       const encoded = encodeConfig(config);
       const params = new URLSearchParams(searchParams.toString());
-      
+
       // Only update if the encoded state is different from what's in the URL
       if (params.get('s') !== encoded) {
         isUpdatingUrlRef.current = true;
         params.set('s', encoded);
         router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-        
+
         // Reset flag after a short delay to allow router to update
         setTimeout(() => {
           isUpdatingUrlRef.current = false;
         }, TIMEOUTS.URL_UPDATE_RESET);
       }
-        }, TIMEOUTS.URL_SYNC_DEBOUNCE);
+    }, TIMEOUTS.URL_SYNC_DEBOUNCE);
 
     // Cleanup timeout on unmount or config change
     return () => {
@@ -261,6 +267,10 @@ export function usePosterConfig() {
     dispatch({ type: 'UPDATE_LAYERS', payload: layers });
   }, []);
 
+  const updateRendering = useCallback((rendering: Partial<NonNullable<PosterConfig['rendering']>>) => {
+    dispatch({ type: 'UPDATE_RENDERING', payload: rendering });
+  }, []);
+
   const undo = useCallback(() => {
     if (historyIndexRef.current > 0) {
       historyIndexRef.current--;
@@ -295,6 +305,7 @@ export function usePosterConfig() {
     updateTypography,
     updateFormat,
     updateLayers,
+    updateRendering,
     setConfig,
     undo,
     redo,
