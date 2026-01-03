@@ -8,7 +8,8 @@ import {
     Globe,
     ExternalLink,
     Loader2,
-    AlertCircle
+    AlertCircle,
+    Activity
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MetricCard } from '@/components/admin/MetricCard';
@@ -20,14 +21,25 @@ interface AnalyticsData {
     topPages: Array<{ url: string; views: number }>;
 }
 
+interface RealtimeData {
+    activeUsers: number;
+    pages: Array<{ path: string; activeUsers: number }>;
+}
+
 export default function AnalyticsPage() {
     const [data, setData] = useState<AnalyticsData | null>(null);
+    const [realtimeData, setRealtimeData] = useState<RealtimeData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [needsConfig, setNeedsConfig] = useState(false);
 
     useEffect(() => {
         fetchAnalytics();
+        fetchRealtimeAnalytics();
+
+        // Poll realtime data every 60 seconds
+        const interval = setInterval(fetchRealtimeAnalytics, 60000);
+        return () => clearInterval(interval);
     }, []);
 
     const fetchAnalytics = async () => {
@@ -45,6 +57,18 @@ export default function AnalyticsPage() {
             setError('Failed to fetch analytics data');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const fetchRealtimeAnalytics = async () => {
+        try {
+            const res = await fetch('/api/admin/analytics/realtime');
+            if (res.ok) {
+                const result = await res.json();
+                setRealtimeData(result);
+            }
+        } catch (err) {
+            console.error('Failed to fetch realtime analytics');
         }
     };
 
@@ -136,6 +160,45 @@ export default function AnalyticsPage() {
                     icon={Users}
                 />
             </div>
+
+            {realtimeData && (
+                <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-6 text-white shadow-lg overflow-hidden relative">
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <Activity className="w-24 h-24" />
+                    </div>
+
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-4">
+                            <span className="flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-green-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                            </span>
+                            <h2 className="text-sm font-bold uppercase tracking-wider opacity-80">Live Now</h2>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row md:items-end gap-8">
+                            <div>
+                                <div className="text-5xl font-black mb-1">{realtimeData.activeUsers}</div>
+                                <div className="text-sm opacity-80 font-medium">Active users across all pages</div>
+                            </div>
+
+                            <div className="flex-1 max-h-48 overflow-y-auto scrollbar-hide pr-2">
+                                <div className="space-y-2">
+                                    {realtimeData.pages.slice(0, 5).map((page, i) => (
+                                        <div key={i} className="flex items-center justify-between text-sm bg-white/10 hover:bg-white/20 rounded-lg px-3 py-2 transition-colors">
+                                            <span className="truncate max-w-[200px] font-medium">{page.path === '' ? '/' : page.path}</span>
+                                            <span className="font-bold bg-white/20 px-2 py-0.5 rounded text-[10px]">{page.activeUsers} users</span>
+                                        </div>
+                                    ))}
+                                    {realtimeData.pages.length === 0 && (
+                                        <div className="text-sm opacity-60 italic">Waiting for more activity...</div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
                 <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">

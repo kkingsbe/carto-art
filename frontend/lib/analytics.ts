@@ -27,6 +27,11 @@ export interface AnalyticsReport {
     topPages: Array<{ url: string; views: number }>;
 }
 
+export interface RealtimeAnalyticsReport {
+    activeUsers: number;
+    pages: Array<{ path: string; activeUsers: number }>;
+}
+
 /**
  * Fetch core metrics for the last 30 days.
  */
@@ -76,5 +81,37 @@ export async function getCoreTrafficStats(): Promise<AnalyticsReport> {
         sessions: parseInt(metricsData[1]?.value || '0'),
         activeUsers: parseInt(metricsData[2]?.value || '0'),
         topPages,
+    };
+}
+
+/**
+ * Fetch real-time active users for the last 5 minutes.
+ */
+export async function getRealtimeActiveUsers(): Promise<RealtimeAnalyticsReport> {
+    const propertyId = process.env.GOOGLE_ANALYTICS_PROPERTY_ID;
+    if (!propertyId) {
+        throw new Error('GOOGLE_ANALYTICS_PROPERTY_ID is not set');
+    }
+
+    const client = getGAClient();
+
+    const [response] = await client.runRealtimeReport({
+        property: `properties/${propertyId}`,
+        dimensions: [{ name: 'unifiedScreenName' }], // or pagePath
+        metrics: [{ name: 'activeUsers' }],
+    });
+
+    const activeUsersTotal = response.rows?.reduce((sum, row) => {
+        return sum + parseInt(row.metricValues?.[0]?.value || '0');
+    }, 0) || 0;
+
+    const pages = response.rows?.map(row => ({
+        path: row.dimensionValues?.[0]?.value || 'unknown',
+        activeUsers: parseInt(row.metricValues?.[0]?.value || '0'),
+    })) || [];
+
+    return {
+        activeUsers: activeUsersTotal,
+        pages,
     };
 }
