@@ -1,7 +1,8 @@
 'use client';
 
 import type { PosterConfig } from '@/types/poster';
-import { formatCoordinates, hexToRgba } from '@/lib/utils';
+import { formatCoordinates } from '@/lib/utils';
+import { hexToRgba } from '@/lib/utils/color';
 import { getScrimAlpha, calculateScrimHeight, getBackdropGradientStyles, stopsToCssGradient } from '@/lib/styles/backdrop';
 
 interface TextOverlayProps {
@@ -50,7 +51,7 @@ export function TextOverlay({ config }: TextOverlayProps) {
   const scrimAlpha = getScrimAlpha(typography);
   const scrimHeightPx = calculateScrimHeight(config);
   const gradientDef = getBackdropGradientStyles(config, scrimAlpha);
-  
+
   const bg = config.palette.background;
   const scrimGradient = gradientDef ? stopsToCssGradient(bg, gradientDef) : undefined;
 
@@ -115,11 +116,11 @@ export function TextOverlay({ config }: TextOverlayProps) {
           style={
             typography.position === 'center' && backdropType !== 'none' && backdropType !== 'gradient'
               ? {
-                  backgroundColor: hexToRgba(bg, backdropType === 'strong' ? 0.95 : 0.78),
-                  padding: '1.25rem 2rem',
-                  borderRadius: '1.5rem',
-                  boxShadow: backdropType === 'strong' ? '0 10px 25px -5px rgba(0,0,0,0.1)' : 'none',
-                }
+                backgroundColor: hexToRgba(bg, backdropType === 'strong' ? 0.95 : 0.78),
+                padding: '1.25rem 2rem',
+                borderRadius: '1.5rem',
+                boxShadow: backdropType === 'strong' ? '0 10px 25px -5px rgba(0,0,0,0.1)' : 'none',
+              }
               : undefined
           }
         >
@@ -131,7 +132,7 @@ export function TextOverlay({ config }: TextOverlayProps) {
               {titleText}
             </h1>
           )}
-          
+
           {typography.showSubtitle !== false && subtitleText && (
             <div className="flex items-center gap-4 w-full justify-center" style={{ marginTop: '0.75rem' }}>
               <div className="h-[1.5px] w-12 opacity-40" style={{ backgroundColor: config.palette.text }} />

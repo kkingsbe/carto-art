@@ -1,5 +1,6 @@
 import type { PosterConfig } from '@/types/poster';
-import { formatCoordinates, hexToRgba } from '../utils';
+import { formatCoordinates } from '../utils';
+import { hexToRgba } from '../utils/color';
 import { getScrimAlpha, calculateScrimHeight, getBackdropGradientStyles } from '../styles/backdrop';
 import { drawTextWithHalo } from './drawing';
 
@@ -11,7 +12,7 @@ export function drawTextOverlay(
   exportScale: number
 ) {
   const { typography, location, palette } = config;
-  
+
   ctx.fillStyle = palette.text;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -33,21 +34,21 @@ export function drawTextOverlay(
   const backdropType = typography.textBackdrop || 'gradient';
   const scrimAlpha = getScrimAlpha(typography);
   const scrimHeight = calculateScrimHeight(config, true, exportScale, exportHeight) as number;
-  
+
   if (backdropType !== 'none') {
     const isGradient = backdropType === 'gradient';
-    
+
     ctx.save();
     if (typography.position === 'center' && !isGradient) {
       const yCenter = exportHeight / 2;
       const yTop = Math.max(0, Math.round(yCenter - scrimHeight / 2));
       ctx.globalAlpha = 1.0;
       ctx.fillStyle = hexToRgba(palette.background, backdropType === 'strong' ? 0.95 : 0.78);
-      
+
       const radius = Math.round(scrimHeight * 0.2);
       ctx.font = `${typography.titleWeight} ${titleSizePx}px ${typography.titleFont}`;
       const titleWidth = ctx.measureText(titleText).width;
-      
+
       let maxTextWidth = 0;
       if (showTitle) maxTextWidth = titleWidth;
       if (showSubtitle) {
@@ -62,7 +63,7 @@ export function drawTextOverlay(
 
       const rectWidth = Math.min(exportWidth * 0.9, maxTextWidth * 1.2 + 40);
       const xLeft = (exportWidth - rectWidth) / 2;
-      
+
       ctx.beginPath();
       ctx.roundRect(xLeft, yTop, rectWidth, scrimHeight, radius);
       ctx.fill();
@@ -76,7 +77,7 @@ export function drawTextOverlay(
       const isTop = typography.position === 'top';
       const yTop = isTop ? 0 : exportHeight - scrimHeight;
       const gradientDef = getBackdropGradientStyles(config, scrimAlpha);
-      
+
       let gradient: CanvasGradient;
       if (gradientDef?.direction === 'to top') {
         // Flow from bottom to top
@@ -85,14 +86,14 @@ export function drawTextOverlay(
         // Default to flow from top to bottom
         gradient = ctx.createLinearGradient(0, yTop, 0, yTop + scrimHeight);
       }
-      
+
       if (gradientDef) {
         const bg = palette.background;
         gradientDef.stops.forEach(stop => {
           gradient.addColorStop(stop.pos, hexToRgba(bg, stop.alpha));
         });
       }
-      
+
       ctx.globalAlpha = 1;
       ctx.fillStyle = gradient;
       ctx.fillRect(0, yTop, exportWidth, scrimHeight);
@@ -105,7 +106,7 @@ export function drawTextOverlay(
   const marginPercent = config.format.margin;
   const spacingTitleSub = titleSizePx * 1.1;
   const spacingSubCoords = subtitleSizePx * 1.4;
-  
+
   let totalTextHeight = 0;
   if (showTitle) totalTextHeight += titleSizePx;
   if (showSubtitle) totalTextHeight += (showTitle ? spacingTitleSub : subtitleSizePx);
@@ -148,17 +149,17 @@ export function drawTextOverlay(
     const textWidth = ctx.measureText(subtitleText).width + (subtitleText.length - 1) * tracking * subtitleSizePx;
     const lineWidth = exportWidth * 0.06;
     const lineGap = exportWidth * 0.02;
-    
+
     ctx.save();
     ctx.strokeStyle = palette.text;
     ctx.lineWidth = Math.max(1, Math.round(exportScale * 1.5));
     ctx.globalAlpha = 0.4;
-    
+
     ctx.beginPath();
     ctx.moveTo(exportWidth / 2 - textWidth / 2 - lineGap - lineWidth, subtitleY);
     ctx.lineTo(exportWidth / 2 - textWidth / 2 - lineGap, subtitleY);
     ctx.stroke();
-    
+
     ctx.beginPath();
     ctx.moveTo(exportWidth / 2 + textWidth / 2 + lineGap, subtitleY);
     ctx.lineTo(exportWidth / 2 + textWidth / 2 + lineGap + lineWidth, subtitleY);

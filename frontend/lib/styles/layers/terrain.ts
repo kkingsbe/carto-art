@@ -1,5 +1,5 @@
 import type { ColorPalette } from '@/types/poster';
-import { isColorDark } from '@/lib/utils';
+import { isColorDark } from '@/lib/utils/color';
 
 export interface TerrainLayerOptions {
   hillshadeExaggeration?: number;
@@ -35,9 +35,9 @@ export function createTerrainLayers(
   const layers: any[] = [];
 
   // Hillshade layer
-  const shadowColor = hillshadeShadowColor || 
+  const shadowColor = hillshadeShadowColor ||
     (palette.hillshade ? palette.hillshade : (isDark ? '#000000' : (palette.secondary || palette.text)));
-  const highlightColor = hillshadeHighlightColor || 
+  const highlightColor = hillshadeHighlightColor ||
     (palette.hillshade ? palette.background : (isDark ? (palette.secondary || palette.text) : palette.background));
   const accentColor = hillshadeAccentColor || shadowColor;
 
@@ -233,11 +233,11 @@ export function createTerrainLayers(
     });
   } else {
     // Simple contours: single layer
-    const color = contourColor || 
-      palette.contour || 
-      palette.contourIndex || 
-      palette.secondary || 
-      palette.roads?.secondary || 
+    const color = contourColor ||
+      palette.contour ||
+      palette.contourIndex ||
+      palette.secondary ||
+      palette.roads?.secondary ||
       palette.text;
 
     layers.push({

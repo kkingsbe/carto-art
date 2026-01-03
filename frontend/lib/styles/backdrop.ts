@@ -1,5 +1,5 @@
 import type { PosterConfig } from '@/types/poster';
-import { hexToRgba } from '@/lib/utils';
+import { hexToRgba } from '@/lib/utils/color';
 
 export const BACKDROP_ALPHAS = {
   none: 0,
@@ -38,20 +38,20 @@ export function calculateScrimHeight(
   const { typography, location } = config;
   const backdropType = typography.textBackdrop || 'gradient';
   const userHeight = (typography.backdropHeight ?? 35) / 100;
-  
+
   // For the 'gradient' type, we want a visible fade band
   const isEdgeGradient = backdropType === 'gradient' && (typography.position === 'bottom' || typography.position === 'top');
-  
+
   if (isEdgeGradient) {
     if (isExport) {
       return Math.round(totalHeight * userHeight);
     }
     return `${userHeight * 100}%`;
   }
-  
+
   const subtitleText = location.city || '';
   const height = typography.titleSize * 2.5 + (subtitleText ? typography.subtitleSize * 1.5 : 0) + 6;
-  
+
   if (isExport) {
     // For export, we need to return pixels. 
     // Since our height is in "percentage of width" (cqw), we multiply by width/100.
@@ -59,7 +59,7 @@ export function calculateScrimHeight(
     // Wait, it's easier to just use totalHeight if we have it, but for bands it's usually relative to width.
     return Math.round(height * (exportScale * (config.location.center[0] ? 1 : 1))); // This is getting messy
   }
-  
+
   return `${height}cqw`;
 }
 
@@ -67,7 +67,7 @@ export function calculateScrimHeight(
  * Converts our unified stops into a CSS linear-gradient string
  */
 export function stopsToCssGradient(bg: string, def: GradientDefinition): string {
-  const stopStrings = def.stops.map(s => 
+  const stopStrings = def.stops.map(s =>
     `${hexToRgba(bg, s.alpha)} ${Math.round(s.pos * 100)}%`
   );
   return `linear-gradient(${def.direction}, ${stopStrings.join(', ')})`;
@@ -83,7 +83,7 @@ export function getBackdropGradientStyles(
   const { typography } = config;
   const backdropType = typography.textBackdrop || 'gradient';
   const s = (typography.backdropSharpness ?? 50) / 100;
-  
+
   // Transition end: where the gradient becomes fully opaque (relative to its start)
   // s=0 (soft) -> 1.0 (fade over the whole area)
   // s=1 (abrupt) -> 0.05 (becomes opaque almost immediately)
@@ -130,6 +130,6 @@ export function getBackdropGradientStyles(
       };
     }
   }
-  
+
   return null;
 }

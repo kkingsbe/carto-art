@@ -20,9 +20,6 @@ class CartoArtClient {
             'Authorization': `Bearer ${this.apiKey}`,
             ...options.headers,
         };
-        console.log(`[SDK] Requesting ${url}`);
-        console.log(`[SDK] Key Length: ${this.apiKey?.length}`);
-        console.log(`[SDK] Headers:`, JSON.stringify(headers, null, 2));
         const response = await fetch(url, {
             ...options,
             headers,

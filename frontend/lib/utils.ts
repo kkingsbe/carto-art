@@ -35,80 +35,6 @@ export function formatCoordinates(center: [number, number]): string {
   return `${Math.abs(lat).toFixed(2)}° ${latDir}, ${Math.abs(lon).toFixed(2)}° ${lonDir}`;
 }
 
-/**
- * Converts a hex color string to rgba() CSS format.
- * Supports both 3-digit and 6-digit hex colors.
- * 
- * @param hex - Hex color string (e.g., "#ff0000" or "#f00")
- * @param alpha - Alpha value between 0 and 1
- * @returns RGBA CSS string (e.g., "rgba(255, 0, 0, 0.5)")
- * 
- * @example
- * ```ts
- * hexToRgba('#ff0000', 0.5) // "rgba(255, 0, 0, 0.5)"
- * hexToRgba('#f00', 1) // "rgba(255, 0, 0, 1)"
- * ```
- */
-export function hexToRgba(hex: string, alpha: number): string {
-  const normalized = hex.trim();
-  if (!normalized.startsWith('#')) {
-    return normalized;
-  }
-
-  const raw = normalized.slice(1);
-  const expanded =
-    raw.length === 3
-      ? raw
-          .split('')
-          .map(ch => ch + ch)
-          .join('')
-      : raw;
-
-  if (expanded.length !== 6) return normalized;
-
-  const r = Number.parseInt(expanded.slice(0, 2), 16);
-  const g = Number.parseInt(expanded.slice(2, 4), 16);
-  const b = Number.parseInt(expanded.slice(4, 6), 16);
-
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
-/**
- * Determines if a hex color is dark using ITU-R BT.709 luminance formula.
- * Useful for choosing appropriate text colors on colored backgrounds.
- * 
- * @param hex - Hex color string (e.g., "#000000" or "#fff")
- * @returns true if the color is dark (luminance < 0.5), false if light
- * 
- * @example
- * ```ts
- * isColorDark('#000000') // true
- * isColorDark('#ffffff') // false
- * ```
- */
-export function isColorDark(hex: string): boolean {
-  const normalized = hex.trim();
-  if (!normalized.startsWith('#')) return false;
-
-  const raw = normalized.slice(1);
-  const expanded =
-    raw.length === 3
-      ? raw
-          .split('')
-          .map(ch => ch + ch)
-          .join('')
-      : raw;
-
-  if (expanded.length !== 6) return false;
-
-  const r = Number.parseInt(expanded.slice(0, 2), 16);
-  const g = Number.parseInt(expanded.slice(2, 4), 16);
-  const b = Number.parseInt(expanded.slice(4, 6), 16);
-
-  // ITU-R BT.709 luminance formula
-  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-  return luminance < 0.5;
-}
 
 /**
  * Throttles a function to execute at most once per specified time interval.
@@ -129,7 +55,7 @@ export function throttle<T extends (...args: any[]) => any>(
   wait: number
 ): (...args: Parameters<T>) => void {
   let previous = 0;
-  return function(this: any, ...args: Parameters<T>) {
+  return function (this: any, ...args: Parameters<T>) {
     const now = Date.now();
     if (now - previous > wait) {
       previous = now;
@@ -157,7 +83,7 @@ export function debounce<T extends (...args: any[]) => any>(
   wait: number
 ): (...args: Parameters<T>) => void {
   let timeoutId: NodeJS.Timeout | null = null;
-  return function(this: any, ...args: Parameters<T>) {
+  return function (this: any, ...args: Parameters<T>) {
     if (timeoutId) {
       clearTimeout(timeoutId);
     }

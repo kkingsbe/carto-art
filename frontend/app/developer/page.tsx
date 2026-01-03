@@ -85,22 +85,41 @@ export default function DeveloperPage() {
                                 <div className="p-6 text-left overflow-x-auto font-mono text-sm leading-relaxed">
                                     <div className="flex gap-4">
                                         <div className="text-gray-600 select-none text-right w-4">
-                                            1<br />2<br />3<br />4<br />5<br />6<br />7<br />8<br />9<br />10
+                                            1<br />2<br />3<br />4<br />5<br />6<br />7<br />8<br />9<br />10<br />11<br />12
                                         </div>
                                         <code className="text-[#dcdcaa]">
-                                            <span className="text-[#569cd6]">const</span> poster = <span className="text-[#569cd6]">await</span> carto.<span className="text-[#dcdcaa]">posters</span>.<span className="text-[#dcdcaa]">generate</span>({`{`}<br />
-                                            &nbsp;&nbsp;style: <span className="text-[#ce9178]">'midnight-gold'</span>,<br />
-                                            &nbsp;&nbsp;location: {`{`} <span className="text-[#9cdcfe]">center</span>: [<span className="text-[#b5cea8]">-74.006</span>, <span className="text-[#b5cea8]">40.712</span>], <span className="text-[#9cdcfe]">zoom</span>: <span className="text-[#b5cea8]">12</span> {`}`},<br />
-                                            &nbsp;&nbsp;format: {`{`} <span className="text-[#9cdcfe]">orientation</span>: <span className="text-[#ce9178]">'portrait'</span>, <span className="text-[#9cdcfe]">size</span>: <span className="text-[#ce9178]">'24x36'</span> {`}`},<br />
-                                            &nbsp;&nbsp;labels: [<br />
-                                            &nbsp;&nbsp;&nbsp;&nbsp;{`{`} <span className="text-[#9cdcfe]">text</span>: <span className="text-[#ce9178]">'New York City'</span>, <span className="text-[#9cdcfe]">font</span>: <span className="text-[#ce9178]">'Manrope-Bold'</span> {`}`}<br />
-                                            &nbsp;&nbsp;]<br />
+                                            <span className="text-[#c586c0]">import</span> {`{`} <span className="text-[#4ec9b0]">CartoArtClient</span> {`}`} <span className="text-[#c586c0]">from</span> <span className="text-[#ce9178]">'@kkingsbe/cartoart'</span>;<br />
+                                            <br />
+                                            <span className="text-[#6a9955]">// Initialize the client with your API key</span><br />
+                                            <span className="text-[#569cd6]">const</span> client = <span className="text-[#569cd6]">new</span> <span className="text-[#4ec9b0]">CartoArtClient</span>({`{`} <span className="text-[#9cdcfe]">apiKey</span>: <span className="text-[#ce9178]">'your_api_key_here'</span> {`}`});<br />
+                                            <br />
+                                            <span className="text-[#6a9955]">// Generate a poster</span><br />
+                                            <span className="text-[#569cd6]">const</span> poster = <span className="text-[#569cd6]">await</span> client.<span className="text-[#dcdcaa]">posters</span>.<span className="text-[#dcdcaa]">generate</span>({`{`}<br />
+                                            &nbsp;&nbsp;location: {`{`} <span className="text-[#9cdcfe]">lat</span>: <span className="text-[#b5cea8]">34.0522</span>, <span className="text-[#9cdcfe]">lng</span>: <span className="text-[#b5cea8]">-118.2437</span> {`}`}, <span className="text-[#6a9955]">// Los Angeles</span><br />
+                                            &nbsp;&nbsp;style: <span className="text-[#ce9178]">'minimal'</span>,<br />
+                                            &nbsp;&nbsp;options: {`{`} <span className="text-[#9cdcfe]">high_res</span>: <span className="text-[#569cd6]">true</span> {`}`}<br />
                                             {`}`});<br />
                                             <br />
-                                            <span className="text-[#c586c0]">console</span>.<span className="text-[#dcdcaa]">log</span>(<span className="text-[#ce9178]">'Success:'</span>, poster.url);
+                                            <span className="text-[#c586c0]">console</span>.<span className="text-[#dcdcaa]">log</span>(<span className="text-[#ce9178]">`Poster URL: $</span>{`{`}poster.download_url{`}`}<span className="text-[#ce9178]">`</span>);
                                         </code>
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* SDK npm Link Button */}
+                            <div className="mt-6 flex justify-center">
+                                <a
+                                    href="https://www.npmjs.com/package/@kkingsbe/cartoart"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="group inline-flex items-center gap-3 px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#c9a962]/30 text-[#f5f0e8] hover:text-[#c9a962] transition-all duration-300 font-medium"
+                                >
+                                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M0 7.334v8h6.666v1.332H12v-1.332h12v-8H0zm6.666 6.664H5.334v-4H3.999v4H1.335V8.667h5.331v5.331zm4 0v1.336H8.001V8.667h5.334v5.332h-2.669v-.001zm12.001 0h-1.33v-4h-1.336v4h-1.335v-4h-1.33v4h-2.671V8.667h8.002v5.331zM10.665 10H12v2.667h-1.335V10z" />
+                                    </svg>
+                                    <span>View SDK on npm</span>
+                                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -156,7 +175,9 @@ export default function DeveloperPage() {
                                 {
                                     icon: <Code className="w-6 h-6" />,
                                     title: "SDKs for Everyone",
-                                    description: "Native libraries for Node.js, Python, and Go. Type-safe, documented, and easy to integrate."
+                                    description: "Native libraries for Node.js, Python, and Go. Type-safe, documented, and easy to integrate.",
+                                    link: "https://www.npmjs.com/package/@kkingsbe/cartoart",
+                                    linkText: "View on npm"
                                 },
                                 {
                                     icon: <MapIcon className="w-6 h-6" />,
@@ -172,7 +193,8 @@ export default function DeveloperPage() {
                                     icon: <Cpu className="w-6 h-6" />,
                                     title: "MCP Protocol",
                                     description: "Standardized tool definitions for AI Agents. Generate maps directly in conversation.",
-                                    link: "/developer/mcp"
+                                    link: "/developer/mcp",
+                                    linkText: "Setup MCP"
                                 }
                             ].map((f, i) => (
                                 <div key={i} className="group relative">
@@ -184,7 +206,7 @@ export default function DeveloperPage() {
                                         <p className="text-gray-400 leading-relaxed mb-6 flex-grow">{f.description}</p>
                                         {(f as any).link && (
                                             <Link href={(f as any).link} className="inline-flex items-center gap-2 text-[#c9a962] text-sm font-bold hover:gap-3 transition-all">
-                                                Setup MCP <ArrowRight className="w-4 h-4" />
+                                                {(f as any).linkText || 'Learn More'} <ArrowRight className="w-4 h-4" />
                                             </Link>
                                         )}
                                     </div>
