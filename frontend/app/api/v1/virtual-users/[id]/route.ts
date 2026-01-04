@@ -11,7 +11,7 @@ const UpdateVirtualUserSchema = z.object({
 
 export async function PATCH(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const authResult = await authenticateApiRequest(req);
@@ -23,7 +23,7 @@ export async function PATCH(
         }
 
         const { userId } = authResult.context;
-        const virtualUserId = params.id;
+        const { id: virtualUserId } = await params;
 
         let body;
         try {
@@ -77,7 +77,7 @@ export async function PATCH(
 
 export async function DELETE(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const authResult = await authenticateApiRequest(req);
@@ -89,7 +89,7 @@ export async function DELETE(
         }
 
         const { userId } = authResult.context;
-        const virtualUserId = params.id;
+        const { id: virtualUserId } = await params;
         const supabase = createServiceRoleClient();
 
         // Verify ownership and virtual status
