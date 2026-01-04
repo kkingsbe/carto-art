@@ -194,7 +194,7 @@ export function MapPreview({
   return (
     <div className="relative w-full h-full">
       {hasError || isEdgeCase ? (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-900 z-10">
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-900 z-25">
           <div className="text-center p-8 max-w-md">
             <div className="text-4xl mb-4">🗺️</div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
@@ -240,7 +240,7 @@ export function MapPreview({
         minZoom={MAP.MIN_ZOOM}
       >
         {showMarker && (
-          <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center">
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
             <MarkerIcon
               type={layers?.markerType || 'crosshair'}
               color={markerColor}
@@ -253,7 +253,7 @@ export function MapPreview({
       {/* Tile Loading Indicator */}
       <div
         className={cn(
-          "absolute top-4 left-4 z-30 transition-opacity duration-300 pointer-events-none",
+          "absolute top-4 left-4 z-20 transition-opacity duration-300 pointer-events-none",
           isLoading ? "opacity-100" : "opacity-0"
         )}
       >
@@ -266,7 +266,7 @@ export function MapPreview({
       </div>
 
       {/* Zoom Level Indicator */}
-      <div className="absolute top-4 right-4 z-30 pointer-events-none">
+      <div className="absolute top-4 right-4 z-20 pointer-events-none">
         <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm px-2 py-1 rounded-md border border-gray-200 dark:border-gray-700 shadow-sm">
           <span className="text-[10px] font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
             Zoom: {viewState.zoom.toFixed(1)}
@@ -277,7 +277,7 @@ export function MapPreview({
       {/* Texture Overlay */}
       {format?.texture && format.texture !== 'none' && (
         <div
-          className="absolute inset-0 pointer-events-none z-20 mix-blend-multiply"
+          className="absolute inset-0 pointer-events-none z-5 mix-blend-multiply"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
             opacity: (format.textureIntensity || TEXTURE.DEFAULT_INTENSITY) / 100,
