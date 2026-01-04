@@ -27,13 +27,18 @@ export function getScrimAlpha(typography: PosterConfig['typography']): number {
 
 /**
  * Calculates the height of the backdrop band.
- * Returns a number (pixels) or string (percentage for CSS).
+ * Returns a number (pixels for export) or string (percentage/cqw for CSS).
+ * 
+ * @param config - Poster configuration
+ * @param isExport - Whether this is for canvas export (returns pixels) or CSS (returns cqw string)
+ * @param exportWidth - Width of the export canvas in pixels (only used when isExport is true)
+ * @param exportHeight - Height of the export canvas in pixels (only used when isExport is true)
  */
 export function calculateScrimHeight(
   config: PosterConfig,
   isExport: boolean = false,
-  exportScale: number = 1,
-  totalHeight: number = 0
+  exportWidth: number = 0,
+  exportHeight: number = 0
 ): number | string {
   const { typography, location } = config;
   const backdropType = typography.textBackdrop || 'gradient';
@@ -44,24 +49,25 @@ export function calculateScrimHeight(
 
   if (isEdgeGradient) {
     if (isExport) {
-      return Math.round(totalHeight * userHeight);
+      // userHeight is a percentage (0-1), so multiply by exportHeight for the gradient band height
+      return Math.round(exportHeight * userHeight);
     }
     return `${userHeight * 100}%`;
   }
 
+  // For non-gradient backdrops (subtle, strong), calculate based on text content
   const subtitleText = location.city || '';
-  const height = typography.titleSize * 2.5 + (subtitleText ? typography.subtitleSize * 1.5 : 0) + 6;
+  // Height formula in cqw units (container width percentage)
+  const heightCqw = typography.titleSize * 2.5 + (subtitleText ? typography.subtitleSize * 1.5 : 0) + 6;
 
   if (isExport) {
-    // For export, we need to return pixels. 
-    // Since our height is in "percentage of width" (cqw), we multiply by width/100.
-    // The exportScale passed here from exportCanvas.ts is exportWidth / logicalWidth.
-    // Wait, it's easier to just use totalHeight if we have it, but for bands it's usually relative to width.
-    return Math.round(height * (exportScale * (config.location.center[0] ? 1 : 1))); // This is getting messy
+    // Convert cqw to pixels: heightCqw is in container width %, so multiply by exportWidth/100
+    return Math.round((heightCqw / 100) * exportWidth);
   }
 
-  return `${height}cqw`;
+  return `${heightCqw}cqw`;
 }
+
 
 /**
  * Converts our unified stops into a CSS linear-gradient string

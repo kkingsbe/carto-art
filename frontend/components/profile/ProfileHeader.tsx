@@ -89,12 +89,20 @@ export function ProfileHeader({ profile, stats, isOwnProfile }: ProfileHeaderPro
                                         </div>
                                     )}
                                     {isOwnProfile && (
-                                        <a
-                                            href="/profile/edit"
-                                            className="inline-flex items-center justify-center px-6 py-2.5 border border-[#c9a962]/30 rounded-full text-sm font-medium text-[#f5f0e8] hover:bg-[#c9a962]/10 hover:border-[#c9a962]/50 transition-all duration-300"
-                                        >
-                                            Edit Profile
-                                        </a>
+                                        <div className="flex gap-3">
+                                            <a
+                                                href="/profile/orders"
+                                                className="inline-flex items-center justify-center px-6 py-2.5 border border-[#c9a962]/30 rounded-full text-sm font-medium text-[#f5f0e8] hover:bg-[#c9a962]/10 hover:border-[#c9a962]/50 transition-all duration-300"
+                                            >
+                                                My Orders
+                                            </a>
+                                            <a
+                                                href="/profile/edit"
+                                                className="inline-flex items-center justify-center px-6 py-2.5 bg-[#c9a962]/10 text-[#c9a962] border border-[#c9a962]/20 rounded-full text-sm font-bold hover:bg-[#c9a962]/20 hover:border-[#c9a962]/40 transition-all duration-300"
+                                            >
+                                                Edit Profile
+                                            </a>
+                                        </div>
                                     )}
                                 </div>
                             </div>

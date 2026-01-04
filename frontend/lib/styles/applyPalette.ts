@@ -572,7 +572,7 @@ function applyContourDensity(layer: any, density: number | undefined) {
     return;
   }
 
-  // MapTiler contours-v2 uses 'height' property (not 'ele' or 'elevation')
+  // MapTiler contours uses 'height' property (not 'ele' or 'elevation')
   const hasEle = ['has', 'height'];
   const getEle = ['get', 'height'];
 

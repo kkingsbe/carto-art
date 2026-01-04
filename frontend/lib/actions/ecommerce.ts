@@ -49,3 +49,18 @@ export async function uploadDesignFile(formData: FormData) {
 
     return { signedUrl: signedData.signedUrl };
 }
+
+export async function getUserOrders() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return [];
+
+    const { data } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+    return data || [];
+}

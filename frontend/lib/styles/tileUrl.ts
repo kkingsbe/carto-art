@@ -8,7 +8,7 @@ function getBaseUrl(): string {
   if (typeof window !== 'undefined' && window.location?.origin) {
     return window.location.origin;
   }
-  
+
   // In web workers, self.location is available
   if (typeof self !== 'undefined' && self.location?.origin) {
     return self.location.origin;
@@ -35,7 +35,7 @@ function joinBaseAndPath(base: string, path: string): string {
 export function getOpenFreeMapPlanetTileJsonUrl(): string {
   const path = 'openfreemap/planet';
   const baseUrl = getBaseUrl();
-  
+
   const url = baseUrl
     ? joinBaseAndPath(baseUrl, `${PROXY_BASE}/${path}`)
     : `${PROXY_BASE}/${path}`;
@@ -58,13 +58,13 @@ export function getContourTileJsonUrl(): string | null {
   const maptilerKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
   if (!maptilerKey) return null;
 
-  const path = `maptiler/tiles/contours-v2/tiles.json?key=${maptilerKey}`;
+  const path = `maptiler/tiles/contours/tiles.json?key=${maptilerKey}`;
   const baseUrl = getBaseUrl();
-  
+
   if (baseUrl) {
     return joinBaseAndPath(baseUrl, `${PROXY_BASE}/${path}`);
   }
-  
+
   return `${PROXY_BASE}/${path}`;
 }
 
@@ -75,7 +75,7 @@ export function getContourTileJsonUrl(): string | null {
 export function getAwsTerrariumTileUrl(): string {
   const path = 'aws-terrain/terrarium/{z}/{x}/{y}.png';
   const baseUrl = getBaseUrl();
-  
+
   if (baseUrl) {
     return joinBaseAndPath(baseUrl, `${PROXY_BASE}/${path}`);
   }
@@ -92,7 +92,7 @@ export function getTerrainRgbTileJsonUrl(): string | null {
 
   const path = `maptiler/tiles/terrain-rgb-v2/tiles.json?key=${maptilerKey}`;
   const baseUrl = getBaseUrl();
-  
+
   if (baseUrl) {
     return joinBaseAndPath(baseUrl, `${PROXY_BASE}/${path}`);
   }
@@ -106,7 +106,7 @@ export function getTerrainRgbTileJsonUrl(): string | null {
 export function getPopulationTileUrl(): string {
   const path = 'kontur/{z}/{x}/{y}.mvt?indicatorsClass=general';
   const baseUrl = getBaseUrl();
-  
+
   if (baseUrl) {
     return joinBaseAndPath(baseUrl, `${PROXY_BASE}/${path}`);
   }

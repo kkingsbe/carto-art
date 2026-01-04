@@ -373,7 +373,3 @@ These are optional - defaults will work for development. For production, it's re
 6. Implement text overlay system
 7. Add PNG export functionality
 8. Iterate from there
-
----
-
-Let me know if you need clarification on any section or want to dive deeper into a specific area.

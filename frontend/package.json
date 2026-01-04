@@ -8,6 +8,10 @@
     "build": "next build",
     "start": "next start",
     "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:ecommerce": "jest --testPathPattern='(checkout|stripe|printful|ecommerce)'",
+    "test:integration": "jest --testPathPattern='integration'",
     "lint": "eslint"
   },
   "dependencies": {

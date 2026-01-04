@@ -47,6 +47,12 @@ export async function POST(request: Request) {
 
         const typedOrder = order as OrderRow;
 
+        // Idempotency Check: Don't process if already paid or failed
+        if (typedOrder.status === 'paid' || typedOrder.status === 'failed') {
+            console.log(`Order ${typedOrder.id} already processed (status: ${typedOrder.status}). Skipping.`);
+            return NextResponse.json({ received: true });
+        }
+
         // Submit to Printful
         try {
             const printfulOrder = await printful.createOrder({
@@ -85,14 +91,15 @@ export async function POST(request: Request) {
                 })
                 .eq('id', typedOrder.id);
 
-        } catch (err) {
+        } catch (err: any) {
             console.error('Failed to create Printful order', err);
-            // Mark as paid but failed fulfillment
+            // Mark as failed so admin can intervene
             await (supabase as any)
                 .from('orders')
                 .update({
-                    status: 'paid', // Still paid
-                    shipping_name: 'FAILED_TO_FULFILL: ' + JSON.stringify(err) // HACK to store error
+                    status: 'failed',
+                    // Store error context if possible, or assume logs will be checked
+                    shipping_name: `FAILED: ${err.message || 'Unknown error'}`.substring(0, 255) // Fallback context storage
                 })
                 .eq('id', typedOrder.id);
         }

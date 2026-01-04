@@ -23,6 +23,9 @@ interface Profile {
     avatar_url: string | null;
     created_at: string;
     is_admin: boolean;
+    last_active_at?: string;
+    first_map_at?: string;
+    first_export_at?: string;
 }
 
 export default function UsersPage() {
@@ -46,6 +49,14 @@ export default function UsersPage() {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const getChurnRisk = (lastActive?: string) => {
+        if (!lastActive) return 'unknown';
+        const days = (Date.now() - new Date(lastActive).getTime()) / (1000 * 60 * 60 * 24);
+        if (days > 30) return 'churned';
+        if (days > 7) return 'at-risk';
+        return 'active';
     };
 
     const toggleAdmin = async (userId: string, currentStatus: boolean) => {
@@ -108,6 +119,7 @@ export default function UsersPage() {
                             <tr>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">User</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Role</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Status</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Joined</th>
                                 <th className="px-6 py-4 text-right"></th>
                             </tr>
@@ -148,6 +160,23 @@ export default function UsersPage() {
                                             ) : (
                                                 <Badge variant="secondary">User</Badge>
                                             )}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {(() => {
+                                                const risk = getChurnRisk(user.last_active_at);
+                                                return (
+                                                    <Badge variant="secondary" className={
+                                                        risk === 'active' ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400' :
+                                                            risk === 'at-risk' ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400' :
+                                                                risk === 'churned' ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400' :
+                                                                    ''
+                                                    }>
+                                                        {risk === 'active' ? 'Active' :
+                                                            risk === 'at-risk' ? 'At Risk' :
+                                                                risk === 'churned' ? 'Inactive' : 'Unknown'}
+                                                    </Badge>
+                                                );
+                                            })()}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-500">
                                             <div className="flex items-center gap-2">

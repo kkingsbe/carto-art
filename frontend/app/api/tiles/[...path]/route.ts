@@ -18,18 +18,18 @@ export async function GET(
 ) {
   try {
     const { path: pathArray } = await params;
-    
+
     if (!pathArray || pathArray.length < 2) {
       return NextResponse.json({ error: 'Invalid path: path must contain at least 2 segments' }, { status: 400 });
     }
 
     const sourceKey = pathArray[0];
-    
+
     // Validate source key against allowlist
     if (!ALLOWED_SOURCES.includes(sourceKey)) {
-      return NextResponse.json({ 
-        error: `Unknown source: ${sourceKey}`, 
-        allowedSources: ALLOWED_SOURCES 
+      return NextResponse.json({
+        error: `Unknown source: ${sourceKey}`,
+        allowedSources: ALLOWED_SOURCES
       }, { status: 400 });
     }
 
@@ -37,23 +37,23 @@ export async function GET(
 
     // Reconstruct the remaining path
     const remainingPath = pathArray.slice(1).join('/');
-    
+
     // Validate path doesn't contain dangerous patterns (path traversal, double slashes, etc.)
     if (remainingPath.includes('..') || remainingPath.includes('//') || remainingPath.startsWith('/')) {
-      return NextResponse.json({ 
-        error: 'Invalid path: path contains dangerous patterns', 
-        details: 'Path traversal and double slashes are not allowed' 
+      return NextResponse.json({
+        error: 'Invalid path: path contains dangerous patterns',
+        details: 'Path traversal and double slashes are not allowed'
       }, { status: 400 });
     }
-    
+
     // Additional validation: ensure path segments don't contain control characters or special patterns
     const dangerousPatterns = /[<>:"|?*\x00-\x1f]/;
     if (dangerousPatterns.test(remainingPath)) {
-      return NextResponse.json({ 
-        error: 'Invalid path: path contains invalid characters' 
+      return NextResponse.json({
+        error: 'Invalid path: path contains invalid characters'
       }, { status: 400 });
     }
-    
+
     // Construct the target URL
     const urlObj = new URL(request.url);
     // In production we may be behind a proxy/CDN, so build a public origin using forwarded headers.
@@ -65,9 +65,12 @@ export async function GET(
       urlObj.host;
     const origin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : urlObj.origin;
     const searchParams = urlObj.searchParams.toString();
-    const tileUrl = `${baseUrl}${remainingPath}${searchParams ? '?' + searchParams : ''}`;
-    
-    const response = await fetch(tileUrl, {
+    const targetUrl = `${baseUrl}${remainingPath}${searchParams ? '?' + searchParams : ''}`;
+
+    // Log the constructed URL for debugging purposes (especially for export failures)
+    // logger.debug(`Proxying ${request.url} to ${targetUrl}`);
+
+    const response = await fetch(targetUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       },
@@ -75,14 +78,14 @@ export async function GET(
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'No error body');
-      logger.error(`Tile fetch error (${response.status}) for ${tileUrl}:`, errorText);
+      logger.error(`Tile fetch error (${response.status}) for ${targetUrl}:`, errorText);
       return NextResponse.json(
-        { 
-          error: 'Upstream fetch failed', 
-          status: response.status, 
-          url: tileUrl,
-          details: errorText.slice(0, 500) 
-        }, 
+        {
+          error: 'Upstream fetch failed',
+          status: response.status,
+          url: targetUrl,
+          details: errorText.slice(0, 500)
+        },
         { status: response.status }
       );
     }
@@ -97,7 +100,7 @@ export async function GET(
       try {
         const text = new TextDecoder().decode(data);
         const json = JSON.parse(text);
-        
+
         // OpenFreeMap specific: Override maxzoom to 15 to unlock high-detail tiles
         if (sourceKey === 'openfreemap' && json.maxzoom) {
           json.maxzoom = 15;
@@ -113,7 +116,7 @@ export async function GET(
                 return `${origin}/api/tiles/openfreemap/${matches[1]}`;
               }
             }
-            
+
             // Handle MapTiler
             if (sourceKey === 'maptiler') {
               const matches = url.match(/https:\/\/api\.maptiler\.com\/(.*)/);
@@ -155,8 +158,8 @@ export async function GET(
   } catch (error) {
     logger.error('Tile proxy error:', error);
     return NextResponse.json(
-      { 
-        error: 'Proxy exception', 
+      {
+        error: 'Proxy exception',
         message: error instanceof Error ? error.message : 'Unknown error',
         details: error instanceof Error ? error.stack : String(error)
       },

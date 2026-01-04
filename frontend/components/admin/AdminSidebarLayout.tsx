@@ -8,6 +8,7 @@ import {
     Flag,
     Users,
     BarChart3,
+    LineChart,
     Settings,
     Activity,
     MessageSquare,
@@ -33,6 +34,7 @@ export function AdminSidebarLayout({ children }: AdminSidebarLayoutProps) {
         { label: 'Feature Flags', href: '/admin/feature-flags', icon: Flag },
         { label: 'Users', href: '/admin/users', icon: Users },
         { label: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
+        { label: 'Retention', href: '/admin/analytics/retention', icon: LineChart },
         { label: 'Activity', href: '/admin/activity', icon: Activity },
         { label: 'Feedback', href: '/admin/feedback', icon: MessageSquare },
     ];

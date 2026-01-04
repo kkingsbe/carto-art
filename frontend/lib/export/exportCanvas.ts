@@ -1,4 +1,5 @@
-import type MapLibreGL from 'maplibre-gl';
+import maplibregl from 'maplibre-gl';
+import type { Map } from 'maplibre-gl';
 import type { PosterConfig } from '@/types/poster';
 import { DEFAULT_EXPORT_RESOLUTION } from './constants';
 import { calculateTargetResolution } from './resolution';
@@ -8,7 +9,7 @@ import { logger } from '@/lib/logger';
 import { createError } from '@/lib/errors/ServerActionError';
 
 interface ExportOptions {
-  map: MapLibreGL.Map;
+  map: maplibregl.Map;
   config: PosterConfig;
   resolution?: {
     width: number;
@@ -19,11 +20,9 @@ interface ExportOptions {
 }
 
 export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
-  const { map, config, resolution } = options;
+  const { map: previewMap, config, resolution } = options;
 
   // 1. CALCULATE ACTUAL RESOLUTION
-  // If resolution is already provided with width/height, use it.
-  // Otherwise calculate it from the base resolution (or default).
   let exportResolution: { width: number; height: number; dpi: number; name: string };
 
   if (resolution && 'width' in resolution) {
@@ -47,77 +46,89 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
     logger.warn('Failed to load fonts for export, falling back to system fonts:', e);
   }
 
-  // 2. GATHER DIMENSIONS & SCALING
-  const container = map.getContainer();
-  const posterElement = container.closest('[style*="aspect-ratio"]');
-  const rect = (posterElement || container).getBoundingClientRect();
-  const logicalWidth = rect.width;
+  // 2. HEADLESS MAP SETUP
+  // Instead of resizing the live map (which React fights against), we spawn a hidden map
+  // with the exact export dimensions.
 
-  if (!logicalWidth) {
-    throw new Error('Map container has no width, cannot export');
-  }
+  // Capture state from live map
+  const originalStyle = previewMap.getStyle();
+  const originalPitch = previewMap.getPitch();
+  const originalBearing = previewMap.getBearing();
+  const originalCenter = previewMap.getCenter();
+  const originalZoom = previewMap.getZoom();
 
-  const exportScale = exportResolution.width / logicalWidth;
-  const zoomOffset = Math.log2(exportScale);
+  // Calculate margins first to determine draw size
+  const marginPx = Math.round(exportResolution.width * (config.format.margin / 100));
+  const drawWidth = exportResolution.width - (marginPx * 2);
+  const drawHeight = exportResolution.height - (marginPx * 2);
 
-  const originalWidth = container.clientWidth;
-  const originalHeight = container.clientHeight;
-  const originalZoom = map.getZoom();
-  const originalMaxZoom = (map as any).getMaxZoom?.();
+  // Create hidden container
+  // We size the container to the DRAWING AREA (inside margins), not the full resolution.
+  // This simplifies the math: the headless map corresponds exactly to the preview map viewport.
+  // We will composite it onto the full canvas with margins later.
+  const hiddenContainer = document.createElement('div');
+  hiddenContainer.style.width = `${drawWidth}px`;
+  hiddenContainer.style.height = `${drawHeight}px`;
+  hiddenContainer.style.position = 'fixed'; // Fixed to avoid layout impact
+  hiddenContainer.style.top = '-9999px';
+  hiddenContainer.style.left = '-9999px';
+  hiddenContainer.style.visibility = 'hidden';
+  hiddenContainer.style.pointerEvents = 'none';
+  document.body.appendChild(hiddenContainer);
+
+  let exportMap: Map | null = null;
 
   try {
-    const marginPx = Math.round(exportResolution.width * (config.format.margin / 100));
-    const drawWidth = exportResolution.width - (marginPx * 2);
-    const drawHeight = exportResolution.height - (marginPx * 2);
-
-    // 3. APPLY HIGH-RES SCALING TO MAP
-    if (typeof (map as any).setMaxZoom === 'function') {
-      (map as any).setMaxZoom(24); // Temporarily allow higher zoom for export
-    }
-
-    // Mock container dimensions so map.resize() picks up the target export size
-    // This is the key fix for the "failed to invert matrix" error.
-    // MapLibre's internal projection matrix depends on the container size.
-    Object.defineProperty(container, 'clientWidth', { configurable: true, value: drawWidth });
-    Object.defineProperty(container, 'clientHeight', { configurable: true, value: drawHeight });
-
-    // Update map size to match target resolution
-    map.resize();
-
-    // update zoom to match the new resolution while keeping the same geographic bounds
-    map.setZoom(originalZoom + zoomOffset);
-
-    map.jumpTo({
-      center: config.location.center,
-      zoom: originalZoom + zoomOffset,
-      pitch: config.layers.buildings3DPitch ?? 0,
-      bearing: config.layers.buildings3DBearing ?? 0
+    // Initialize export map
+    exportMap = new maplibregl.Map({
+      container: hiddenContainer,
+      style: originalStyle as any,
+      interactive: false,
+      attributionControl: false,
+      preserveDrawingBuffer: true,
+      fadeDuration: 0,
     });
 
-    // Robust wait for map to load after resize/jump
-    await new Promise<void>(resolve => {
-      // Give the map a moment to invalidate its state after resize/jumpTo
-      // This prevents the idle event from firing too early before tile requests are made
-      setTimeout(() => {
-        const checkLoaded = () => {
-          if (map.loaded()) {
-            // Add one final small buffer to ensure tiles are painted
-            // (sometimes loaded returns true but the texture upload is pending in the next frame)
-            requestAnimationFrame(() => resolve());
-          } else {
-            map.once('idle', checkLoaded);
-          }
-        };
+    // Calculate the scale factor by comparing the export inner width to the preview inner width
+    const containerWidth = previewMap.getContainer().clientWidth;
+    const mapExportScale = drawWidth / containerWidth;
 
-        if (map.loaded()) {
+    // Calculate zoom offset
+    const zoomOffset = Math.log2(mapExportScale);
+
+    // Apply explicit state (No fitBounds due to pitch skewing bounds)
+    exportMap.jumpTo({
+      center: originalCenter,
+      zoom: (originalZoom || 0) + zoomOffset,
+      pitch: originalPitch,
+      bearing: originalBearing
+    });
+
+    // Wait for load
+    await new Promise<void>((resolve, reject) => {
+      if (!exportMap) return reject('Map not initialized');
+
+      const timeout = setTimeout(() => reject(new Error('Export timed out')), 15000);
+
+      const checkReady = () => {
+        if (exportMap?.loaded()) {
+          clearTimeout(timeout);
+          // extra frame for safety
           requestAnimationFrame(() => resolve());
         } else {
-          map.once('idle', checkLoaded);
+          exportMap?.once('idle', checkReady);
         }
-      }, 250);
+      };
+
+      if (exportMap.loaded()) {
+        checkReady();
+      } else {
+        exportMap.once('idle', checkReady);
+      }
     });
 
-    const mapCanvas = map.getCanvas();
+    // 4. DRAWING
+    const mapCanvas = exportMap.getCanvas();
     const exportCanvas = document.createElement('canvas');
     exportCanvas.width = exportResolution.width;
     exportCanvas.height = exportResolution.height;
@@ -129,20 +140,25 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
     exportCtx.fillStyle = config.palette.background;
     exportCtx.fillRect(0, 0, exportResolution.width, exportResolution.height);
 
-    // 4. DRAW MAP
+    // Draw Map (Clipped)
     exportCtx.save();
-    exportCtx.beginPath();
+
     const maskShape = config.format.maskShape || 'rectangular';
     if (maskShape === 'circular') {
       const radius = Math.min(drawWidth, drawHeight) / 2;
       const centerX = marginPx + drawWidth / 2;
       const centerY = marginPx + drawHeight / 2;
+      exportCtx.beginPath();
       exportCtx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      exportCtx.clip();
     } else {
+      exportCtx.beginPath();
       exportCtx.rect(marginPx, marginPx, drawWidth, drawHeight);
+      exportCtx.clip();
     }
-    exportCtx.clip();
-    exportCtx.drawImage(mapCanvas, marginPx, marginPx, drawWidth, drawHeight);
+
+    // Draw the map. Since the map is sized to DRAW AREA (inner), we offset by marginPx
+    exportCtx.drawImage(mapCanvas, marginPx, marginPx);
     exportCtx.restore();
 
     // 5. DRAW MARKER
@@ -155,13 +171,12 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
     }
 
     // 6. TEXT OVERLAY
-    drawTextOverlay(exportCtx, config, exportResolution.width, exportResolution.height, exportScale);
+    drawTextOverlay(exportCtx, config, exportResolution.width, exportResolution.height, mapExportScale);
 
     // 7. BORDER
     if (config.format.borderStyle !== 'none') {
       exportCtx.save();
       exportCtx.strokeStyle = config.palette.accent || config.palette.text;
-
       const { borderStyle } = config.format;
 
       if (maskShape === 'circular') {
@@ -195,13 +210,10 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
         // Compass Rose
         if (config.format.compassRose) {
           const compassColor = config.palette.accent || config.palette.text;
-          // Tune to match CompassRose.tsx (SVG units relative to 108% container)
-          // SVG 0.15 units ~= 0.0016 width
           const compassLineWidth = Math.max(1, exportResolution.width * 0.0016);
-          // SVG 1.2 units ~= 0.013 width
           const compassFontSize = exportResolution.width * 0.013;
-
           let borderOuterRadius = radius;
+
           if (borderStyle === 'thin') {
             borderOuterRadius = radius + (exportResolution.width * 0.005) / 2;
           } else if (borderStyle === 'thick') {
@@ -212,15 +224,7 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
             borderOuterRadius = radius + (exportResolution.width * 0.005) / 2;
           }
 
-          drawCompassRose(
-            exportCtx,
-            centerX,
-            centerY,
-            borderOuterRadius,
-            compassColor,
-            compassLineWidth,
-            compassFontSize
-          );
+          drawCompassRose(exportCtx, centerX, centerY, borderOuterRadius, compassColor, compassLineWidth, compassFontSize);
         }
       } else {
         if (borderStyle === 'thin') {
@@ -258,17 +262,12 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
         else reject(new Error('Failed to create blob from canvas'));
       }, 'image/png');
     });
-  } finally {
-    // RESTORE STATE
-    delete (container as any).clientWidth;
-    delete (container as any).clientHeight;
 
-    map.resize();
-    map.setZoom(originalZoom);
-    if (typeof (map as any).setMaxZoom === 'function' && originalMaxZoom !== undefined) {
-      (map as any).setMaxZoom(originalMaxZoom);
+  } finally {
+    if (exportMap) exportMap.remove();
+    if (document.body.contains(hiddenContainer)) {
+      document.body.removeChild(hiddenContainer);
     }
-    map.resize();
   }
 }
 
@@ -310,3 +309,5 @@ export function downloadBlob(blob: Blob, filename: string): void {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+
+

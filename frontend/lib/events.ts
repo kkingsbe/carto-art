@@ -14,7 +14,17 @@ export type EventType =
     | 'layer_toggle'
     | 'interaction'
     | 'format_change'
-    | 'palette_change';
+    | 'palette_change'
+    // Retention & Funnel Events
+    | 'editor_open'
+    | 'editor_abandon'
+    | 'export_start'
+    | 'export_fail'
+    | 'export_abandon'
+    | 'session_heartbeat'
+    | 'scroll_depth'
+    | 'return_visit'
+    | 'notification_click';
 
 /**
  * Tracks a user event in the database for admin analytics.

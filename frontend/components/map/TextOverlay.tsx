@@ -134,15 +134,15 @@ export function TextOverlay({ config }: TextOverlayProps) {
           )}
 
           {typography.showSubtitle !== false && subtitleText && (
-            <div className="flex items-center gap-4 w-full justify-center" style={{ marginTop: '0.75rem' }}>
-              <div className="h-[1.5px] w-12 opacity-40" style={{ backgroundColor: config.palette.text }} />
+            <div className="flex items-center w-full justify-center" style={{ marginTop: `${typography.titleSize * 0.125}cqw`, gap: '1.6cqw' }}>
+              <div className="opacity-40" style={{ backgroundColor: config.palette.text, width: '4.8cqw', height: '0.15cqw', minHeight: '1px' }} />
               <p
                 className="uppercase"
                 style={subtitleStyle}
               >
                 {subtitleText}
               </p>
-              <div className="h-[1.5px] w-12 opacity-40" style={{ backgroundColor: config.palette.text }} />
+              <div className="opacity-40" style={{ backgroundColor: config.palette.text, width: '4.8cqw', height: '0.15cqw', minHeight: '1px' }} />
             </div>
           )}
 

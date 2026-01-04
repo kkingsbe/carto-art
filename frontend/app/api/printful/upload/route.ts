@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 
 const PRINTFUL_API_URL = 'https://api.printful.com';
-const API_KEY = process.env.PRINTFUL_API_KEY;
+
 
 const uploadSchema = z.object({
     url: z.string().url(),
@@ -20,6 +20,8 @@ export async function POST(request: Request) {
 
         const body = await request.json();
         const { url } = uploadSchema.parse(body);
+
+        const API_KEY = process.env.PRINTFUL_API_KEY;
 
         if (!API_KEY) {
             return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
