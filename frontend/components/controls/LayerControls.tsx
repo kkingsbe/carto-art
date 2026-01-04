@@ -79,6 +79,44 @@ export function LayerControls({ layers, rendering, onLayersChange, onRenderingCh
             <div className="space-y-2">
               {geographicLayers.map(renderLayerItem)}
 
+              {/* Volumetric Terrain Controls */}
+              <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+                <ControlCheckbox
+                  label="Volumetric 3D Terrain"
+                  description="Render terrain height"
+                  checked={Boolean(layers.volumetricTerrain)}
+                  onChange={() => {
+                    const newValue = !layers.volumetricTerrain;
+                    onLayersChange({ volumetricTerrain: newValue });
+                    trackEventAction({
+                      eventType: 'layer_toggle',
+                      eventName: 'volumetricTerrain',
+                      metadata: { enabled: newValue }
+                    });
+                  }}
+                />
+
+                {layers.volumetricTerrain && (
+                  <div className="mt-3 ml-6">
+                    <div className="flex justify-between text-xs mb-1.5">
+                      <span className="text-gray-500 font-medium">Exaggeration</span>
+                      <span className="text-gray-900 dark:text-gray-300 font-mono">
+                        {layers.volumetricTerrainExaggeration?.toFixed(1) ?? '1.5'}x
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="5"
+                      step="0.1"
+                      value={layers.volumetricTerrainExaggeration ?? 1.5}
+                      onChange={(e) => onLayersChange({ volumetricTerrainExaggeration: parseFloat(e.target.value) })}
+                      className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
+                    />
+                  </div>
+                )}
+              </div>
+
               {/* Landcover */}
               {landcoverLayers.length > 0 && (
                 <CollapsibleSection title="Landcover" defaultOpen={true}>

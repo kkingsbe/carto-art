@@ -1,10 +1,9 @@
 const PROXY_BASE = '/api/tiles';
 
 function getBaseUrl(): string {
-  if (process.env.NEXT_PUBLIC_SERVER_URL) {
-    return process.env.NEXT_PUBLIC_SERVER_URL;
-  }
-
+  // Prioritize runtime location over build-time env vars.
+  // This prevents CORS issues when the build env differs from the runtime env
+  // (e.g., building locally then deploying to production).
   if (typeof window !== 'undefined' && window.location?.origin) {
     return window.location.origin;
   }
@@ -12,6 +11,11 @@ function getBaseUrl(): string {
   // In web workers, self.location is available
   if (typeof self !== 'undefined' && self.location?.origin) {
     return self.location.origin;
+  }
+
+  // Fallback to env var for SSR/Node.js contexts
+  if (process.env.NEXT_PUBLIC_SERVER_URL) {
+    return process.env.NEXT_PUBLIC_SERVER_URL;
   }
 
   return '';

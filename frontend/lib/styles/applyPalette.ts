@@ -95,6 +95,16 @@ export function applyPaletteToStyle(
     }
   }
 
+  // detailed terrain configuration
+  if (layers?.volumetricTerrain) {
+    updatedStyle.terrain = {
+      source: 'terrain',
+      exaggeration: layers.volumetricTerrainExaggeration ?? 1.5
+    };
+  } else {
+    delete updatedStyle.terrain;
+  }
+
   return updatedStyle;
 }
 

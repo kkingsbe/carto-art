@@ -70,6 +70,9 @@ export const DEFAULT_CONFIG: PosterConfig = {
     markerType: 'crosshair',
     markerColor: undefined, // Default to palette primary
     roadWeight: 1.0,
+    // 3D Terrain
+    volumetricTerrain: false,
+    volumetricTerrainExaggeration: 1.5,
     // Landcover layers (enabled by default)
     landcoverWood: true,
     landcoverGrass: true,

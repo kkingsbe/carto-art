@@ -140,6 +140,9 @@ export interface PosterConfig {
     markerType?: 'pin' | 'crosshair' | 'dot' | 'ring' | 'heart' | 'home';
     markerColor?: string;
     roadWeight: number; // New: control road line thickness
+    // 3D Terrain
+    volumetricTerrain?: boolean;       // Enable 3D terrain (RGB-encoded elevation)
+    volumetricTerrainExaggeration?: number; // Exaggeration factor (0-5)
     // 3D Buildings
     buildings3D?: boolean;             // Enable 3D building extrusions
     buildings3DPitch?: number;         // Camera pitch angle (0-60°)

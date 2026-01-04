@@ -214,7 +214,6 @@ export function MapPreview({
 
       <Map
         ref={mapRef}
-        key={`${format?.aspectRatio}-${format?.orientation}`}
         {...viewState}
         style={{ width: '100%', height: '100%' }}
         mapStyle={mapStyle}

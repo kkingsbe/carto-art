@@ -226,10 +226,10 @@ export function PosterEditor() {
       },
       style: randomStyle,
       palette: randomPalette,
-      rendering: {
-        ...config.rendering,
-        pitch: randomPitch,
-        bearing: randomBearing,
+      layers: {
+        ...config.layers,
+        buildings3DPitch: randomPitch,
+        buildings3DBearing: randomBearing,
       },
       format: {
         ...config.format,
