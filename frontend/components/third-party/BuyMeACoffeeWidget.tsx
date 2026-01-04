@@ -10,7 +10,7 @@ export function BuyMeACoffeeWidget() {
             target="_blank"
             rel="noopener noreferrer"
             className={cn(
-                "fixed bottom-24 md:bottom-4 right-4 z-40 flex items-center gap-2",
+                "fixed top-20 left-4 md:bottom-4 md:right-4 md:top-auto md:left-auto z-40 flex items-center gap-2",
                 "bg-[#FFDD00] text-black font-semibold",
                 "px-4 py-2.5 md:px-5 md:py-3 rounded-full shadow-lg",
                 "transform transition-all duration-300 hover:scale-105 hover:shadow-xl hover:-translate-y-1",

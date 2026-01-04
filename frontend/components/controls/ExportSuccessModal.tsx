@@ -26,20 +26,7 @@ export function ExportSuccessModal({
     hasUnsavedChanges
 }: ExportSuccessModalProps) {
     const router = useRouter();
-    const [isMobile, setIsMobile] = useState(false);
     const [copied, setCopied] = useState(false);
-
-    // Detect mobile on mount and resize
-    useEffect(() => {
-        const checkMobile = () => {
-            setIsMobile(window.innerWidth < 640);
-        };
-
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
-
     // Handle ESC key to close
     useEffect(() => {
         if (!isOpen) return;
@@ -87,9 +74,9 @@ export function ExportSuccessModal({
     return (
         <div
             className={cn(
-                "fixed inset-0 z-[100] flex items-center justify-center",
+                "fixed inset-0 z-[100] flex items-end md:items-center justify-center",
                 "animate-in fade-in duration-200",
-                isMobile ? "p-4" : "p-4"
+                "p-0 md:p-4"
             )}
             onClick={(e) => {
                 if (e.target === e.currentTarget) {
@@ -107,8 +94,10 @@ export function ExportSuccessModal({
                     "bg-white dark:bg-gray-900",
                     "shadow-2xl shadow-blue-500/10",
                     "border border-gray-200 dark:border-gray-800",
-                    "rounded-2xl overflow-hidden",
-                    "animate-in fade-in zoom-in-95 duration-300 transform"
+                    "rounded-t-2xl md:rounded-2xl overflow-hidden",
+                    "animate-in slide-in-from-bottom md:zoom-in-95 duration-300 transform",
+                    "pb-safe",
+                    "max-h-[85vh]"
                 )}
                 onClick={(e) => e.stopPropagation()}
             >
@@ -123,7 +112,7 @@ export function ExportSuccessModal({
                 </div>
 
                 {/* Hero Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-8 text-white text-center relative overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 md:p-8 text-white text-center relative overflow-hidden shrink-0">
                     <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
                     <div className="relative z-10">
                         <div className="mx-auto bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mb-4 backdrop-blur-sm">
@@ -135,7 +124,7 @@ export function ExportSuccessModal({
                 </div>
 
                 {/* Content Grid */}
-                <div className="p-6 grid gap-6 md:grid-cols-2">
+                <div className="p-6 grid gap-6 md:grid-cols-2 flex-1 overflow-y-auto overscroll-contain">
 
                     {/* Primary Action: Print (if enabled) or Save */}
                     <div className="col-span-1 md:col-span-2 space-y-4">

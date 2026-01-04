@@ -108,7 +108,7 @@ export function FeedbackModal({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300"
@@ -119,10 +119,11 @@ export function FeedbackModal({
             <div className="
         relative w-full max-w-md
         bg-white dark:bg-gray-900
-        rounded-2xl shadow-2xl
-        animate-in slide-in-from-bottom-4 duration-300
+        rounded-t-2xl sm:rounded-2xl shadow-2xl
+        animate-in slide-in-from-bottom sm:zoom-in-95 duration-300
         max-h-[85vh] overflow-hidden
         flex flex-col
+        pb-safe
       ">
                 {/* Gradient header */}
                 <div className="

@@ -6,7 +6,7 @@ import { useSavedProjects } from '@/hooks/useSavedProjects';
 import { useMapExport } from '@/hooks/useMapExport';
 import { useProjectManager } from '@/hooks/useProjectManager';
 import { useEditorKeyboardShortcuts } from '@/hooks/useEditorKeyboardShortcuts';
-import { Maximize, Plus, Minus } from 'lucide-react';
+import { Maximize, Plus, Minus, X, Map as MapIcon, Type, Layout, Sparkles, Palette, User, Layers } from 'lucide-react';
 import { MapPreview } from '@/components/map/MapPreview';
 import { PosterCanvas } from '@/components/map/PosterCanvas';
 import { EditorToolbar } from '@/components/editor/EditorToolbar';
@@ -31,6 +31,7 @@ import { ExportButton } from '@/components/controls/ExportButton';
 export function PosterEditor() {
   const [activeTab, setActiveTab] = useState<Tab>('location');
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const isEcommerceEnabled = useFeatureFlag('ecommerce');
 
   // Handle responsive drawer state
@@ -230,8 +231,8 @@ export function PosterEditor() {
         } : undefined}
       />
 
-      {/* Floating Sidebar Container */}
-      <div className="absolute top-16 left-2 bottom-2 md:top-4 md:left-4 md:bottom-4 z-40 flex flex-row pointer-events-none max-w-[calc(100vw-1rem)]">
+      {/* Floating Sidebar Container - Hidden on mobile */}
+      <div className="hidden md:flex absolute top-16 left-2 bottom-2 md:top-4 md:left-4 md:bottom-4 z-40 flex-row pointer-events-none max-w-[calc(100vw-1rem)]">
         <div className="pointer-events-auto flex flex-row h-full shadow-2xl rounded-2xl overflow-hidden bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200 dark:border-gray-700/50">
           <TabNavigation
             activeTab={activeTab}
@@ -267,7 +268,7 @@ export function PosterEditor() {
 
       {/* Main Content Area - Full Screen with Centered Poster */}
       <main
-        className="absolute inset-0 flex items-center justify-center p-4 pb-24 md:p-12 overflow-hidden"
+        className="absolute inset-0 flex items-center justify-center p-4 pb-32 md:p-12 md:pb-12 overflow-hidden"
         style={{ containerType: 'size' }}
       >
         <PosterCanvas
@@ -334,13 +335,95 @@ export function PosterEditor() {
       />
 
       {/* Product Modal */}
-      {exportedImage && isEcommerceEnabled && (
-        <ProductModal
-          isOpen={showProductModal}
-          onClose={() => setShowProductModal(false)}
-          imageUrl={exportedImage}
-        />
-      )}
+      {
+        exportedImage && isEcommerceEnabled && (
+          <ProductModal
+            isOpen={showProductModal}
+            onClose={() => setShowProductModal(false)}
+            imageUrl={exportedImage}
+          />
+        )
+      }
+
+      {/* Mobile Tab Bar - Above Action Bar */}
+      <div className="fixed bottom-[72px] left-0 right-0 z-40 md:hidden">
+        <div className="flex justify-around items-center bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200/80 dark:border-gray-700 px-1 py-1.5">
+          {[
+            { id: 'library' as Tab, icon: Sparkles, label: 'Library' },
+            { id: 'location' as Tab, icon: MapIcon, label: 'Location' },
+            { id: 'style' as Tab, icon: Palette, label: 'Style' },
+            { id: 'layers' as Tab, icon: Layers, label: 'Layers' },
+            { id: 'text' as Tab, icon: Type, label: 'Text' },
+            { id: 'frame' as Tab, icon: Layout, label: 'Frame' },
+          ].map(({ id, icon: Icon, label }) => (
+            <button
+              key={id}
+              onClick={() => {
+                setActiveTab(id);
+                setMobileSheetOpen(true);
+              }}
+              className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-lg transition-colors ${activeTab === id && mobileSheetOpen
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                }`}
+            >
+              <Icon className="w-5 h-5" />
+              <span className="text-[9px] font-medium mt-0.5">{label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Mobile Bottom Sheet */}
+      {
+        mobileSheetOpen && (
+          <div className="fixed inset-0 z-50 md:hidden">
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+              onClick={() => setMobileSheetOpen(false)}
+            />
+            {/* Sheet */}
+            <div className="absolute bottom-0 left-0 right-0 max-h-[75vh] bg-white dark:bg-gray-900 rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom duration-300 overflow-hidden">
+              {/* Handle */}
+              <div className="flex items-center justify-center py-3 border-b border-gray-200 dark:border-gray-700">
+                <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
+                <button
+                  onClick={() => setMobileSheetOpen(false)}
+                  className="absolute right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              {/* Content */}
+              <div className="overflow-y-auto max-h-[calc(75vh-48px)] pb-safe">
+                <ControlDrawer
+                  activeTab={activeTab}
+                  isDrawerOpen={true}
+                  setIsDrawerOpen={setMobileSheetOpen}
+                  config={config}
+                  updateLocation={updateLocation}
+                  updateStyle={updateStyle}
+                  updatePalette={updatePalette}
+                  updateTypography={updateTypography}
+                  updateFormat={updateFormat}
+                  updateLayers={updateLayers}
+                  updateRendering={updateRendering}
+                  setConfig={setConfig}
+                  savedProjects={projects}
+                  deleteProject={deleteProject}
+                  renameProject={renameProject}
+                  currentMapId={currentMapId}
+                  currentMapName={currentMapName}
+                  currentMapStatus={currentMapStatus}
+                  onLoadProject={loadProject}
+                  onPublishSuccess={refreshStatus}
+                />
+              </div>
+            </div>
+          </div>
+        )
+      }
 
       {/* Mobile Bottom Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200 dark:border-gray-700 px-4 py-3 safe-area-inset-bottom">
@@ -374,5 +457,3 @@ export function PosterEditor() {
     </div>
   );
 }
-
-

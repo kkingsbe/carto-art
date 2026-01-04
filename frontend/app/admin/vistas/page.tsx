@@ -4,17 +4,13 @@ import { useState, useEffect } from 'react';
 import {
     Plus,
     MapPin,
-    MoreVertical,
     Trash2,
-    Check,
     X,
     Settings,
     Loader2,
-    Copy,
     ChevronUp,
     ChevronDown,
     Save,
-    Map as MapIcon,
     Globe
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -24,7 +20,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 
 interface Vista {
     id: string;
@@ -51,10 +46,13 @@ export default function VistasPage() {
     const [editingVista, setEditingVista] = useState<Vista | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
-    // Form state
+    // Form state - individual fields instead of JSON
     const [formName, setFormName] = useState('');
     const [formDescription, setFormDescription] = useState('');
-    const [formLocationJson, setFormLocationJson] = useState('');
+    const [formCity, setFormCity] = useState('');
+    const [formLat, setFormLat] = useState('');
+    const [formLng, setFormLng] = useState('');
+    const [formZoom, setFormZoom] = useState('10');
     const [formEnabled, setFormEnabled] = useState(true);
 
     useEffect(() => {
@@ -78,7 +76,10 @@ export default function VistasPage() {
     const resetForm = () => {
         setFormName('');
         setFormDescription('');
-        setFormLocationJson('');
+        setFormCity('');
+        setFormLat('');
+        setFormLng('');
+        setFormZoom('10');
         setFormEnabled(true);
         setEditingVista(null);
     };
@@ -92,7 +93,10 @@ export default function VistasPage() {
         setEditingVista(vista);
         setFormName(vista.name);
         setFormDescription(vista.description || '');
-        setFormLocationJson(JSON.stringify(vista.location, null, 2));
+        setFormCity(vista.location.city || '');
+        setFormLat(vista.location.center[1].toString());
+        setFormLng(vista.location.center[0].toString());
+        setFormZoom(vista.location.zoom.toString());
         setFormEnabled(vista.enabled);
         setIsModalOpen(true);
     };
@@ -103,22 +107,36 @@ export default function VistasPage() {
     };
 
     const saveVista = async () => {
-        if (!formName.trim() || !formLocationJson.trim()) {
-            toast.error('Name and Location JSON are required');
+        if (!formName.trim()) {
+            toast.error('Name is required');
             return;
         }
 
-        let parsedLocation;
-        try {
-            parsedLocation = JSON.parse(formLocationJson);
-            // Basic validation
-            if (!parsedLocation.center || !parsedLocation.zoom) {
-                throw new Error('Invalid location format: center and zoom required');
-            }
-        } catch (e: any) {
-            toast.error(`Invalid JSON: ${e.message}`);
+        const lat = parseFloat(formLat);
+        const lng = parseFloat(formLng);
+        const zoom = parseFloat(formZoom);
+
+        if (isNaN(lat) || lat < -90 || lat > 90) {
+            toast.error('Invalid latitude (must be -90 to 90)');
             return;
         }
+        if (isNaN(lng) || lng < -180 || lng > 180) {
+            toast.error('Invalid longitude (must be -180 to 180)');
+            return;
+        }
+        if (isNaN(zoom) || zoom < 0 || zoom > 22) {
+            toast.error('Invalid zoom (must be 0 to 22)');
+            return;
+        }
+
+        // Build location object with sensible defaults for bounds
+        const location = {
+            name: formName,
+            city: formCity || formName,
+            center: [lng, lat] as [number, number],
+            bounds: [[lng - 0.1, lat - 0.1], [lng + 0.1, lat + 0.1]] as [[number, number], [number, number]],
+            zoom: zoom
+        };
 
         setIsSaving(true);
         try {
@@ -127,7 +145,7 @@ export default function VistasPage() {
                 id: editingVista?.id,
                 name: formName,
                 description: formDescription,
-                location: parsedLocation,
+                location,
                 enabled: formEnabled
             };
 
@@ -198,14 +216,12 @@ export default function VistasPage() {
 
         if (targetIndex < 0 || targetIndex >= vistas.length) return;
 
-        // Swap the items
         const temp = newVistas[index];
         newVistas[index] = newVistas[targetIndex];
         newVistas[targetIndex] = temp;
 
         setVistas(newVistas);
 
-        // Update display_order in DB for BOTH items
         try {
             await Promise.all([
                 fetch('/api/admin/vistas', {
@@ -221,7 +237,7 @@ export default function VistasPage() {
             ]);
         } catch (error) {
             toast.error('Failed to update sort order');
-            fetchVistas(); // Refresh to original order
+            fetchVistas();
         }
     };
 
@@ -252,7 +268,7 @@ export default function VistasPage() {
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
                     <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={closeModal} />
-                    <div className="relative z-10 w-full max-w-2xl mx-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+                    <div className="relative z-10 w-full max-w-lg mx-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
                         <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                             <h2 className="text-lg font-semibold">{editingVista ? 'Edit Vista' : 'Create New Vista'}</h2>
                             <button onClick={closeModal} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
@@ -260,14 +276,24 @@ export default function VistasPage() {
                             </button>
                         </div>
 
-                        <div className="p-6 space-y-6 overflow-y-auto">
+                        <div className="p-6 space-y-5 overflow-y-auto">
                             <div className="space-y-2">
-                                <Label htmlFor="vista-name">Display Name</Label>
+                                <Label htmlFor="vista-name">Display Name *</Label>
                                 <Input
                                     id="vista-name"
                                     placeholder="e.g., Manhattan Skyline"
                                     value={formName}
                                     onChange={(e) => setFormName(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="vista-city">City / Location Label</Label>
+                                <Input
+                                    id="vista-city"
+                                    placeholder="e.g., New York, NY"
+                                    value={formCity}
+                                    onChange={(e) => setFormCity(e.target.value)}
                                 />
                             </div>
 
@@ -282,47 +308,52 @@ export default function VistasPage() {
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor="vista-location">Location JSON</Label>
-                                    <button
-                                        className="text-[10px] text-blue-500 hover:underline"
-                                        onClick={() => {
-                                            const example = {
-                                                name: "Example Location",
-                                                city: "City Name",
-                                                center: [-73.9857, 40.7484],
-                                                bounds: [[-74.0, 40.7], [-73.9, 40.8]],
-                                                zoom: 12
-                                            };
-                                            setFormLocationJson(JSON.stringify(example, null, 2));
-                                        }}
-                                    >
-                                        Insert Template
-                                    </button>
-                                </div>
-                                <div className="relative group">
-                                    <Textarea
-                                        id="vista-location"
-                                        placeholder='{"name": "...", "center": [...], "zoom": 12}'
-                                        value={formLocationJson}
-                                        onChange={(e) => setFormLocationJson(e.target.value)}
-                                        rows={10}
-                                        className="font-mono text-xs"
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="vista-lat">Latitude *</Label>
+                                    <Input
+                                        id="vista-lat"
+                                        type="number"
+                                        step="any"
+                                        placeholder="40.7484"
+                                        value={formLat}
+                                        onChange={(e) => setFormLat(e.target.value)}
                                     />
-                                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Badge variant="outline" className="bg-white/80 dark:bg-gray-800/80">JSON</Badge>
-                                    </div>
                                 </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="vista-lng">Longitude *</Label>
+                                    <Input
+                                        id="vista-lng"
+                                        type="number"
+                                        step="any"
+                                        placeholder="-73.9857"
+                                        value={formLng}
+                                        onChange={(e) => setFormLng(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="vista-zoom">Zoom Level *</Label>
+                                <Input
+                                    id="vista-zoom"
+                                    type="number"
+                                    step="0.1"
+                                    min="0"
+                                    max="22"
+                                    placeholder="12"
+                                    value={formZoom}
+                                    onChange={(e) => setFormZoom(e.target.value)}
+                                />
                                 <p className="text-[10px] text-gray-400">
-                                    Tip: You can copy the "location" object from a project export or example config.
+                                    Range: 0 (world) to 22 (building level). Typical: 10-14
                                 </p>
                             </div>
 
                             <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
                                 <div>
                                     <p className="font-medium">Active Status</p>
-                                    <p className="text-sm text-gray-500 text-[10px]">Show this vista in the editor gallery</p>
+                                    <p className="text-[10px] text-gray-500">Show this vista in the editor gallery</p>
                                 </div>
                                 <Switch
                                     checked={formEnabled}
@@ -435,4 +466,3 @@ export default function VistasPage() {
         </div>
     );
 }
-

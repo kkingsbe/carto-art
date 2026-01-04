@@ -80,10 +80,10 @@ export function ControlDrawer({
   return (
     <aside className={cn(
       "relative bg-transparent h-full overflow-hidden transition-all duration-500 ease-out",
-      isDrawerOpen ? "w-[85vw] md:w-[340px] opacity-100" : "w-0 opacity-0"
+      isDrawerOpen ? "w-full md:w-[340px] opacity-100" : "w-0 opacity-0"
     )}>
-      <div className="h-full overflow-y-auto w-[85vw] md:w-[340px]"> {/* Fixed width inner container to prevent reflow during transition */}
-        <div className="p-6 space-y-6 pb-24">
+      <div className="h-full overflow-y-auto w-full md:w-[340px]"> {/* Fixed width inner container to prevent reflow during transition */}
+        <div className="p-4 md:p-6 space-y-6 pb-24">
           <div className="flex items-center justify-between md:hidden mb-2">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">{activeTab}</h2>
             <button
