@@ -3,7 +3,10 @@ import { headers } from 'next/headers';
 import { stripe } from '@/lib/stripe/client';
 import { printful } from '@/lib/printful/client';
 import { createServiceRoleClient } from '@/lib/supabase/server';
+import type { Database } from '@/types/database';
 import Stripe from 'stripe';
+
+type OrderRow = Database['public']['Tables']['orders']['Row'];
 
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -31,7 +34,7 @@ export async function POST(request: Request) {
         console.log(`Payment confirmed: ${paymentIntent.id}`);
 
         // Update Order in DB
-        const { data: order, error: fetchError } = await supabase
+        const { data: order, error: fetchError } = await (supabase as any)
             .from('orders')
             .select('*')
             .eq('stripe_payment_intent_id', paymentIntent.id)
@@ -42,10 +45,12 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Order not found' }, { status: 404 });
         }
 
+        const typedOrder = order as OrderRow;
+
         // Submit to Printful
         try {
             const printfulOrder = await printful.createOrder({
-                external_id: order.id,
+                external_id: typedOrder.id,
                 recipient: {
                     name: shipping?.name,
                     address1: shipping?.address?.line1,
@@ -57,13 +62,13 @@ export async function POST(request: Request) {
                 },
                 items: [
                     {
-                        variant_id: parseInt(order.variant_id),
-                        quantity: order.quantity,
+                        variant_id: typedOrder.variant_id,
+                        quantity: typedOrder.quantity,
                         files: [
                             // Logic: If design_id is numeric, treat as File ID. If URL, treat as URL.
-                            /^\d+$/.test(order.design_id)
-                                ? { id: parseInt(order.design_id) }
-                                : { url: order.design_id }
+                            /^\d+$/.test(typedOrder.design_id)
+                                ? { id: parseInt(typedOrder.design_id) }
+                                : { url: typedOrder.design_id }
                         ]
                     }
                 ],
@@ -71,26 +76,32 @@ export async function POST(request: Request) {
             });
 
             // Update DB
-            await supabase.from('orders').update({
-                status: 'paid',
-                printful_order_id: printfulOrder.id,
-                stripe_payment_status: 'succeeded'
-            }).eq('id', order.id);
+            await (supabase as any)
+                .from('orders')
+                .update({
+                    status: 'paid',
+                    printful_order_id: printfulOrder.id,
+                    stripe_payment_status: 'succeeded'
+                })
+                .eq('id', typedOrder.id);
 
         } catch (err) {
             console.error('Failed to create Printful order', err);
             // Mark as paid but failed fulfillment
-            await supabase.from('orders').update({
-                status: 'paid', // Still paid
-                shipping_name: 'FAILED_TO_FULFILL: ' + JSON.stringify(err) // HACK to store error
-            }).eq('id', order.id);
+            await (supabase as any)
+                .from('orders')
+                .update({
+                    status: 'paid', // Still paid
+                    shipping_name: 'FAILED_TO_FULFILL: ' + JSON.stringify(err) // HACK to store error
+                })
+                .eq('id', typedOrder.id);
         }
     } else if (event.type === 'payment_intent.payment_failed') {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         console.log(`Payment failed: ${paymentIntent.id}`);
 
         // Update Order in DB to failed
-        const { error: updateError } = await supabase
+        const { error: updateError } = await (supabase as any)
             .from('orders')
             .update({
                 status: 'failed',

@@ -7,6 +7,6 @@ if (!STRIPE_SECRET_KEY) {
 }
 
 export const stripe = new Stripe(STRIPE_SECRET_KEY || '', {
-    apiVersion: '2024-12-18.acacia', // Use latest stable version or match user's version
+    apiVersion: '2025-12-15.clover', // Use latest stable version or match user's version
     typescript: true,
 });

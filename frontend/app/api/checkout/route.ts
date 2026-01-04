@@ -92,7 +92,9 @@ export async function POST(request: Request) {
             shipping_zip: shipping.address.postal_code,
             shipping_country: shipping.address.country,
         };
-        const { error: dbError } = await supabase.from('orders').insert(orderData);
+        const { error: dbError } = await (supabase as any)
+            .from('orders')
+            .insert(orderData);
 
         if (dbError) {
             console.error("DB Error", dbError);
