@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateApiRequest } from '@/lib/auth/api-middleware';
-import { getBrowser } from '@/lib/rendering/browser';
+import { renderMapToBuffer } from '@/lib/rendering/renderer';
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
@@ -224,99 +224,24 @@ export async function POST(req: NextRequest) {
         const height = 3600;
 
 
-        // 3. Launch Browser & Render
-        // Note: Vercel functions have a timeout (10s hobby, 60s pro). 
-        // This part must be FAST.
-
-        let browser = null;
-        let screenshotBuffer: Buffer | null = null;
-
+        // 3. Render
+        let screenshotBuffer: Buffer;
         try {
-            console.log(`[PosterDebug] Launching browser for ${requestId}`);
-            browser = await getBrowser();
-            console.log(`[PosterDebug] Browser launched, opening new page for ${requestId}`);
-            const page = await browser.newPage();
-            console.log(`[PosterDebug] New page opened for ${requestId}`);
-
-            // Forward console logs from the browser to the node console EARLY
-            page.on('console', msg => {
-                const type = msg.type();
-                const text = msg.text();
-                console.log(`[Browser Console] ${type.toUpperCase()}: ${text}`);
+            console.log(`[PosterDebug] Calling renderMapToBuffer for ${requestId}`);
+            screenshotBuffer = await renderMapToBuffer(config, {
+                width,
+                height,
+                pixelRatio,
+                timeout: 45000
             });
-
-            page.on('pageerror', (err: unknown) => {
-                console.error(`[Browser Error] ${String(err)}`);
-            });
-
-            // Set viewport to a reasonable default - actual rendering size is handled by exportMapToPNG's own canvas
-            await page.setViewport({
-                width: 1920,
-                height: 1080,
-                deviceScaleFactor: 1,
-            });
-
-            // Construct URL for renderer page
-            const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-            const rendererUrl = `${appUrl}/renderer`;
-            console.log(`[PosterDebug] Navigating to ${rendererUrl} for ${requestId}`);
-
-            // Navigate
-            await page.goto(rendererUrl, { waitUntil: 'domcontentloaded' });
-            console.log(`[PosterDebug] Navigation complete, waiting for renderPoster for ${requestId}`);
-
-            // Wait for renderPoster to be exposed
-            await page.waitForFunction('typeof window.renderPoster === "function"');
-            console.log(`[PosterDebug] renderPoster found, injecting config for ${requestId}`);
-
-            // Inject Config
-            await page.evaluate((cfg) => {
-                window.renderPoster(cfg);
-            }, config as any);
-
-            // Wait for rendering to complete (or timeout)
-            // We race between success marker and error marker
-            console.log(`[PosterDebug] Config injected, waiting for #render-complete or #render-error for ${requestId}`);
-
-            // Wait for map to be idle and fonts to be loaded
-            console.log(`[PosterDebug] Waiting for renderer signal for ${requestId}`);
-
-            const result = await Promise.race([
-                page.waitForSelector('#render-complete', { timeout: 45000 }).then(() => 'complete'),
-                page.waitForSelector('#render-error', { timeout: 45000 }).then(() => 'error')
-            ]);
-
-            if (result === 'error') {
-                throw new Error('Renderer reported a configuration error');
-            }
-
-            await page.waitForFunction(() => {
-                return (window as any).generatePosterImage !== undefined;
-            }, { timeout: 5000 });
-
-            console.log(`[PosterDebug] Renderer ready, executing generatePosterImage for ${requestId}`);
-
-            // Execute export
-            const base64Image = await page.evaluate(async (res) => {
-                return await window.generatePosterImage(res);
-            }, { width, height, dpi: 72 * pixelRatio, name: 'poster' }); // dpi is approximate, exportCanvas handles resolution
-
-            console.log(`[PosterDebug] Image generated, decoding base64 for ${requestId}`);
-            screenshotBuffer = Buffer.from(base64Image, 'base64');
-
-        } catch (renderError) {
+            console.log(`[PosterDebug] Rendering successful for ${requestId}`);
+        } catch (renderError: any) {
             console.error(`[PosterDebug] Render error for ${requestId}:`, renderError);
             logger.error('Rendering failed', { error: renderError, requestId });
             return NextResponse.json({
                 error: 'Rendering failed or timed out',
-                details: (renderError as Error).message
+                details: renderError.message
             }, { status: 500 });
-        } finally {
-            if (browser) await browser.close();
-        }
-
-        if (!screenshotBuffer) {
-            return NextResponse.json({ error: 'Failed to generate screenshot' }, { status: 500 });
         }
 
 

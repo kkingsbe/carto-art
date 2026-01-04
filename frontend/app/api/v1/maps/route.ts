@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateApiRequest } from '@/lib/auth/api-middleware';
 import { createServiceRoleClient } from '@/lib/supabase/server';
+import { renderMapToBuffer } from '@/lib/rendering/renderer';
+import { trackEvent } from '@/lib/events';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { serializeMapConfig } from '@/lib/supabase/maps';
@@ -108,41 +110,50 @@ export async function POST(req: NextRequest) {
                 zoom: mapConfig.camera.zoom,
                 name: mapTitle,
                 city: mapSubtitle,
-                bounds: [[mapConfig.location.lng - 0.1, mapConfig.location.lat - 0.1], [mapConfig.location.lng + 0.1, mapConfig.location.lat + 0.1]] // Dummy bounds
+                bounds: [[mapConfig.location.lng - 0.1, mapConfig.location.lat - 0.1], [mapConfig.location.lng + 0.1, mapConfig.location.lat + 0.1]]
             },
             style: {
                 id: selectedStyle.id,
-                name: selectedStyle.name
+                name: selectedStyle.name,
+                description: selectedStyle.description,
+                mapStyle: selectedStyle.mapStyle,
+                defaultPalette: selectedStyle.defaultPalette,
+                palettes: selectedStyle.palettes,
+                recommendedFonts: selectedStyle.recommendedFonts,
+                layerToggles: selectedStyle.layerToggles
             },
             palette: selectedStyle.defaultPalette,
             layers: {
-                streets: mapConfig.options.streets,
-                buildings: mapConfig.options.buildings,
-                water: mapConfig.options.water,
-                parks: mapConfig.options.parks,
-                labels: mapConfig.options.labels,
-                buildings3D: mapConfig.options.buildings_3d,
-                buildings3DPitch: mapConfig.camera.pitch,
-                buildings3DBearing: mapConfig.camera.bearing,
-                terrain: mapConfig.options.terrain,
-                terrainUnderWater: mapConfig.options.terrain_under_water,
-                contours: mapConfig.options.contours,
-                boundaries: mapConfig.options.boundaries,
-                population: mapConfig.options.population,
-                pois: mapConfig.options.pois,
-                marker: mapConfig.options.marker,
-                landcoverWood: mapConfig.options.landcover_wood,
-                landcoverGrass: mapConfig.options.landcover_grass,
-                landcoverFarmland: mapConfig.options.landcover_farmland,
-                landcoverIce: mapConfig.options.landcover_ice,
-                landuseForest: mapConfig.options.landuse_forest,
-                landuseOrchard: mapConfig.options.landuse_orchard,
-                landuseVineyard: mapConfig.options.landuse_vineyard,
-                landuseCemetery: mapConfig.options.landuse_cemetery,
-                landuseGrass: mapConfig.options.landuse_grass,
+                streets: mapConfig.options.streets ?? true,
+                buildings: mapConfig.options.buildings ?? true,
+                water: mapConfig.options.water ?? true,
+                parks: mapConfig.options.parks ?? true,
+                labels: mapConfig.options.labels ?? true,
+                buildings3D: mapConfig.options.buildings_3d ?? false,
+                buildings3DPitch: mapConfig.camera.pitch ?? 0,
+                buildings3DBearing: mapConfig.camera.bearing ?? 0,
+                terrain: mapConfig.options.terrain ?? false,
+                terrainUnderWater: mapConfig.options.terrain_under_water ?? false,
+                contours: mapConfig.options.contours ?? false,
+                boundaries: mapConfig.options.boundaries ?? false,
+                population: mapConfig.options.population ?? false,
+                pois: mapConfig.options.pois ?? false,
+                marker: mapConfig.options.marker ?? false,
+                landcoverWood: mapConfig.options.landcover_wood ?? false,
+                landcoverGrass: mapConfig.options.landcover_grass ?? false,
+                landcoverFarmland: mapConfig.options.landcover_farmland ?? false,
+                landcoverIce: mapConfig.options.landcover_ice ?? false,
+                landuseForest: mapConfig.options.landuse_forest ?? false,
+                landuseOrchard: mapConfig.options.landuse_orchard ?? false,
+                landuseVineyard: mapConfig.options.landuse_vineyard ?? false,
+                landuseCemetery: mapConfig.options.landuse_cemetery ?? false,
+                landuseGrass: mapConfig.options.landuse_grass ?? false,
                 labelSize: 1,
+                labelMaxWidth: 100,
                 roadWeight: 1,
-                labelsCities: mapConfig.options.labels
+                labelsCities: mapConfig.options.labels ?? true,
+                hillshadeExaggeration: 0.5,
+                contourDensity: 1
             },
             format: {
                 aspectRatio: '2:3',
@@ -150,7 +161,7 @@ export async function POST(req: NextRequest) {
                 margin: 5,
                 borderStyle: 'none'
             },
-            typography: selectedStyle.defaultPalette.text ? {
+            typography: {
                 titleFont: selectedStyle.recommendedFonts?.[0] || 'Inter',
                 titleSize: 5,
                 titleWeight: 800,
@@ -164,35 +175,94 @@ export async function POST(req: NextRequest) {
                 showSubtitle: mapConfig.text?.show_subtitle ?? true,
                 showCoordinates: mapConfig.text?.show_coordinates ?? true,
                 position: mapConfig.text?.position || 'bottom'
-            } : undefined
+            }
         };
 
         const sanitizedTitle = sanitizeText(title);
-        const serializedConfig = serializeMapConfig(fullConfig);
+        const sanitizedSubtitle = subtitle ? sanitizeText(subtitle) : null;
+        const isPublished = is_published;
+
         const supabase = createServiceRoleClient();
 
-        const insertData = {
-            user_id: userId,
-            title: sanitizedTitle,
-            subtitle: subtitle ? sanitizeText(subtitle) : undefined,
-            config: serializedConfig,
-            is_published: is_published,
-            published_at: is_published ? new Date().toISOString() : null
-        };
-
-        const { data, error } = await (supabase.from('maps') as any)
-            .insert(insertData)
+        // Insert map
+        const { data, error } = await (supabase
+            .from('maps') as any)
+            .insert({
+                title: sanitizedTitle,
+                subtitle: sanitizedSubtitle,
+                config: fullConfig,
+                user_id: userId,
+                is_published: isPublished,
+                published_at: isPublished ? new Date().toISOString() : null,
+                thumbnail_url: null,
+            })
             .select()
             .single();
 
         if (error) {
-            logger.error('API Create Map Error', { error, userId });
+            logger.error('Failed to create map', { error, userId });
             return NextResponse.json({ error: 'Internal Server Error', details: error.message, code: error.code, hint: error.hint }, { status: 500 });
         }
 
+        // Generate Thumbnail in background
+        // We don't await this to keep the API responsive, but we start it immediately
+        const generateThumbnail = async () => {
+            try {
+                console.log(`[ThumbnailDebug] Generating thumbnail for map ${data.id}`);
+                const thumbnailBuffer = await renderMapToBuffer(fullConfig, {
+                    width: 600,
+                    height: 900,
+                    pixelRatio: 1,
+                    timeout: 30000
+                });
+
+                const fileName = `thumb-${data.id}-${Date.now()}.png`;
+                const filePath = `thumbnails/${fileName}`;
+
+                const { error: uploadError } = await supabase.storage
+                    .from('posters')
+                    .upload(filePath, thumbnailBuffer, {
+                        contentType: 'image/png',
+                        upsert: true
+                    });
+
+                if (uploadError) throw uploadError;
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('posters')
+                    .getPublicUrl(filePath);
+
+                await (supabase
+                    .from('maps') as any)
+                    .update({ thumbnail_url: publicUrl })
+                    .eq('id', data.id);
+
+                console.log(`[ThumbnailDebug] Thumbnail generated and updated for map ${data.id}`);
+            } catch (err) {
+                console.error(`[ThumbnailDebug] Failed to generate thumbnail for map ${data.id}:`, err);
+            }
+        };
+
+        // Fire and forget - but in some environments (like Vercel) this might be killed
+        // For local dev it works fine.
+        generateThumbnail();
+
+        // Trace activity
+        await trackEvent({
+            eventType: 'map_create',
+            eventName: 'Map Created via API',
+            userId: userId,
+            metadata: {
+                map_id: data.id,
+                title: sanitizedTitle,
+                is_published: isPublished,
+                source: 'api'
+            }
+        });
+
         return NextResponse.json({ map: data }, { status: 201 });
 
-    } catch (error) {
+    } catch (error: any) {
         logger.error('Unexpected error in POST /api/v1/maps', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }

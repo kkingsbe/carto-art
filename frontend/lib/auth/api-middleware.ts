@@ -122,7 +122,6 @@ export async function authenticateApiRequest(req: NextRequest): Promise<ApiAuthR
         }
 
         // 3. Update last usage async (fire and forget)
-        // We don't await this to keep latency down
         (supabase
             .from('api_keys') as any)
             .update({ last_used_at: new Date().toISOString() })
@@ -131,10 +130,36 @@ export async function authenticateApiRequest(req: NextRequest): Promise<ApiAuthR
                 if (error) logger.error('Failed to update api key last_used_at', { error });
             });
 
+        // 4. Handle Virtual User Context
+        const virtualUserId = req.headers.get('x-virtual-user-id');
+        let effectiveUserId = keyRecord.user_id;
+
+        if (virtualUserId) {
+            // Check if the virtual user exists and is owned by this API key holder
+            const { data: virtualUser, error: virtualError } = await (supabase
+                .from('profiles') as any)
+                .select('id, owner_id')
+                .eq('id', virtualUserId)
+                .eq('is_virtual', true)
+                .single();
+
+            if (virtualError || !virtualUser) {
+                return { success: false, reason: 'unauthorized', message: 'Invalid or unauthorized Virtual User ID' };
+            }
+
+            // Verify ownership: Virtual user must be owned by the API key owner
+            if (virtualUser.owner_id !== keyRecord.user_id) {
+                return { success: false, reason: 'unauthorized', message: 'Virtual User is not owned by this API key' };
+            }
+
+            effectiveUserId = virtualUser.id;
+            logger.info('Virtual User authenticated', { virtualUserId, ownerId: keyRecord.user_id });
+        }
+
         return {
             success: true,
             context: {
-                userId: keyRecord.user_id,
+                userId: effectiveUserId,
                 keyId: keyRecord.id,
                 tier: keyRecord.tier
             }

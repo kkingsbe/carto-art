@@ -1,12 +1,21 @@
 import { CartoArtClient } from '../src';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
 
-// Use the public sandbox key
-const API_KEY = 'ca_live_demo_sandbox_key_2024';
+// Load environment variables from .env and .env.local
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config({ path: path.resolve(__dirname, '.env.local'), override: true });
+
+const API_KEY = process.env.CARTOART_API_KEY;
+
+if (!API_KEY) {
+    console.error('Error: CARTOART_API_KEY not found in .env or .env.local');
+    process.exit(1);
+}
 
 const client = new CartoArtClient({
     apiKey: API_KEY,
-    // Explicitly set to prod in case we want to change later, though default matches
-    baseUrl: 'https://cartoart.net/api/v1'
+    baseUrl: process.env.CARTOART_API_URL || 'https://cartoart.net/api/v1'
 });
 
 async function run() {

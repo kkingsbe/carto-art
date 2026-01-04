@@ -18,4 +18,18 @@ export class Users {
     async unfollow(userId: string): Promise<void> {
         await this.client.request<void>(`/users/${userId}/follow`, { method: 'DELETE' });
     }
+
+    async listVirtual(): Promise<import('../types').VirtualUser[]> {
+        const response = await this.client.get<{ users: import('../types').VirtualUser[] }>('/virtual-users');
+        return response.users;
+    }
+
+    async createVirtual(data: import('../types').CreateVirtualUserRequest): Promise<import('../types').VirtualUser> {
+        const response = await this.client.post<{ user: import('../types').VirtualUser }>('/virtual-users', data);
+        return response.user;
+    }
+
+    async deleteVirtual(id: string): Promise<void> {
+        await this.client.request<void>(`/virtual-users/${id}`, { method: 'DELETE' });
+    }
 }

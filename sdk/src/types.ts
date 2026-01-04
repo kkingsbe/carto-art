@@ -124,4 +124,23 @@ export interface SavedMap {
     user_id: string;
 }
 
+export interface CreateVirtualUserRequest {
+    username: string;
+    display_name?: string;
+    avatar_url?: string;
+}
+
+export interface SocialProfile {
+    id: string;
+    username: string;
+    display_name: string | null;
+    avatar_url: string | null;
+}
+
+export interface VirtualUser extends SocialProfile {
+    owner_id: string;
+    api_key_id: string;
+    is_virtual: boolean;
+}
+
 export type VoteValue = 1 | -1;

@@ -79,3 +79,45 @@ export interface Style {
 export interface ListStylesResponse {
     styles: Style[];
 }
+export interface Comment {
+    id: string;
+    content: string;
+    created_at: string;
+    updated_at: string;
+    user_id: string;
+    profile?: {
+        username: string;
+        display_name: string | null;
+        avatar_url: string | null;
+    };
+}
+export interface ListCommentsResponse {
+    comments: Comment[];
+}
+export interface SavedMap {
+    id: string;
+    title: string;
+    subtitle: string | null;
+    is_published: boolean;
+    thumbnail_url: string | null;
+    created_at: string;
+    updated_at: string;
+    user_id: string;
+}
+export interface CreateVirtualUserRequest {
+    username: string;
+    display_name?: string;
+    avatar_url?: string;
+}
+export interface SocialProfile {
+    id: string;
+    username: string;
+    display_name: string | null;
+    avatar_url: string | null;
+}
+export interface VirtualUser extends SocialProfile {
+    owner_id: string;
+    api_key_id: string;
+    is_virtual: boolean;
+}
+export type VoteValue = 1 | -1;
