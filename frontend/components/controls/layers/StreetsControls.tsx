@@ -9,10 +9,6 @@ interface StreetsControlsProps {
 }
 
 export function StreetsControls({ layers, onLayersChange }: StreetsControlsProps) {
-    const handleRoadWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        onLayersChange({ roadWeight: parseFloat(e.target.value) });
-    };
-
     return (
         <div className="pl-8 pr-2 pb-2">
             <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-3">
@@ -23,7 +19,6 @@ export function StreetsControls({ layers, onLayersChange }: StreetsControlsProps
                         max="3.0"
                         step="0.1"
                         value={layers.roadWeight ?? 1.0}
-                        onChange={handleRoadWeightChange}
                         displayValue={`${(layers.roadWeight ?? 1.0).toFixed(1)}x`}
                         onValueChange={(value) => onLayersChange({ roadWeight: value })}
                         formatValue={(v) => v.toFixed(1)}

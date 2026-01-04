@@ -143,6 +143,7 @@ export interface PosterConfig {
     // 3D Terrain
     volumetricTerrain?: boolean;       // Enable 3D terrain (RGB-encoded elevation)
     volumetricTerrainExaggeration?: number; // Exaggeration factor (0-5)
+    terrainMeshQuality?: 'fast' | 'balanced' | 'high' | 'export'; // Mesh resolution quality
     // 3D Buildings
     buildings3D?: boolean;             // Enable 3D building extrusions
     buildings3DPitch?: number;         // Camera pitch angle (0-60°)

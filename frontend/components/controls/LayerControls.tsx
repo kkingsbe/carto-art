@@ -1,7 +1,7 @@
 'use client';
 
 import { PosterConfig, LayerToggle, ColorPalette } from '@/types/poster';
-import { ControlSection, ControlCheckbox, CollapsibleSection } from '@/components/ui/control-components';
+import { ControlSection, ControlCheckbox, CollapsibleSection, ControlSelect, ControlLabel, ControlSlider } from '@/components/ui/control-components';
 import { MarkerControls } from './layers/MarkerControls';
 import { RenderingControls } from './layers/RenderingControls';
 import { LayerToggleItem } from './layers/LayerToggleItem';
@@ -97,22 +97,31 @@ export function LayerControls({ layers, rendering, onLayersChange, onRenderingCh
                 />
 
                 {layers.volumetricTerrain && (
-                  <div className="mt-3 ml-6">
-                    <div className="flex justify-between text-xs mb-1.5">
-                      <span className="text-gray-500 font-medium">Exaggeration</span>
-                      <span className="text-gray-900 dark:text-gray-300 font-mono">
-                        {layers.volumetricTerrainExaggeration?.toFixed(1) ?? '1.5'}x
-                      </span>
+                  <div className="mt-3 ml-6 space-y-4">
+                    <div className="space-y-1.5">
+                      <ControlLabel>Mesh Quality</ControlLabel>
+                      <ControlSelect
+                        value={layers.terrainMeshQuality ?? 'balanced'}
+                        onChange={(e) => onLayersChange({ terrainMeshQuality: e.target.value as any })}
+                      >
+                        <option value="fast">Fast (Preview)</option>
+                        <option value="balanced">Balanced</option>
+                        <option value="high">High (Slower)</option>
+                        <option value="export">Export Quality</option>
+                      </ControlSelect>
                     </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="5"
-                      step="0.1"
-                      value={layers.volumetricTerrainExaggeration ?? 1.5}
-                      onChange={(e) => onLayersChange({ volumetricTerrainExaggeration: parseFloat(e.target.value) })}
-                      className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
-                    />
+
+                    <div className="space-y-1.5">
+                      <ControlLabel>Exaggeration</ControlLabel>
+                      <ControlSlider
+                        min={0}
+                        max={5}
+                        step={0.1}
+                        value={layers.volumetricTerrainExaggeration ?? 1.5}
+                        onValueChange={(val) => onLayersChange({ volumetricTerrainExaggeration: val })}
+                        displayValue={`${(layers.volumetricTerrainExaggeration ?? 1.5).toFixed(1)}x`}
+                      />
+                    </div>
                   </div>
                 )}
               </div>

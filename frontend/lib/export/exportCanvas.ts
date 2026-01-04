@@ -5,6 +5,7 @@ import { DEFAULT_EXPORT_RESOLUTION } from './constants';
 import { calculateTargetResolution } from './resolution';
 import { drawMarker, applyTexture, drawCompassRose } from './drawing';
 import { drawTextOverlay } from './text-overlay';
+import { renderDeckTerrain } from './deck-render';
 import { logger } from '@/lib/logger';
 import { createError } from '@/lib/errors/ServerActionError';
 
@@ -104,8 +105,9 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
     exportMap.jumpTo({
       center: originalCenter,
       zoom: originalZoom || 0,
-      pitch: originalPitch,
-      bearing: originalBearing
+      // If using deck.gl terrain, we render the map FLAT (top-down) to use as a texture
+      pitch: config.layers.volumetricTerrain ? 0 : (originalPitch || 0),
+      bearing: config.layers.volumetricTerrain ? 0 : (originalBearing || 0)
     });
 
     // Wait for load
@@ -163,6 +165,25 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
 
     // Draw the map. Since the map is sized to DRAW AREA (inner), we offset by marginPx
     exportCtx.drawImage(mapCanvas, marginPx, marginPx);
+
+    // Draw Volumetric Terrain (Deck.gl)
+    if (config.layers.volumetricTerrain) {
+      try {
+        const terrainCanvas = await renderDeckTerrain({
+          config,
+          width: drawWidth,
+          height: drawHeight,
+          center: { lng: originalCenter.lng, lat: originalCenter.lat },
+          zoom: originalZoom,
+          pitch: originalPitch,
+          bearing: originalBearing,
+          texture: mapCanvas // Pass the rendered map as texture
+        });
+        exportCtx.drawImage(terrainCanvas, marginPx, marginPx);
+      } catch (error) {
+        logger.error('Failed to render terrain for export', error);
+      }
+    }
     exportCtx.restore();
 
 

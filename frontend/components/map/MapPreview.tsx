@@ -6,6 +6,8 @@ import { Loader2 } from 'lucide-react';
 import type { PosterLocation, LayerToggle, PosterConfig } from '@/types/poster';
 import { cn } from '@/lib/utils';
 import { MarkerIcon } from './MarkerIcon';
+import { DeckTerrainLayer, TERRAIN_QUALITY_PRESETS } from './DeckTerrainLayer';
+import { getAwsTerrariumTileUrl } from '@/lib/styles/tileUrl';
 import { MAP, TIMEOUTS, TEXTURE } from '@/lib/constants';
 import { logger } from '@/lib/logger';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -18,7 +20,8 @@ interface MapPreviewProps {
   showMarker?: boolean;
   markerColor?: string;
   onMapLoad?: (map: any) => void;
-  onMove?: (center: [number, number], zoom: number) => void;
+  onMove?: (center: [number, number], zoom: number, pitch: number, bearing: number) => void;
+  onMoveEnd?: (center: [number, number], zoom: number, pitch: number, bearing: number) => void;
   onError?: (error: any) => void;
   layers?: PosterConfig['layers'];
   layerToggles?: LayerToggle[];
@@ -34,6 +37,7 @@ export function MapPreview({
   markerColor,
   onMapLoad,
   onMove,
+  onMoveEnd,
   onError,
   layers,
   layerToggles,
@@ -44,6 +48,7 @@ export function MapPreview({
   const [hasRenderedOnce, setHasRenderedOnce] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isMoving, setIsMoving] = useState(false);
 
   // Store event handler references and timeout IDs for cleanup
   const loadingHandlerRef = useRef<(() => void) | null>(null);
@@ -66,6 +71,7 @@ export function MapPreview({
 
   // Sync with external location changes
   useEffect(() => {
+    if (isMoving) return;
     const overzoomBoost = Math.log2(rendering?.overzoom ?? 1);
     setViewState(prev => ({
       ...prev,
@@ -73,16 +79,17 @@ export function MapPreview({
       latitude: location.center[1],
       zoom: location.zoom + overzoomBoost,
     }));
-  }, [location.center, location.zoom, rendering?.overzoom]);
+  }, [location.center[0], location.center[1], location.zoom, rendering?.overzoom, isMoving]);
 
   // Sync pitch/bearing
   useEffect(() => {
+    if (isMoving) return;
     setViewState(prev => ({
       ...prev,
       pitch: layers?.buildings3DPitch ?? 0,
       bearing: layers?.buildings3DBearing ?? 0,
     }));
-  }, [layers?.buildings3DPitch, layers?.buildings3DBearing]);
+  }, [layers?.buildings3DPitch, layers?.buildings3DBearing, isMoving]);
 
   const handleError = useCallback((e: any) => {
     logger.error('MapLibre error details:', {
@@ -152,12 +159,32 @@ export function MapPreview({
     };
   }, [mapStyle]);
 
+  const handleMoveStart = useCallback(() => setIsMoving(true), []);
+
   const handleMove = useCallback((evt: any) => {
     setViewState(evt.viewState);
     if (onMove) {
-      onMove([evt.viewState.longitude, evt.viewState.latitude], evt.viewState.zoom - overzoomBoost);
+      onMove(
+        [evt.viewState.longitude, evt.viewState.latitude],
+        evt.viewState.zoom - overzoomBoost,
+        evt.viewState.pitch,
+        evt.viewState.bearing
+      );
     }
   }, [onMove, overzoomBoost]);
+
+  const handleMoveEnd = useCallback((evt: any) => {
+    setIsMoving(false);
+    setViewState(evt.viewState);
+    if (onMoveEnd) {
+      onMoveEnd(
+        [evt.viewState.longitude, evt.viewState.latitude],
+        evt.viewState.zoom - overzoomBoost,
+        evt.viewState.pitch,
+        evt.viewState.bearing
+      );
+    }
+  }, [onMoveEnd, overzoomBoost]);
 
   const getZoomLabel = (zoom: number): string => {
     if (zoom >= 16) return 'Street';
@@ -220,8 +247,9 @@ export function MapPreview({
         attributionControl={false}
         preserveDrawingBuffer={true}
         onLoad={handleLoad}
+        onMoveStart={handleMoveStart}
         onMove={handleMove}
-        onMoveEnd={handleMove}
+        onMoveEnd={handleMoveEnd}
         onError={handleError}
         onMouseDown={onInteraction}
         onTouchStart={onInteraction}
@@ -232,6 +260,16 @@ export function MapPreview({
         maxZoom={MAP.MAX_ZOOM}
         minZoom={MAP.MIN_ZOOM}
       >
+        {/* Deck.gl Terrain Layer - Disabled for Preview to allow native texture draping
+        {layers?.volumetricTerrain && (
+          <DeckTerrainLayer
+            exaggeration={layers.volumetricTerrainExaggeration ?? 1.5}
+            meshMaxError={TERRAIN_QUALITY_PRESETS[(layers.terrainMeshQuality ?? 'balanced') as keyof typeof TERRAIN_QUALITY_PRESETS]}
+            elevationData={getAwsTerrariumTileUrl()}
+          />
+        )}
+        */}
+
         {showMarker && (
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
             <MarkerIcon type={layers?.markerType || 'crosshair'} color={markerColor} size={40} />

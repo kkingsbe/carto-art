@@ -47,9 +47,9 @@ Button.displayName = 'Button';
  * Layout Components
  * -----------------------------------------------------------------------------------------------*/
 
-export function ControlSection({ title, children, className, action }: { 
-  title: string; 
-  children: React.ReactNode; 
+export function ControlSection({ title, children, className, action }: {
+  title: string;
+  children: React.ReactNode;
   className?: string;
   action?: React.ReactNode;
 }) {
@@ -127,7 +127,7 @@ interface LabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {
 export function ControlLabel({ children, className, action, ...props }: LabelProps) {
   return (
     <div className="flex items-center justify-between mb-1.5">
-      <label 
+      <label
         className={cn("text-xs font-medium text-gray-700 dark:text-gray-300 select-none", className)}
         {...props}
       >
@@ -154,7 +154,7 @@ export const ControlInput = React.forwardRef<HTMLInputElement, React.InputHTMLAt
 );
 ControlInput.displayName = "ControlInput";
 
-interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {}
+interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> { }
 
 export const ControlSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
   ({ className, children, ...props }, ref) => {
@@ -185,7 +185,7 @@ interface SliderProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const ControlSlider = React.forwardRef<HTMLInputElement, SliderProps>(
-  ({ className, displayValue, onValueChange, parseValue, formatValue, ...props }, ref) => {
+  ({ className, displayValue, onValueChange, parseValue, formatValue, onChange, ...props }, ref) => {
     const [isEditing, setIsEditing] = React.useState(false);
     const [editValue, setEditValue] = React.useState('');
     const inputRef = React.useRef<HTMLInputElement>(null);
@@ -235,12 +235,22 @@ export const ControlSlider = React.forwardRef<HTMLInputElement, SliderProps>(
       }
     };
 
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (onChange) {
+        onChange(e);
+      }
+      if (onValueChange) {
+        onValueChange(parseFloat(e.target.value));
+      }
+    };
+
     return (
       <div className={cn("relative flex items-center gap-3", className)}>
         <input
           type="range"
           ref={ref}
           className="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600 hover:accent-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          onChange={handleChange}
           {...props}
         />
         {displayValue !== undefined && (

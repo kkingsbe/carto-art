@@ -62,7 +62,6 @@ export function Buildings3DControls({ layers, onLayersChange }: Buildings3DContr
                         max="60"
                         step="5"
                         value={layers.buildings3DPitch ?? 45}
-                        onChange={(e) => onLayersChange({ buildings3DPitch: parseFloat(e.target.value) })}
                         displayValue={`${layers.buildings3DPitch ?? 45}°`}
                         onValueChange={(value) => onLayersChange({ buildings3DPitch: value })}
                         formatValue={(v) => `${Math.round(v)}°`}
@@ -82,7 +81,6 @@ export function Buildings3DControls({ layers, onLayersChange }: Buildings3DContr
                         max="360"
                         step="15"
                         value={layers.buildings3DBearing ?? 0}
-                        onChange={(e) => onLayersChange({ buildings3DBearing: parseFloat(e.target.value) })}
                         displayValue={`${layers.buildings3DBearing ?? 0}°`}
                         onValueChange={(value) => onLayersChange({ buildings3DBearing: value })}
                         formatValue={(v) => `${Math.round(v)}°`}
@@ -102,7 +100,6 @@ export function Buildings3DControls({ layers, onLayersChange }: Buildings3DContr
                         max="3"
                         step="0.1"
                         value={layers.buildings3DHeightScale ?? 1}
-                        onChange={(e) => onLayersChange({ buildings3DHeightScale: parseFloat(e.target.value) })}
                         displayValue={`${(layers.buildings3DHeightScale ?? 1).toFixed(1)}x`}
                         onValueChange={(value) => onLayersChange({ buildings3DHeightScale: value })}
                         formatValue={(v) => `${v.toFixed(1)}x`}
@@ -122,7 +119,6 @@ export function Buildings3DControls({ layers, onLayersChange }: Buildings3DContr
                         max="30"
                         step="1"
                         value={layers.buildings3DDefaultHeight ?? 6}
-                        onChange={(e) => onLayersChange({ buildings3DDefaultHeight: parseFloat(e.target.value) })}
                         displayValue={`${layers.buildings3DDefaultHeight ?? 6}m`}
                         onValueChange={(value) => onLayersChange({ buildings3DDefaultHeight: value })}
                         formatValue={(v) => `${Math.round(v)}m`}

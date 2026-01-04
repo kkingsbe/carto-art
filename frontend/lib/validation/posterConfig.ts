@@ -128,7 +128,20 @@ export const PosterConfigSchema: z.ZodType<PosterConfig> = z.object({
     landuseVineyard: z.boolean().optional(),
     landuseCemetery: z.boolean().optional(),
     landuseGrass: z.boolean().optional(),
+    // 3D Terrain
+    volumetricTerrain: z.boolean().optional(),
+    volumetricTerrainExaggeration: z.number().optional(),
+    terrainMeshQuality: z.enum(['fast', 'balanced', 'high', 'export']).optional(),
+    // 3D Buildings
+    buildings3D: z.boolean().optional(),
+    buildings3DPitch: z.number().optional(),
+    buildings3DBearing: z.number().optional(),
+    buildings3DHeightScale: z.number().optional(),
+    buildings3DDefaultHeight: z.number().optional(),
   }),
+  rendering: z.object({
+    overzoom: z.union([z.literal(1), z.literal(2)]).optional(),
+  }).optional(),
 });
 
 /**

@@ -9,11 +9,6 @@ interface ContoursControlsProps {
 }
 
 export function ContoursControls({ layers, onLayersChange }: ContoursControlsProps) {
-    const handleContourDensityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = parseInt(e.target.value);
-        onLayersChange({ contourDensity: value });
-    };
-
     return (
         <div className="pl-8 pr-2 pb-2">
             <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-3">
@@ -24,7 +19,6 @@ export function ContoursControls({ layers, onLayersChange }: ContoursControlsPro
                         max="250"
                         step="10"
                         value={layers.contourDensity ?? 50}
-                        onChange={handleContourDensityChange}
                         displayValue={`${layers.contourDensity ?? 50}m`}
                         onValueChange={(value) => onLayersChange({ contourDensity: Math.round(value) })}
                         formatValue={(v) => `${Math.round(v)}m`}

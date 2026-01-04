@@ -335,19 +335,35 @@ export function PosterEditor() {
     mapInstanceRef.current = map;
   };
 
-  // Throttle the location update to prevent excessive style re-renders
-  const throttledUpdateLocation = useMemo(
-    () => throttle((center: [number, number], zoom: number) => {
+  // Throttle the map state update to prevent excessive re-renders
+  const throttledUpdateMapState = useMemo(
+    () => throttle((center: [number, number], zoom: number, pitch: number, bearing: number) => {
       updateLocation({ center, zoom });
+
+      // Update 3D view settings
+      updateLayers({
+        buildings3DPitch: pitch,
+        buildings3DBearing: bearing
+      });
     }, THROTTLE.MAP_MOVE),
-    [updateLocation]
+    [updateLocation, updateLayers]
   );
 
-  const handleMapMove = useCallback((center: [number, number], zoom: number) => {
+  const handleMapMove = useCallback((center: [number, number], zoom: number, pitch: number, bearing: number) => {
     // Ignore map movements during export to prevent programmatic zooms from leaking into state
     if (isExportingRef.current) return;
-    throttledUpdateLocation(center, zoom);
-  }, [throttledUpdateLocation, isExportingRef]);
+    throttledUpdateMapState(center, zoom, pitch, bearing);
+  }, [throttledUpdateMapState, isExportingRef]);
+
+  const handleMapMoveEnd = useCallback((center: [number, number], zoom: number, pitch: number, bearing: number) => {
+    if (isExportingRef.current) return;
+
+    updateLocation({ center, zoom });
+    updateLayers({
+      buildings3DPitch: pitch,
+      buildings3DBearing: bearing
+    });
+  }, [updateLocation, updateLayers, isExportingRef]);
 
   return (
     <div className="relative h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden selection:bg-blue-500/30">
@@ -449,6 +465,7 @@ export function PosterEditor() {
             markerColor={config.layers.markerColor || config.palette.primary || config.palette.accent || config.palette.text}
             onMapLoad={handleMapLoad}
             onMove={handleMapMove}
+            onMoveEnd={handleMapMoveEnd}
             layers={config.layers}
             layerToggles={config.style.layerToggles}
             onInteraction={handleMapInteraction}
@@ -522,7 +539,7 @@ export function PosterEditor() {
       }
 
       {/* Mobile Tab Bar - Above Action Bar */}
-      <div className="fixed bottom-[72px] left-0 right-0 z-40 md:hidden">
+      <div className="fixed left-0 right-0 z-40 md:hidden" style={{ bottom: 'calc(72px + env(safe-area-inset-bottom, 0px))' }}>
         <div className="flex justify-around items-center bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200/80 dark:border-gray-700 px-1 py-1.5">
           {[
             { id: 'library' as Tab, icon: Sparkles, label: 'Library' },
@@ -602,7 +619,7 @@ export function PosterEditor() {
       }
 
       {/* Mobile Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200 dark:border-gray-700 px-4 py-3 safe-area-inset-bottom">
+      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200 dark:border-gray-700 px-4 py-3" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}>
         <div className="flex items-center justify-center gap-3">
           <SaveButton
             onSave={handleSaveClick}
