@@ -75,10 +75,10 @@ export function ExportButton({
           onClick={handleExportClick}
           disabled={isExporting}
           className={cn(
-            'group relative flex items-center gap-2 px-5 py-2.5 rounded-full font-medium shadow-lg transition-all duration-300',
-            'bg-gray-900 text-white dark:bg-white dark:text-gray-900',
-            'hover:shadow-xl hover:scale-105 active:scale-95',
-            'disabled:opacity-70 disabled:cursor-wait disabled:hover:scale-100 disabled:shadow-lg',
+            'group relative flex items-center gap-2 px-5 py-2.5 rounded-full font-medium shadow-md transition-all duration-300',
+            'bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600',
+            'hover:shadow-lg hover:bg-gray-50 dark:hover:bg-gray-750 hover:scale-105 active:scale-95',
+            'disabled:opacity-70 disabled:cursor-wait disabled:hover:scale-100 disabled:shadow-md',
             className
           )}
         >

@@ -20,6 +20,17 @@ const MIN_QUERY_LEN = 3;
 const DEBOUNCE_MS = 350;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
+// Deduplicate results with identical name+subtitle to reduce cognitive load
+const deduplicateResults = (hits: SearchHit[]): SearchHit[] => {
+  const seen = new Set<string>();
+  return hits.filter(hit => {
+    const key = `${hit.location.name}|${hit.location.subtitle || ''}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 export function LocationSearch({ onLocationSelect, currentLocation }: LocationSearchProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
 
@@ -119,11 +130,14 @@ export function LocationSearch({ onLocationSelect, currentLocation }: LocationSe
         location: loc
       }));
 
-      cacheRef.current.set(cacheKey, { storedAt: Date.now(), hits });
+      // Deduplicate to avoid showing nearly identical results
+      const uniqueHits = deduplicateResults(hits);
 
-      setResults(hits);
-      setIsOpen(hits.length > 0);
-      setActiveIndex(hits.length > 0 ? 0 : -1);
+      cacheRef.current.set(cacheKey, { storedAt: Date.now(), hits: uniqueHits });
+
+      setResults(uniqueHits);
+      setIsOpen(uniqueHits.length > 0);
+      setActiveIndex(uniqueHits.length > 0 ? 0 : -1);
     } catch (err) {
       if (controller.signal.aborted) return;
       setError(err instanceof Error ? err.message : 'Search failed');
@@ -255,9 +269,9 @@ export function LocationSearch({ onLocationSelect, currentLocation }: LocationSe
                       'focus:outline-none'
                     )}
                   >
-                    <div className="font-medium text-gray-900 dark:text-white">{location.name}</div>
+                    <div className="font-medium text-gray-900 dark:text-white text-sm">{location.name}</div>
                     {location.subtitle && (
-                      <div className="text-sm text-gray-500 dark:text-gray-400">{location.subtitle}</div>
+                      <div className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">{location.subtitle}</div>
                     )}
                   </button>
                 </li>

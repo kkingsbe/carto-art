@@ -25,6 +25,8 @@ import type { FeedbackFormData } from '@/components/feedback';
 import type { ExportResolution } from '@/lib/export/resolution';
 import { ProductModal } from '@/components/ecommerce/ProductModal';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
+import { SaveButton } from '@/components/controls/SaveButton';
+import { ExportButton } from '@/components/controls/ExportButton';
 
 export function PosterEditor() {
   const [activeTab, setActiveTab] = useState<Tab>('location');
@@ -265,7 +267,7 @@ export function PosterEditor() {
 
       {/* Main Content Area - Full Screen with Centered Poster */}
       <main
-        className="absolute inset-0 flex items-center justify-center p-4 md:p-12 overflow-hidden"
+        className="absolute inset-0 flex items-center justify-center p-4 pb-24 md:p-12 overflow-hidden"
         style={{ containerType: 'size' }}
       >
         <PosterCanvas
@@ -339,6 +341,36 @@ export function PosterEditor() {
           imageUrl={exportedImage}
         />
       )}
+
+      {/* Mobile Bottom Action Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200 dark:border-gray-700 px-4 py-3 safe-area-inset-bottom">
+        <div className="flex items-center justify-center gap-3">
+          <SaveButton
+            onSave={handleSaveClick}
+            currentMapName={currentMapName}
+            hasUnsavedChanges={currentMapStatus?.hasUnsavedChanges}
+            isAuthenticated={isAuthenticated}
+            disabled={isExporting}
+            className="flex-1 justify-center py-2.5 shadow-none ring-0 h-auto"
+          />
+          <ExportButton
+            onExport={handleExport}
+            isExporting={isExporting}
+            format={config.format}
+            className="flex-1 justify-center py-2.5 shadow-none h-auto"
+            showDonationModal={showDonationModal}
+            onDonationModalChange={setShowDonationModal}
+            onBuyPrint={isEcommerceEnabled ? () => {
+              setShowDonationModal(false);
+              setShowProductModal(true);
+            } : undefined}
+            onSave={handleSaveClick}
+            isAuthenticated={isAuthenticated}
+            currentMapName={currentMapName}
+            hasUnsavedChanges={currentMapStatus?.hasUnsavedChanges}
+          />
+        </div>
+      </div>
     </div>
   );
 }

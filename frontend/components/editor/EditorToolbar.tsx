@@ -61,40 +61,40 @@ export function EditorToolbar({
                     onClick={onUndo}
                     disabled={!canUndo}
                     className={cn(
-                        "p-2 md:p-2.5 rounded-lg transition-all",
+                        "p-3 md:p-2.5 rounded-lg transition-all",
                         canUndo
                             ? "text-gray-700 hover:text-gray-900 hover:bg-white/50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700/50"
                             : "text-gray-300 dark:text-gray-600 cursor-not-allowed"
                     )}
                     title="Undo (Ctrl+Z)"
                 >
-                    <Undo2 className="w-4 h-4" />
+                    <Undo2 className="w-5 h-5 md:w-4 md:h-4" />
                 </button>
                 <button
                     onClick={onRedo}
                     disabled={!canRedo}
                     className={cn(
-                        "p-2 md:p-2.5 rounded-lg transition-all",
+                        "p-3 md:p-2.5 rounded-lg transition-all",
                         canRedo
                             ? "text-gray-700 hover:text-gray-900 hover:bg-white/50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700/50"
                             : "text-gray-300 dark:text-gray-600 cursor-not-allowed"
                     )}
                     title="Redo (Ctrl+Shift+Z)"
                 >
-                    <Redo2 className="w-4 h-4" />
+                    <Redo2 className="w-5 h-5 md:w-4 md:h-4" />
                 </button>
                 <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
                 <button
                     onClick={onReset}
-                    className="p-2 md:p-2.5 rounded-lg transition-all text-gray-700 hover:text-red-600 hover:bg-red-50 dark:text-gray-300 dark:hover:text-red-400 dark:hover:bg-red-900/30"
+                    className="p-3 md:p-2.5 rounded-lg transition-all text-gray-700 hover:text-red-600 hover:bg-red-50 dark:text-gray-300 dark:hover:text-red-400 dark:hover:bg-red-900/30"
                     title={currentMapId ? "Exit saved map" : "Reset to default"}
                 >
-                    <RotateCcw className="w-4 h-4" />
+                    <RotateCcw className="w-5 h-5 md:w-4 md:h-4" />
                 </button>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2">
+            {/* Action Buttons - Hidden on mobile, moved to bottom bar */}
+            <div className="hidden md:flex items-center gap-2">
                 <SaveButton
                     onSave={onSave}
                     currentMapName={currentMapName}

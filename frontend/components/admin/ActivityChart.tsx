@@ -24,6 +24,7 @@ interface ActivityPoint {
 const METRICS = [
     { id: 'all', label: 'Total Activity', color: '#3b82f6' },
     { id: 'page_view', label: 'Views', color: '#10b981' },
+    { id: 'unique_page_view', label: 'Unique Views', color: '#6366f1' },
     { id: 'poster_export', label: 'Exports', color: '#f59e0b' },
     { id: 'api_request', label: 'API Requests', color: '#06b6d4' },
     { id: 'total_users', label: 'Total Users', color: '#8b5cf6' },

@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     if (days <= 0.25) intervalMinutes = 15;
     else if (days <= 1.0) intervalMinutes = 30;
 
+    const isUniqueView = eventType === 'unique_page_view';
     const isSubDaily = days <= 1;
 
     const supabase = await createClient();
@@ -33,14 +34,6 @@ export async function GET(request: NextRequest) {
     let page = 0;
     const PAGE_SIZE = 1000;
     let hasMore = true;
-
-    // We can't use offset pagination efficiently for large datasets, 
-    // but for < 100k rows with this volume, range-based or simple pagination is acceptable.
-    // Given the hard 1000 row limit, we must paginate.
-
-    // Optimize: Count first if too large? 
-    // For this dashboard, we need all timestamps for the graph.
-    // We will loop until we get < PAGE_SIZE or hit the end of our time window (implicit in query)
 
     while (hasMore) {
         let query;
@@ -60,15 +53,18 @@ export async function GET(request: NextRequest) {
                 .order('created_at', { ascending: true })
                 .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
         } else {
+            // Updated to fetch user_id and session_id for uniqueness tracking
             query = supabase
                 .from('page_events')
-                .select('created_at')
+                .select('created_at, user_id, session_id')
                 .gte('created_at', startDate.toISOString())
                 .order('created_at', { ascending: true })
                 .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
-            if (eventType !== 'all') {
+            if (eventType !== 'all' && !isUniqueView) {
                 query = query.eq('event_type', eventType);
+            } else if (isUniqueView) {
+                query = query.eq('event_type', 'page_view');
             }
         }
 
@@ -89,7 +85,6 @@ export async function GET(request: NextRequest) {
             hasMore = false;
         }
 
-        // Safety Break: Stop if we somehow fetch excessively (>100k) to prevent OOM
         if (allEvents.length > 100000) {
             console.warn('Analytics: truncated at 100k events');
             break;
@@ -100,52 +95,78 @@ export async function GET(request: NextRequest) {
 
     // Grouping logic
     const counts: Record<string, number> = {};
+    const uniqueIdentifiersPerBucket: Record<string, Set<string>> = {};
 
     if (isSubDaily) {
         const intervalMs = intervalMinutes * 60 * 1000;
         const now = new Date();
-        // Round down current time to nearest interval
         const roundedNow = Math.floor(now.getTime() / intervalMs) * intervalMs;
-
-        // Initialize buckets
         const minutesToCover = days * 24 * 60;
         const numBuckets = Math.ceil(minutesToCover / intervalMinutes);
 
         for (let i = 0; i <= numBuckets; i++) {
             const t = new Date(roundedNow - (i * intervalMs));
-            counts[t.toISOString()] = 0;
+            const key = t.toISOString();
+            counts[key] = 0;
+            if (isUniqueView) {
+                uniqueIdentifiersPerBucket[key] = new Set();
+            }
         }
-
-        console.log(`[ActivityStats] Fetching ${days} days (sub-daily). Found ${events?.length} events.`);
 
         (events as any[]).forEach(event => {
             const t = new Date(event.created_at).getTime();
             const rounded = Math.floor(t / intervalMs) * intervalMs;
             const key = new Date(rounded).toISOString();
 
-            // If key doesn't exist (e.g. slight future skew), initialize it
             if (counts[key] === undefined) {
                 counts[key] = 0;
+                if (isUniqueView) uniqueIdentifiersPerBucket[key] = new Set();
             }
-            counts[key]++;
+
+            if (isUniqueView) {
+                const id = event.user_id || event.session_id || 'anon';
+                uniqueIdentifiersPerBucket[key].add(id);
+            } else {
+                counts[key]++;
+            }
         });
+
+        if (isUniqueView) {
+            Object.keys(counts).forEach(key => {
+                counts[key] = uniqueIdentifiersPerBucket[key].size;
+            });
+        }
     } else {
-        // Initialize last X days with 0
         for (let i = 0; i <= days; i++) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            counts[d.toISOString().split('T')[0]] = 0;
+            const date = d.toISOString().split('T')[0];
+            counts[date] = 0;
+            if (isUniqueView) {
+                uniqueIdentifiersPerBucket[date] = new Set();
+            }
         }
-
-        console.log(`[ActivityStats] Fetching ${days} days (daily). Found ${events?.length} events.`);
 
         (events as any[]).forEach(event => {
             const date = (event.created_at as string).split('T')[0];
             if (counts[date] === undefined) {
                 counts[date] = 0;
+                if (isUniqueView) uniqueIdentifiersPerBucket[date] = new Set();
             }
-            counts[date]++;
+
+            if (isUniqueView) {
+                const id = event.user_id || event.session_id || 'anon';
+                uniqueIdentifiersPerBucket[date].add(id);
+            } else {
+                counts[date]++;
+            }
         });
+
+        if (isUniqueView) {
+            Object.keys(counts).forEach(key => {
+                counts[key] = uniqueIdentifiersPerBucket[key].size;
+            });
+        }
     }
 
     const result = Object.entries(counts)

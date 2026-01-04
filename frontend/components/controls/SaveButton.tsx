@@ -104,10 +104,8 @@ export function SaveButton({
         className={cn(
           'group relative flex items-center gap-2 px-4 py-2 rounded-full font-medium shadow-md transition-all duration-300',
           hasUnsavedChanges
-            ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg'
-            : currentMapName
-              ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750',
+            ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg ring-2 ring-blue-300 dark:ring-blue-500'
+            : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg',
           'disabled:opacity-70 disabled:cursor-wait disabled:hover:shadow-md',
           className
         )}

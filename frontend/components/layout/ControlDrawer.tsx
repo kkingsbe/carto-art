@@ -65,6 +65,17 @@ export function ControlDrawer({
   onPublishSuccess,
 }: ControlDrawerProps) {
   const [libraryTab, setLibraryTab] = useState<'vistas' | 'saved'>('vistas');
+  const [tipDismissed, setTipDismissed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('cartoart-tip-dismissed') === 'true';
+    }
+    return false;
+  });
+
+  const handleDismissTip = () => {
+    setTipDismissed(true);
+    localStorage.setItem('cartoart-tip-dismissed', 'true');
+  };
 
   return (
     <aside className={cn(
@@ -85,8 +96,8 @@ export function ControlDrawer({
 
           {activeTab === 'library' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Library</h3>
+              <div className="flex items-center justify-between mb-2 md:block">
+                <h3 className="hidden md:block text-lg font-semibold text-gray-900 dark:text-white">Library</h3>
               </div>
               <div className="flex p-1 bg-gray-100/50 dark:bg-gray-800/50 rounded-xl">
                 <button
@@ -131,8 +142,8 @@ export function ControlDrawer({
 
           {activeTab === 'location' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Location</h3>
+              <div className="flex items-center justify-between md:block">
+                <h3 className="hidden md:block text-lg font-semibold text-gray-900 dark:text-white">Location</h3>
               </div>
               <div className="space-y-2">
                 <LocationSearch
@@ -141,17 +152,26 @@ export function ControlDrawer({
                 />
               </div>
 
-              <div className="bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-xl text-xs text-blue-800 dark:text-blue-200 border border-blue-100 dark:border-blue-900/20">
-                <p className="font-medium mb-1">Tip: Fine-tune your view</p>
-                <p className="opacity-90 leading-relaxed">Drag the map to reposition. Hold <kbd className="px-1 py-0.5 bg-white dark:bg-black rounded text-[10px]">Ctrl</kbd> to rotate and tilt the view.</p>
-              </div>
+              {!tipDismissed && (
+                <div className="bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-xl text-xs text-blue-800 dark:text-blue-200 border border-blue-100 dark:border-blue-900/20 relative group">
+                  <button
+                    onClick={handleDismissTip}
+                    className="absolute top-2 right-2 p-1 text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 transition-colors"
+                    title="Dismiss tip"
+                  >
+                    <Minus className="w-3.5 h-3.5" />
+                  </button>
+                  <p className="font-medium mb-1">Tip: Fine-tune your view</p>
+                  <p className="opacity-90 leading-relaxed pr-4">Drag the map to reposition. Hold <kbd className="px-1 py-0.5 bg-white dark:bg-black rounded text-[10px]">Ctrl</kbd> to rotate and tilt the view.</p>
+                </div>
+              )}
             </div>
           )}
 
           {activeTab === 'style' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Map Style</h3>
+              <div className="flex items-center justify-between md:block">
+                <h3 className="hidden md:block text-lg font-semibold text-gray-900 dark:text-white">Map Style</h3>
               </div>
               <StyleSelector
                 selectedStyleId={config.style.id}
@@ -171,8 +191,8 @@ export function ControlDrawer({
 
           {activeTab === 'layers' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Layers</h3>
+              <div className="flex items-center justify-between md:block">
+                <h3 className="hidden md:block text-lg font-semibold text-gray-900 dark:text-white">Layers</h3>
               </div>
               <div className="space-y-4">
                 <LayerControls
@@ -189,8 +209,8 @@ export function ControlDrawer({
 
           {activeTab === 'text' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Typography</h3>
+              <div className="flex items-center justify-between md:block">
+                <h3 className="hidden md:block text-lg font-semibold text-gray-900 dark:text-white">Typography</h3>
               </div>
               <div className="space-y-4">
                 <TypographyControls
@@ -205,8 +225,8 @@ export function ControlDrawer({
 
           {activeTab === 'frame' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Frame & Format</h3>
+              <div className="flex items-center justify-between md:block">
+                <h3 className="hidden md:block text-lg font-semibold text-gray-900 dark:text-white">Frame & Format</h3>
               </div>
               <div className="space-y-4">
                 <FormatControls
@@ -219,8 +239,8 @@ export function ControlDrawer({
 
           {activeTab === 'account' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Account</h3>
+              <div className="flex items-center justify-between md:block">
+                <h3 className="hidden md:block text-lg font-semibold text-gray-900 dark:text-white">Account</h3>
               </div>
               <AccountPanel
                 currentMapId={currentMapId}

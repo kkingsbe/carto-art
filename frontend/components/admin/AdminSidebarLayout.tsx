@@ -15,7 +15,8 @@ import {
     ExternalLink,
     Download,
     Menu,
-    X
+    X,
+    MapPin
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,7 @@ export function AdminSidebarLayout({ children }: AdminSidebarLayoutProps) {
         { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
         { label: 'Exports', href: '/admin/exports', icon: Download },
         { label: 'Feature Flags', href: '/admin/feature-flags', icon: Flag },
+        { label: 'Vistas', href: '/admin/vistas', icon: MapPin },
         { label: 'Users', href: '/admin/users', icon: Users },
         { label: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
         { label: 'Retention', href: '/admin/analytics/retention', icon: LineChart },

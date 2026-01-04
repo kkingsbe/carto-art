@@ -38,13 +38,16 @@ export function TabNavigation({
         title={label}
       >
         <div className={cn(
-          "flex flex-col items-center justify-center py-4 px-2 space-y-1.5 transition-all duration-200 mx-2 rounded-xl",
+          "flex flex-col items-center justify-center py-3 px-2.5 space-y-0.5 transition-all duration-200 mx-1.5 rounded-xl min-w-[52px] min-h-[56px]",
           isActive
             ? "bg-blue-600 text-white shadow-md shadow-blue-900/20"
             : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 hover:bg-black/5 dark:hover:bg-white/5"
         )}>
-          <Icon className={cn("w-6 h-6", isActive && "text-white")} />
-          <span className={cn("text-[10px] font-medium transition-opacity duration-200", isActive ? "text-white/90" : "opacity-0 group-hover:opacity-100 hidden md:block")}>
+          <Icon className={cn("w-7 h-7 md:w-6 md:h-6", isActive && "text-white")} />
+          <span className={cn(
+            "text-[10px] font-medium leading-tight",
+            isActive ? "text-white/90" : "text-gray-400 dark:text-gray-500"
+          )}>
             {label}
           </span>
         </div>
@@ -53,14 +56,14 @@ export function TabNavigation({
   };
 
   return (
-    <nav className="flex-none w-16 md:w-20 border-r border-gray-200/50 dark:border-gray-700/50 flex flex-col items-center py-4 bg-transparent">
+    <nav className="flex-none w-20 border-r border-gray-200/50 dark:border-gray-700/50 flex flex-col items-center py-4 bg-transparent transition-all duration-300">
       <div className="hidden md:flex items-center justify-center w-full mb-6">
         <Link href="/" className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 shadow-lg flex items-center justify-center hover:scale-105 transition-transform">
           <span className="font-bold text-white text-lg">C</span>
         </Link>
       </div>
 
-      <div className="flex flex-col w-full space-y-2">
+      <div className="flex flex-col w-full space-y-3">
         <TabButton id="library" icon={Sparkles} label="Library" />
         <TabButton id="location" icon={MapIcon} label="Location" />
         <TabButton id="style" icon={Palette} label="Style" />
@@ -69,7 +72,7 @@ export function TabNavigation({
         <TabButton id="frame" icon={Layout} label="Frame" />
       </div>
 
-      <div className="mt-auto flex flex-col w-full space-y-2 pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
+      <div className="mt-auto flex flex-col w-full space-y-3 pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
         <TabButton id="account" icon={User} label="Account" />
       </div>
     </nav>
