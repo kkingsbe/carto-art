@@ -108,7 +108,7 @@ function drawCrosshairMarker(
   ctx.fillStyle = color;
   ctx.lineCap = 'butt';
 
-  const fullLineWidth = Math.max(1, Math.round(size * 0.015));
+  const fullLineWidth = Math.max(1, Math.round(size * 0.025));
   ctx.lineWidth = fullLineWidth;
   ctx.globalAlpha = 0.55;
 

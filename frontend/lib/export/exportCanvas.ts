@@ -165,14 +165,7 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
     exportCtx.drawImage(mapCanvas, marginPx, marginPx);
     exportCtx.restore();
 
-    // 5. DRAW MARKER
-    if (config.layers.marker !== false) {
-      const markerX = marginPx + drawWidth / 2;
-      const markerY = marginPx + drawHeight / 2;
-      const markerSize = exportResolution.width * 0.045;
-      const markerColor = config.layers.markerColor || config.palette.primary || config.palette.accent || config.palette.text;
-      drawMarker(exportCtx, markerX, markerY, markerSize, markerColor, config.layers.markerType || 'crosshair');
-    }
+
 
     // 6. TEXT OVERLAY
     drawTextOverlay(exportCtx, config, exportResolution.width, exportResolution.height, mapExportScale);
@@ -257,7 +250,17 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
       applyTexture(exportCtx, exportResolution.width, exportResolution.height, texture, textureIntensity);
     }
 
-    // 9. WATERMARK
+    // 9. DRAW MARKER (Rendered above texture)
+    if (config.layers.marker !== false) {
+      const markerX = marginPx + drawWidth / 2;
+      const markerY = marginPx + drawHeight / 2;
+      // Match the preview's fixed size (40px) scaled up by the export scale
+      const markerSize = 40 * mapExportScale;
+      const markerColor = config.layers.markerColor || config.palette.primary || config.palette.accent || config.palette.text;
+      drawMarker(exportCtx, markerX, markerY, markerSize, markerColor, config.layers.markerType || 'crosshair');
+    }
+
+    // 10. WATERMARK
     drawWatermark(exportCtx, exportResolution.width, exportResolution.height);
 
     return new Promise<Blob>((resolve, reject) => {
