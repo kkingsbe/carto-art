@@ -7,6 +7,9 @@ import { useMapExport } from '@/hooks/useMapExport';
 import { useProjectManager } from '@/hooks/useProjectManager';
 import { useEditorKeyboardShortcuts } from '@/hooks/useEditorKeyboardShortcuts';
 import { Maximize, Plus, Minus, X, Map as MapIcon, Type, Layout, Sparkles, Palette, User, Layers } from 'lucide-react';
+import { styles } from '@/lib/styles';
+import { useVistas } from '@/hooks/useVistas';
+import { VISTAS as FALLBACK_VISTAS } from '@/lib/config/examples';
 import { MapPreview } from '@/components/map/MapPreview';
 import { PosterCanvas } from '@/components/map/PosterCanvas';
 import { EditorToolbar } from '@/components/editor/EditorToolbar';
@@ -128,6 +131,42 @@ export function PosterEditor() {
     mapId: currentMapId || undefined,
   });
 
+  // Randomization Logic
+  const { vistas: dbVistas } = useVistas();
+  const vistas = dbVistas.length > 0 ? dbVistas : FALLBACK_VISTAS;
+
+  const handleRandomize = useCallback(() => {
+    // Pick Random Style
+    const randomStyle = styles[Math.floor(Math.random() * styles.length)];
+    // Pick Random Palette
+    const randomPalette = randomStyle.palettes[Math.floor(Math.random() * randomStyle.palettes.length)];
+
+    // Pick Random Location
+    const randomVista = vistas[Math.floor(Math.random() * vistas.length)];
+
+    // Randomize Pitch & Bearing
+    const randomPitch = Math.floor(Math.random() * 61); // 0 to 60
+    const randomBearing = Math.floor(Math.random() * 361) - 180; // -180 to 180
+
+    const newConfig = {
+      ...config,
+      location: {
+        ...config.location,
+        ...randomVista.location,
+      },
+      style: randomStyle,
+      palette: randomPalette,
+      rendering: {
+        ...config.rendering,
+        pitch: randomPitch,
+        bearing: randomBearing,
+      }
+    };
+
+    setConfig(newConfig);
+    trackEventAction({ eventType: 'interaction', eventName: 'randomize' });
+  }, [config, vistas, setConfig]);
+
   // Wrap exportToPNG to handle errors and track export count
   const handleExport = useCallback(async (resolution?: ExportResolution) => {
     try {
@@ -207,6 +246,7 @@ export function PosterEditor() {
         }}
         canUndo={canUndo}
         canRedo={canRedo}
+        onRandomize={handleRandomize}
         onReset={() => {
           resetProject();
           trackEventAction({ eventType: 'interaction', eventName: 'reset_project' });

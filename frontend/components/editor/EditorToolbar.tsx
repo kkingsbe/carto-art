@@ -21,7 +21,7 @@ interface EditorToolbarProps {
     canUndo: boolean;
     canRedo: boolean;
     onReset: () => void;
-    onRandomize: () => void;
+    onRandomize?: () => void;
     onSave: (name: string) => Promise<void>;
     onSaveCopy: (name: string) => Promise<void>;
     onExport: (resolution?: any) => Promise<void>;
@@ -87,13 +87,15 @@ export function EditorToolbar({
                     <Redo2 className="w-5 h-5 md:w-4 md:h-4" />
                 </button>
                 <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
-                <button
-                    onClick={onRandomize}
-                    className="p-3 md:p-2.5 rounded-lg transition-all text-gray-700 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-300 dark:hover:text-blue-400 dark:hover:bg-blue-900/30"
-                    title="Randomize Theme & Location"
-                >
-                    <Shuffle className="w-5 h-5 md:w-4 md:h-4" />
-                </button>
+                {onRandomize && (
+                    <button
+                        onClick={onRandomize}
+                        className="p-3 md:p-2.5 rounded-lg transition-all text-gray-700 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-300 dark:hover:text-blue-400 dark:hover:bg-blue-900/30"
+                        title="Randomize Theme & Location"
+                    >
+                        <Shuffle className="w-5 h-5 md:w-4 md:h-4" />
+                    </button>
+                )}
                 <button
                     onClick={onReset}
                     className="p-3 md:p-2.5 rounded-lg transition-all text-gray-700 hover:text-red-600 hover:bg-red-50 dark:text-gray-300 dark:hover:text-red-400 dark:hover:bg-red-900/30"
