@@ -81,6 +81,14 @@ export function LocationSearch({ onLocationSelect, currentLocation }: LocationSe
   const performSearch = useCallback(async (searchQuery: string) => {
     const q = searchQuery.trim();
 
+    // Skip redundant search if query matches active location name
+    if (q === currentLocation?.name) {
+      setError(null);
+      setIsLoading(false);
+      setResults([]);
+      return;
+    }
+
     if (q.length < MIN_QUERY_LEN) {
       abortRef.current?.abort();
       setIsLoading(false);

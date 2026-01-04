@@ -8,8 +8,6 @@ import { useProjectManager } from '@/hooks/useProjectManager';
 import { useEditorKeyboardShortcuts } from '@/hooks/useEditorKeyboardShortcuts';
 import { Maximize, Plus, Minus, X, Map as MapIcon, Type, Layout, Sparkles, Palette, User, Layers } from 'lucide-react';
 import { styles } from '@/lib/styles';
-import { useVistas } from '@/hooks/useVistas';
-import { VISTAS as FALLBACK_VISTAS } from '@/lib/config/examples';
 import { MapPreview } from '@/components/map/MapPreview';
 import { PosterCanvas } from '@/components/map/PosterCanvas';
 import { EditorToolbar } from '@/components/editor/EditorToolbar';
@@ -132,17 +130,16 @@ export function PosterEditor() {
   });
 
   // Randomization Logic
-  const { vistas: dbVistas } = useVistas();
-  const vistas = dbVistas.length > 0 ? dbVistas : FALLBACK_VISTAS;
-
   const handleRandomize = useCallback(() => {
     // Pick Random Style
     const randomStyle = styles[Math.floor(Math.random() * styles.length)];
     // Pick Random Palette
     const randomPalette = randomStyle.palettes[Math.floor(Math.random() * randomStyle.palettes.length)];
 
-    // Pick Random Location
-    const randomVista = vistas[Math.floor(Math.random() * vistas.length)];
+    // Purely Random Location
+    const randomLng = (Math.random() * 360) - 180;
+    const randomLat = (Math.random() * 170) - 85;
+    const randomZoom = Math.random() * 13 + 2; // Zoom 2 to 15
 
     // Randomize Pitch & Bearing
     const randomPitch = Math.floor(Math.random() * 61); // 0 to 60
@@ -152,7 +149,11 @@ export function PosterEditor() {
       ...config,
       location: {
         ...config.location,
-        ...randomVista.location,
+        name: 'Random Exploration',
+        city: 'Somewhere on Earth',
+        subtitle: `${randomLat.toFixed(4)}°, ${randomLng.toFixed(4)}°`,
+        center: [randomLng, randomLat] as [number, number],
+        zoom: randomZoom,
       },
       style: randomStyle,
       palette: randomPalette,
@@ -164,8 +165,8 @@ export function PosterEditor() {
     };
 
     setConfig(newConfig);
-    trackEventAction({ eventType: 'interaction', eventName: 'randomize' });
-  }, [config, vistas, setConfig]);
+    trackEventAction({ eventType: 'interaction', eventName: 'randomize_pure' });
+  }, [config, setConfig]);
 
   // Wrap exportToPNG to handle errors and track export count
   const handleExport = useCallback(async (resolution?: ExportResolution) => {
