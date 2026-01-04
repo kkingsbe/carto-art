@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useCallback, useState, useRef } from 'react';
+import { useMemo, useCallback, useState, useRef, useEffect } from 'react';
 import { usePosterConfig } from '@/hooks/usePosterConfig';
 import { useSavedProjects } from '@/hooks/useSavedProjects';
 import { useMapExport } from '@/hooks/useMapExport';
@@ -30,6 +30,26 @@ export function PosterEditor() {
   const [activeTab, setActiveTab] = useState<Tab>('location');
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
   const isEcommerceEnabled = useFeatureFlag('ecommerce');
+
+  // Handle responsive drawer state
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setIsDrawerOpen(false);
+      } else {
+        setIsDrawerOpen(true);
+      }
+    };
+
+    // Initial check
+    if (window.innerWidth < 768) {
+      setIsDrawerOpen(false);
+    }
+
+    // Optional: Listen for resize if we want dynamic adjustment
+    // window.addEventListener('resize', handleResize);
+    // return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const {
     config,
@@ -209,7 +229,7 @@ export function PosterEditor() {
       />
 
       {/* Floating Sidebar Container */}
-      <div className="absolute top-4 left-4 bottom-4 z-40 flex flex-row pointer-events-none">
+      <div className="absolute top-16 left-2 bottom-2 md:top-4 md:left-4 md:bottom-4 z-40 flex flex-row pointer-events-none max-w-[calc(100vw-1rem)]">
         <div className="pointer-events-auto flex flex-row h-full shadow-2xl rounded-2xl overflow-hidden bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200 dark:border-gray-700/50">
           <TabNavigation
             activeTab={activeTab}
@@ -272,7 +292,7 @@ export function PosterEditor() {
           />
 
           {/* Floating Map Controls - Inside the paper */}
-          <div className="absolute bottom-4 right-4 flex flex-col items-center gap-1 z-10">
+          <div className="absolute bottom-4 right-4 flex flex-col items-center gap-1 z-10 md:bottom-4 md:right-4">
             <div className="flex flex-col bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200 overflow-hidden">
               <button
                 onClick={zoomIn}

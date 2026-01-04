@@ -602,3 +602,17 @@ export const POSTER_EXAMPLES: PosterExample[] = [
   }
 ];
 
+export interface Vista {
+  id: string;
+  name: string;
+  description: string;
+  location: PosterConfig['location'];
+}
+
+export const VISTAS: Vista[] = POSTER_EXAMPLES.map(example => ({
+  id: example.id,
+  name: example.name,
+  description: example.description,
+  location: example.config.location
+}));
+

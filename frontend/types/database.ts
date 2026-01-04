@@ -542,11 +542,37 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
-    };
+      get_retention_rate: {
+        Args: any;
+        Returns: number;
+      };
+      get_weekly_cohort_retention: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          cohort_week: string;
+          total_users: number;
+          week_0: number;
+          week_1: number;
+          week_2: number;
+          week_3: number;
+          week_4: number;
+        }[];
+      };
+      get_activation_metrics: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
+      get_revenue_metrics: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
+      get_stickiness_metrics: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
+    },
     Enums: {
       notification_type: 'FOLLOW' | 'MAP_POST' | 'COMMENT' | 'LIKE';
     };
   };
 }
-

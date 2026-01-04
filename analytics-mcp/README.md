@@ -30,14 +30,6 @@ It exposes several tools to query the admin panel data:
     
     Alternatively, create a `.env` file in this directory with those values.
 
-## Security
-
-This MCP server is protected by API key authentication. It requires an `MCP_API_KEY` to be set in the environment or Claude Desktop config.
-1. The key must exist in the `api_keys` table.
-2. The user associated with the key must have `is_admin: true` in their profile.
-3. The key must be active.
-
-
 To run the server locally:
 
 ```bash
@@ -58,8 +50,7 @@ To use this with Claude Desktop, add the following to your `claude_desktop_confi
       "cwd": "c:/Users/Kyle/Documents/code/carto-art/analytics-mcp",
       "env": {
         "SUPABASE_URL": "http://127.0.0.1:54321",
-        "SUPABASE_SERVICE_ROLE_KEY": "your_local_service_role_key",
-        "MCP_API_KEY": "your_local_admin_api_key"
+        "SUPABASE_SERVICE_ROLE_KEY": "your_local_service_role_key"
       }
     }
   }
@@ -76,8 +67,7 @@ To use this with Claude Desktop, add the following to your `claude_desktop_confi
       "cwd": "c:/Users/Kyle/Documents/code/carto-art/analytics-mcp",
       "env": {
         "SUPABASE_URL": "https://your-project.supabase.co",
-        "SUPABASE_SERVICE_ROLE_KEY": "your_prod_service_role_key",
-        "MCP_API_KEY": "your_prod_admin_api_key"
+        "SUPABASE_SERVICE_ROLE_KEY": "your_prod_service_role_key"
       }
     }
   }

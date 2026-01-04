@@ -9,7 +9,7 @@ import { ColorControls } from '@/components/controls/ColorControls';
 import { TypographyControls } from '@/components/controls/TypographyControls';
 import { LayerControls } from '@/components/controls/LayerControls';
 import { FormatControls } from '@/components/controls/FormatControls';
-import { ExamplesGallery } from '@/components/controls/ExamplesGallery';
+import { VistasGallery } from '@/components/controls/VistasGallery';
 import { SavedProjects } from '@/components/controls/SavedProjects';
 import { AccountPanel } from '@/components/controls/AccountPanel';
 import type { Tab } from './TabNavigation';
@@ -64,14 +64,14 @@ export function ControlDrawer({
   onLoadProject,
   onPublishSuccess,
 }: ControlDrawerProps) {
-  const [libraryTab, setLibraryTab] = useState<'examples' | 'saved'>('examples');
+  const [libraryTab, setLibraryTab] = useState<'vistas' | 'saved'>('vistas');
 
   return (
     <aside className={cn(
       "relative bg-transparent h-full overflow-hidden transition-all duration-500 ease-out",
-      isDrawerOpen ? "w-[340px] opacity-100" : "w-0 opacity-0"
+      isDrawerOpen ? "w-[85vw] md:w-[340px] opacity-100" : "w-0 opacity-0"
     )}>
-      <div className="h-full overflow-y-auto w-[340px]"> {/* Fixed width inner container to prevent reflow during transition */}
+      <div className="h-full overflow-y-auto w-[85vw] md:w-[340px]"> {/* Fixed width inner container to prevent reflow during transition */}
         <div className="p-6 space-y-6 pb-24">
           <div className="flex items-center justify-between md:hidden mb-2">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">{activeTab}</h2>
@@ -90,15 +90,15 @@ export function ControlDrawer({
               </div>
               <div className="flex p-1 bg-gray-100/50 dark:bg-gray-800/50 rounded-xl">
                 <button
-                  onClick={() => setLibraryTab('examples')}
+                  onClick={() => setLibraryTab('vistas')}
                   className={cn(
                     "flex-1 py-2 text-xs font-medium rounded-lg transition-all",
-                    libraryTab === 'examples'
+                    libraryTab === 'vistas'
                       ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
                       : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                   )}
                 >
-                  Examples
+                  Vistas
                 </button>
                 <button
                   onClick={() => setLibraryTab('saved')}
@@ -113,9 +113,9 @@ export function ControlDrawer({
                 </button>
               </div>
 
-              {libraryTab === 'examples' ? (
-                <ExamplesGallery
-                  onSelect={setConfig}
+              {libraryTab === 'vistas' ? (
+                <VistasGallery
+                  onLocationSelect={updateLocation}
                   currentConfig={config}
                 />
               ) : (

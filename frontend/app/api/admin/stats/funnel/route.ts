@@ -55,11 +55,13 @@ export async function GET() {
         if (recentUsers && recentUsers.length > 0) {
             const signupToEditorTimes = recentUsers
                 .filter(u => u.first_view_editor_at)
-                .map(u => calculateAvgTime(u.created_at, u.first_view_editor_at));
+                .map(u => calculateAvgTime(u.created_at, u.first_view_editor_at))
+                .filter(t => t > 0 && t <= 60);
 
             const editorToMapTimes = recentUsers
                 .filter(u => u.first_view_editor_at && u.first_map_at)
-                .map(u => calculateAvgTime(u.first_view_editor_at, u.first_map_at));
+                .map(u => calculateAvgTime(u.first_view_editor_at, u.first_map_at))
+                .filter(t => t > 0 && t <= 60);
 
             avgSignupToEditor = signupToEditorTimes.length ? signupToEditorTimes.reduce((a, b) => a + b, 0) / signupToEditorTimes.length : 0;
             avgEditorToMap = editorToMapTimes.length ? editorToMapTimes.reduce((a, b) => a + b, 0) / editorToMapTimes.length : 0;

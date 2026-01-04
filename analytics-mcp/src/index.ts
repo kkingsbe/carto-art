@@ -7,7 +7,6 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { supabase } from "./db.js";
-import bcrypt from "bcryptjs";
 
 const server = new Server(
     {
@@ -20,32 +19,6 @@ const server = new Server(
         },
     }
 );
-
-async function validateAdminApiKey(apiKey: string | undefined): Promise<boolean> {
-    if (!apiKey) return false;
-    if (!apiKey.startsWith('ca_live_')) return false;
-
-    const keyPrefix = apiKey.substring(0, 16);
-
-    try {
-        const { data: keyRecord, error } = await supabase
-            .from('api_keys')
-            .select('key_hash, is_active, profiles(is_admin)')
-            .eq('key_prefix', keyPrefix)
-            .single();
-
-        if (error || !keyRecord || !keyRecord.is_active) return false;
-
-        // Check if user is admin
-        const profile = keyRecord.profiles as unknown as { is_admin: boolean } | null;
-        if (!profile?.is_admin) return false;
-
-        return await bcrypt.compare(apiKey, keyRecord.key_hash);
-    } catch (error) {
-        console.error('Auth verification error:', error);
-        return false;
-    }
-}
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
     return {
@@ -120,17 +93,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
     try {
         const { name, arguments: args } = request.params;
-
-        // AUTH CHECK
-        const mcpApiKey = process.env.MCP_API_KEY;
-        const isAuthenticated = await validateAdminApiKey(mcpApiKey);
-
-        if (!isAuthenticated) {
-            return {
-                content: [{ type: "text", text: "Error: Unauthorized. Valid Admin MCP_API_KEY required." }],
-                isError: true,
-            };
-        }
 
         if (name === "get_admin_overview") {
             const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
