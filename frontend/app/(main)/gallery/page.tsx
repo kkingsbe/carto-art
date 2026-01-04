@@ -8,12 +8,12 @@ export const metadata = {
 };
 
 interface GalleryPageProps {
-  searchParams: Promise<{ sort?: 'fresh' | 'top' }>;
+  searchParams: Promise<{ sort?: 'fresh' | 'top' | 'following' }>;
 }
 
 export default async function GalleryPage({ searchParams }: GalleryPageProps) {
   const params = await searchParams;
-  const sort = (params.sort || 'fresh') as 'fresh' | 'top';
+  const sort = (params.sort || 'fresh') as 'fresh' | 'top' | 'following';
   const stats = await getSiteStats();
 
   return (

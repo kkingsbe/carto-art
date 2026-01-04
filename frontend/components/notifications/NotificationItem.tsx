@@ -2,7 +2,7 @@
 
 import { Notification, NotificationType } from '@/lib/actions/notifications';
 import { formatDistanceToNow } from 'date-fns';
-import { UserPlus, Heart, MessageSquare, Map as MapIcon, Circle } from 'lucide-react';
+import { UserPlus, Heart, MessageSquare, Map as MapIcon, Circle, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -32,6 +32,11 @@ const typeConfig: Record<NotificationType, { icon: any, color: string, label: st
         icon: MapIcon,
         color: 'text-amber-500',
         label: 'published a new map'
+    },
+    PROFILE_VIEW: {
+        icon: Eye,
+        color: 'text-purple-500',
+        label: 'viewed your profile'
     }
 };
 
@@ -40,7 +45,7 @@ export function NotificationItem({ notification, onRead }: NotificationItemProps
     const Icon = config.icon;
     const isUnread = !notification.read_at;
 
-    const href = notification.type === 'FOLLOW'
+    const href = (notification.type === 'FOLLOW' || notification.type === 'PROFILE_VIEW')
         ? `/user/${notification.actor?.username}`
         : `/map/${notification.resource_id}`;
 

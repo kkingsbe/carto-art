@@ -13,6 +13,7 @@ export interface FeedMap {
   subtitle: string | null;
   thumbnail_url: string | null;
   vote_score: number;
+  view_count: number;
   published_at: string;
   created_at: string;
   author: {
@@ -29,14 +30,15 @@ export interface FeedMap {
 export async function getFeed(
   sort: 'fresh' | 'top' = 'fresh',
   page: number = 0,
-  limit: number = FEED_PAGE_SIZE
+  limit: number = FEED_PAGE_SIZE,
+  filter: 'all' | 'following' = 'all'
 ): Promise<FeedMap[]> {
   const supabase = await createClient();
-  
+
   // Validate and clamp pagination parameters
   page = Math.max(0, Math.min(page, FEED_MAX_PAGE));
   limit = Math.max(1, Math.min(limit, 100)); // Max 100 per page
-  
+
   // Check rate limit (use anonymous user ID if not authenticated)
   const { data: { user } } = await supabase.auth.getUser();
   const userId = user?.id || 'anonymous';
@@ -63,6 +65,7 @@ export async function getFeed(
         subtitle,
         thumbnail_url,
         vote_score,
+        view_count,
         published_at,
         created_at,
         profiles!left (
@@ -73,6 +76,30 @@ export async function getFeed(
       `)
       .eq('is_published', true)
       .not('published_at', 'is', null);
+
+    // Apply 'following' filter
+    if (filter === 'following') {
+      if (userId === 'anonymous') {
+        // Can't filter by following if not logged in
+        return [];
+      }
+      // Get IDs of people the user follows
+      const { data: follows, error: followError } = await supabase
+        .from('follows')
+        .select('following_id')
+        .eq('follower_id', userId);
+
+      if (!followError && follows) {
+        // Explicitly cast to fix 'never' inference
+        const followingIds = (follows as any[]).map(f => f.following_id);
+        if (followingIds.length > 0) {
+          query = query.in('user_id', followingIds);
+        } else {
+          // User follows no one, return empty
+          return [];
+        }
+      }
+    }
 
     // Apply sorting
     if (sort === 'fresh') {
@@ -89,10 +116,10 @@ export async function getFeed(
     if (error) {
       // Check if error is due to missing foreign key
       if (error.message?.includes('foreign key') || error.code === 'PGRST116' || error.message?.includes('relation')) {
-        logger.warn('JOIN query failed, falling back to two-query approach', { error, sort, page, limit });
-        return getFeedFallback(supabase, sort, page, limit);
+        logger.warn('JOIN query failed, falling back to two-query approach', { error, sort, page, limit, filter });
+        return getFeedFallback(supabase, sort, page, limit, filter);
       }
-      logger.error('Failed to fetch feed:', { error, sort, page, limit });
+      logger.error('Failed to fetch feed:', { error, sort, page, limit, filter });
       throw createError.databaseError(`Failed to fetch feed: ${error.message}`);
     }
 
@@ -109,6 +136,7 @@ export async function getFeed(
         subtitle: map.subtitle,
         thumbnail_url: map.thumbnail_url,
         vote_score: map.vote_score,
+        view_count: map.view_count || 0,
         published_at: map.published_at,
         created_at: map.created_at,
         author: profile ? {
@@ -125,8 +153,8 @@ export async function getFeed(
   } catch (error: any) {
     // If it's a foreign key error, try fallback
     if (error.message?.includes('foreign key') || error.code === 'PGRST116') {
-      logger.warn('JOIN query failed, falling back to two-query approach', { error, sort, page, limit });
-      return getFeedFallback(supabase, sort, page, limit);
+      logger.warn('JOIN query failed, falling back to two-query approach', { error, sort, page, limit, filter });
+      return getFeedFallback(supabase, sort, page, limit, filter);
     }
     throw error;
   }
@@ -140,14 +168,34 @@ async function getFeedFallback(
   supabase: Awaited<ReturnType<typeof createClient>>,
   sort: 'fresh' | 'top',
   page: number,
-  limit: number
+  limit: number,
+  filter: 'all' | 'following' = 'all'
 ): Promise<FeedMap[]> {
   // First, fetch the maps
   let query = supabase
     .from('maps')
-    .select('id, title, subtitle, thumbnail_url, vote_score, published_at, created_at, user_id')
+    .select('id, title, subtitle, thumbnail_url, vote_score, view_count, published_at, created_at, user_id')
     .eq('is_published', true)
     .not('published_at', 'is', null);
+
+  if (filter === 'following') {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: follows } = await supabase
+        .from('follows')
+        .select('following_id')
+        .eq('follower_id', user.id);
+
+      const followingIds = (follows as any[])?.map(f => f.following_id) || [];
+      if (followingIds.length > 0) {
+        query = query.in('user_id', followingIds);
+      } else {
+        return [];
+      }
+    } else {
+      return [];
+    }
+  }
 
   if (sort === 'fresh') {
     query = query.order('published_at', { ascending: false });
@@ -160,7 +208,7 @@ async function getFeedFallback(
   const { data: maps, error: mapsError } = await query;
 
   if (mapsError) {
-    logger.error('Failed to fetch maps in fallback:', { error: mapsError, sort, page, limit });
+    logger.error('Failed to fetch maps in fallback:', { error: mapsError, sort, page, limit, filter });
     throw createError.databaseError(`Failed to fetch feed: ${mapsError.message}`);
   }
 
@@ -196,6 +244,7 @@ async function getFeedFallback(
       subtitle: map.subtitle,
       thumbnail_url: map.thumbnail_url,
       vote_score: map.vote_score,
+      view_count: map.view_count || 0,
       published_at: map.published_at,
       created_at: map.created_at,
       author: profile ? {

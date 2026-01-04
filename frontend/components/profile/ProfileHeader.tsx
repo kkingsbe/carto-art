@@ -1,8 +1,12 @@
+'use client';
+
 import { ProfileStats, UserProfile } from '@/lib/actions/user';
 import { FollowButton } from '@/components/profile/FollowButton';
 import { Background3D } from '@/components/landing/3DBackground';
 import { Calendar, Eye, Heart, Users } from 'lucide-react';
 import Image from 'next/image';
+import { useState } from 'react';
+import { FollowListDialog } from './FollowListDialog';
 
 interface ProfileHeaderProps {
     profile: UserProfile;
@@ -11,13 +15,28 @@ interface ProfileHeaderProps {
 }
 
 export function ProfileHeader({ profile, stats, isOwnProfile }: ProfileHeaderProps) {
+    const [followDialogOpen, setFollowDialogOpen] = useState(false);
+    const [activeFollowTab, setActiveFollowTab] = useState<'followers' | 'following'>('followers');
+
     const joinDate = new Date(profile.created_at).toLocaleDateString('en-US', {
         month: 'long',
         year: 'numeric'
     });
 
+    const openFollowList = (tab: 'followers' | 'following') => {
+        setActiveFollowTab(tab);
+        setFollowDialogOpen(true);
+    };
+
     return (
         <div className="relative overflow-hidden mb-8">
+            <FollowListDialog
+                userId={profile.id}
+                open={followDialogOpen}
+                onOpenChange={setFollowDialogOpen}
+                initialTab={activeFollowTab}
+            />
+
             {/* Background Layer */}
             <div className="absolute inset-0 z-0 h-[500px] bg-gradient-to-b from-[#0a0f1a] to-[#0a0f1a]/50">
                 <Background3D />
@@ -88,7 +107,7 @@ export function ProfileHeader({ profile, stats, isOwnProfile }: ProfileHeaderPro
                                     </div>
                                     <div>
                                         <span className="block font-bold text-lg text-[#f5f0e8]">{stats.total_views.toLocaleString()}</span>
-                                        <span className="text-xs uppercase tracking-wider">Views</span>
+                                        <span className="text-xs uppercase tracking-wider">Map Views</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 group" title="Total Likes Received">
@@ -100,21 +119,36 @@ export function ProfileHeader({ profile, stats, isOwnProfile }: ProfileHeaderPro
                                         <span className="text-xs uppercase tracking-wider">Likes</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2 group">
+                                <div className="flex items-center gap-2 group" title="Total Profile Visits">
+                                    <div className="p-2 rounded-lg bg-white/5 group-hover:bg-white/10 transition-colors">
+                                        <Eye className="w-4 h-4 text-[#c9a962]" />
+                                    </div>
+                                    <div>
+                                        <span className="block font-bold text-lg text-[#f5f0e8]">{stats.profile_views.toLocaleString()}</span>
+                                        <span className="text-xs uppercase tracking-wider">Profile Views</span>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => openFollowList('followers')}
+                                    className="flex items-center gap-2 group hover:bg-white/5 -ml-2 pl-2 pr-4 rounded-lg transition-colors text-left"
+                                >
                                     <div className="p-2 rounded-lg bg-white/5 group-hover:bg-white/10 transition-colors">
                                         <Users className="w-4 h-4 text-[#c9a962]" />
                                     </div>
                                     <div>
-                                        <span className="block font-bold text-lg text-[#f5f0e8]">{stats.followers.toLocaleString()}</span>
-                                        <span className="text-xs uppercase tracking-wider">Followers</span>
+                                        <span className="block font-bold text-lg text-[#f5f0e8] group-hover:text-white transition-colors">{stats.followers.toLocaleString()}</span>
+                                        <span className="text-xs uppercase tracking-wider group-hover:text-[#c9a962] transition-colors">Followers</span>
                                     </div>
-                                </div>
-                                <div className="flex items-center gap-2 group">
-                                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5">
-                                        <span className="font-bold text-[#f5f0e8]">{stats.following.toLocaleString()}</span>
-                                        <span className="text-xs uppercase tracking-wider">Following</span>
+                                </button>
+                                <button
+                                    onClick={() => openFollowList('following')}
+                                    className="flex items-center gap-2 group hover:bg-white/5 -ml-2 pl-2 pr-4 rounded-lg transition-colors text-left"
+                                >
+                                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 group-hover:bg-white/10 transition-colors">
+                                        <span className="font-bold text-[#f5f0e8] group-hover:text-white transition-colors">{stats.following.toLocaleString()}</span>
+                                        <span className="text-xs uppercase tracking-wider group-hover:text-[#c9a962] transition-colors">Following</span>
                                     </div>
-                                </div>
+                                </button>
                             </div>
 
                             <div className="mt-6 flex flex-wrap gap-y-2 gap-x-6 text-xs text-[#d4cfc4]/40 font-mono">

@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { formatDistanceToNow } from 'date-fns';
 
 interface TimeDisplayProps {
     date: string | Date;
-    format?: 'time' | 'datetime';
+    format?: 'time' | 'datetime' | 'relative';
     className?: string;
 }
 
@@ -21,9 +22,23 @@ export function TimeDisplay({ date, format = 'time', className }: TimeDisplayPro
     }
 
     const d = new Date(date);
+    let content;
+
+    switch (format) {
+        case 'relative':
+            content = formatDistanceToNow(d, { addSuffix: true });
+            break;
+        case 'datetime':
+            content = d.toLocaleString();
+            break;
+        case 'time':
+        default:
+            content = d.toLocaleTimeString();
+    }
+
     return (
         <span className={className}>
-            {format === 'time' ? d.toLocaleTimeString() : d.toLocaleString()}
+            {content}
         </span>
     );
 }

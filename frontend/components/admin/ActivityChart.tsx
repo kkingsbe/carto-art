@@ -26,6 +26,7 @@ const METRICS = [
     { id: 'page_view', label: 'Views', color: '#10b981' },
     { id: 'poster_export', label: 'Exports', color: '#f59e0b' },
     { id: 'api_request', label: 'API Requests', color: '#06b6d4' },
+    { id: 'total_users', label: 'Total Users', color: '#8b5cf6' },
     { id: 'search_location', label: 'Searches', color: '#8b5cf6' },
     { id: 'style_change', label: 'Styles', color: '#ec4899' },
     { id: 'generation_latency', label: 'Generation Latency', color: '#ef4444' },
@@ -126,9 +127,28 @@ export function ActivityChart() {
             )
             .subscribe();
 
+        const profilesChannel = supabase
+            .channel('profiles_activity')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'profiles'
+                },
+                async () => {
+                    if (selectedType === 'all' || selectedType === 'total_users') {
+                        console.log('ActivityChart: New profile detected, refetching data');
+                        await fetchData(false);
+                    }
+                }
+            )
+            .subscribe();
+
         return () => {
             supabase.removeChannel(pageEventsChannel);
             supabase.removeChannel(apiUsageChannel);
+            supabase.removeChannel(profilesChannel);
         };
     }, [selectedType, selectedDays]);
 
@@ -249,7 +269,8 @@ export function ActivityChart() {
                                     if (isLatencyMetric) {
                                         return [`${value} ms`, 'Avg Latency'];
                                     }
-                                    return [value, 'Count'];
+                                    const label = METRICS.find(m => m.id === selectedType)?.label || 'Count';
+                                    return [value, label];
                                 }}
                             />
                             <Area

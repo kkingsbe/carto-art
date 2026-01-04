@@ -6,6 +6,8 @@ import { ProfileMapsGrid } from '@/components/profile/ProfileMapsGrid';
 import { Star } from 'lucide-react';
 import { deserializeMapConfig } from '@/lib/supabase/maps'; // Need to expose this or reimplement? It's exported from actions/maps usually but better from utils
 import { getUserMaps } from '@/lib/actions/maps'; // We'll need a different function for "get public maps by user"
+import { ProfileViewTracker } from '@/components/analytics/ProfileViewTracker';
+import { ViewTracker } from '@/components/analytics/ViewTracker';
 
 // Helper to fetch public maps for a user
 async function getPublicMaps(userId: string) {
@@ -63,6 +65,8 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
+            <ViewTracker type="profile" id={profile.id} />
+            <ProfileViewTracker targetUserId={profile.id} />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <ProfileHeader
                     profile={profile}
@@ -76,7 +80,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                             <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
                             Featured Maps
                         </h2>
-                        <ProfileMapsGrid maps={sortedFeaturedMaps} />
+                        <ProfileMapsGrid maps={sortedFeaturedMaps} profile={profile} />
                     </div>
                 )}
 
@@ -84,7 +88,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
                         All Maps
                     </h2>
-                    <ProfileMapsGrid maps={normalMaps.length > 0 ? normalMaps : (sortedFeaturedMaps.length > 0 ? [] : maps)} />
+                    <ProfileMapsGrid maps={normalMaps.length > 0 ? normalMaps : (sortedFeaturedMaps.length > 0 ? [] : maps)} profile={profile} />
                 </div>
             </div>
         </div>

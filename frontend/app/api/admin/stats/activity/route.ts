@@ -52,6 +52,13 @@ export async function GET(request: NextRequest) {
                 .gte('created_at', startDate.toISOString())
                 .order('created_at', { ascending: true })
                 .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+        } else if (eventType === 'user_signup' || eventType === 'total_users') {
+            query = supabase
+                .from('profiles')
+                .select('created_at')
+                .gte('created_at', startDate.toISOString())
+                .order('created_at', { ascending: true })
+                .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
         } else {
             query = supabase
                 .from('page_events')
@@ -144,6 +151,20 @@ export async function GET(request: NextRequest) {
     const result = Object.entries(counts)
         .map(([date, count]) => ({ date, count }))
         .sort((a, b) => a.date.localeCompare(b.date));
+
+    if (eventType === 'total_users') {
+        const { count: initialCount } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .lt('created_at', startDate.toISOString());
+
+        let runningTotal = initialCount || 0;
+
+        for (const point of result) {
+            runningTotal += point.count;
+            point.count = runningTotal;
+        }
+    }
 
     return NextResponse.json(result);
 }

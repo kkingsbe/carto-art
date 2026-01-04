@@ -7,7 +7,7 @@ import { useInfiniteFeed } from '@/hooks/useInfiniteFeed';
 import { Loader2 } from 'lucide-react';
 
 interface FeedClientProps {
-  initialSort: 'fresh' | 'top';
+  initialSort: 'fresh' | 'top' | 'following';
 }
 
 export function FeedClient({ initialSort }: FeedClientProps) {
@@ -40,7 +40,7 @@ export function FeedClient({ initialSort }: FeedClientProps) {
   return (
     <>
       <FeedFilters currentSort={initialSort} />
-      
+
       {error && (
         <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
           <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
@@ -54,7 +54,7 @@ export function FeedClient({ initialSort }: FeedClientProps) {
       ) : (
         <>
           <MapGrid maps={maps} />
-          
+
           {/* Sentinel element for infinite scroll */}
           <div ref={sentinelRef} className="h-10 flex items-center justify-center">
             {loading && (

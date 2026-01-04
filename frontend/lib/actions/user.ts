@@ -13,6 +13,7 @@ export interface UserProfile {
     avatar_url: string | null;
     featured_map_ids: string[] | null;
     created_at: string;
+    view_count: number;
 }
 
 export interface ProfileStats {
@@ -21,6 +22,7 @@ export interface ProfileStats {
     total_views: number;
     total_likes: number;
     is_following: boolean; // Relative to current user
+    profile_views: number;
 }
 
 /**
@@ -56,7 +58,8 @@ export async function getProfileStats(targetUserId: string): Promise<ProfileStat
         followersCount,
         followingCount,
         isFollowing,
-        mapsStats
+        mapsStats,
+        profileStats
     ] = await Promise.all([
         // Count followers
         supabase.from('follows').select('follower_id', { count: 'exact', head: true }).eq('following_id', targetUserId),
@@ -65,21 +68,26 @@ export async function getProfileStats(targetUserId: string): Promise<ProfileStat
         // Check if current user is following target (if logged in)
         user ? supabase.from('follows').select('follower_id').eq('follower_id', user.id).eq('following_id', targetUserId).single() : Promise.resolve({ data: null, error: null }),
         // Sum views and votes (likes)
-        supabase.from('maps').select('view_count, vote_score').eq('user_id', targetUserId).eq('is_published', true)
+        supabase.from('maps').select('view_count, vote_score').eq('user_id', targetUserId).eq('is_published', true),
+        // Get profile views
+        supabase.from('profiles').select('view_count').eq('id', targetUserId).single()
     ]);
 
     type MapStats = Pick<Database['public']['Tables']['maps']['Row'], 'view_count' | 'vote_score'>;
     const mapsData = (mapsStats.data || []) as MapStats[];
-    
-    const totalViews = mapsData.reduce((acc, map) => acc + (map.view_count || 0), 0);
+
+    // Sum of views on all maps
+    const totalMapViews = mapsData.reduce((acc, map) => acc + (map.view_count || 0), 0);
     const totalLikes = mapsData.reduce((acc, map) => acc + (map.vote_score || 0), 0);
+    const profileViews = (profileStats.data as any)?.view_count || 0;
 
     return {
         followers: followersCount.count || 0,
         following: followingCount.count || 0,
         is_following: !!isFollowing.data,
-        total_views: totalViews,
+        total_views: totalMapViews,
         total_likes: totalLikes,
+        profile_views: profileViews
     };
 }
 
@@ -182,4 +190,116 @@ export async function updateFeaturedMaps(mapIds: string[]) {
 
     revalidatePath('/profile');
     revalidatePath('/user/[username]');
+}
+
+export interface SocialProfile {
+    id: string;
+    username: string;
+    display_name: string | null;
+    avatar_url: string | null;
+    is_following: boolean; // Context of current user
+}
+
+/**
+ * Get users following a specific user
+ */
+export async function getFollowers(userId: string, page = 0, limit = 20): Promise<SocialProfile[]> {
+    const supabase = await createClient();
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+
+    const { data, error } = await supabase
+        .from('follows')
+        .select(`
+            follower:profiles!follows_follower_id_fkey (
+                id,
+                username,
+                display_name,
+                avatar_url
+            ),
+            created_at
+        `)
+        .eq('following_id', userId)
+        .range(page * limit, (page + 1) * limit - 1)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        logger.error('Failed to fetch followers:', error);
+        throw createError.databaseError('Failed to fetch followers');
+    }
+
+    const profiles = data.map((d: any) => d.follower);
+
+    // If logged in, check which of these profiles the current user is following
+    if (currentUser && profiles.length > 0) {
+        const profileIds = profiles.map((p: any) => p.id);
+        const { data: followingData } = await supabase
+            .from('follows')
+            .select('following_id')
+            .eq('follower_id', currentUser.id)
+            .in('following_id', profileIds);
+
+        const followingSet = new Set(followingData?.map((f: any) => f.following_id) || []);
+
+        return profiles.map((p: any) => ({
+            ...p,
+            is_following: followingSet.has(p.id)
+        }));
+    }
+
+    return profiles.map((p: any) => ({
+        ...p,
+        is_following: false
+    }));
+}
+
+/**
+ * Get users a specific user is following
+ */
+export async function getFollowing(userId: string, page = 0, limit = 20): Promise<SocialProfile[]> {
+    const supabase = await createClient();
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+
+    const { data, error } = await supabase
+        .from('follows')
+        .select(`
+            following:profiles!follows_following_id_fkey (
+                id,
+                username,
+                display_name,
+                avatar_url
+            ),
+            created_at
+        `)
+        .eq('follower_id', userId)
+        .range(page * limit, (page + 1) * limit - 1)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        logger.error('Failed to fetch following:', error);
+        throw createError.databaseError('Failed to fetch following users');
+    }
+
+    const profiles = data.map((d: any) => d.following);
+
+    // If logged in, check which of these profiles the current user is following
+    if (currentUser && profiles.length > 0) {
+        const profileIds = profiles.map((p: any) => p.id);
+        const { data: followingData } = await supabase
+            .from('follows')
+            .select('following_id')
+            .eq('follower_id', currentUser.id)
+            .in('following_id', profileIds);
+
+        const followingSet = new Set(followingData?.map((f: any) => f.following_id) || []);
+
+        return profiles.map((p: any) => ({
+            ...p,
+            is_following: followingSet.has(p.id)
+        }));
+    }
+
+    return profiles.map((p: any) => ({
+        ...p,
+        is_following: false
+    }));
 }

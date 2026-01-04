@@ -1,8 +1,14 @@
 -- Create notification_type enum if it doesn't exist
 DO $$ BEGIN
-    CREATE TYPE public.notification_type AS ENUM ('FOLLOW', 'MAP_POST', 'COMMENT', 'LIKE');
+    -- Check if enum type exists, if so we need to add value if not present
+    -- PostgreSQL doesn't support IF NOT EXISTS for ADD VALUE perfectly in all versions inside blocks easy without playing games
+    -- But since this is a migration file that runs once, we can just try to alter it
+    ALTER TYPE public.notification_type ADD VALUE IF NOT EXISTS 'PROFILE_VIEW';
 EXCEPTION
     WHEN duplicate_object THEN null;
+    -- If the type itself doesn't exist (running from scratch), CREATE it
+    WHEN undefined_object THEN
+        CREATE TYPE public.notification_type AS ENUM ('FOLLOW', 'MAP_POST', 'COMMENT', 'LIKE', 'PROFILE_VIEW');
 END $$;
 
 -- Create notifications table

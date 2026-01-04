@@ -4,6 +4,7 @@ import { getMapById } from '@/lib/actions/maps';
 import { getComments } from '@/lib/actions/comments';
 import { getUserVote } from '@/lib/actions/votes';
 import { MapDetailView } from '@/components/map/MapDetailView';
+import { ViewTracker } from '@/components/analytics/ViewTracker';
 import type { PosterConfig } from '@/types/poster';
 
 interface MapDetailPageProps {
@@ -15,13 +16,13 @@ export const dynamic = 'force-dynamic';
 export default async function MapDetailPage({ params }: MapDetailPageProps) {
   const { id } = await params;
   const supabase = await createClient();
-  
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   const map = await getMapById(id);
-  
+
   if (!map) {
     notFound();
   }
@@ -37,12 +38,15 @@ export default async function MapDetailPage({ params }: MapDetailPageProps) {
   ]);
 
   return (
-    <MapDetailView
-      map={map}
-      comments={comments}
-      userVote={userVote}
-      isOwner={user?.id === map.user_id}
-    />
+    <div className="relative">
+      <ViewTracker type="map" id={id} />
+      <MapDetailView
+        map={map}
+        comments={comments}
+        userVote={userVote}
+        isOwner={user?.id === map.user_id}
+      />
+    </div>
   );
 }
 

@@ -2,10 +2,10 @@
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Clock, TrendingUp } from 'lucide-react';
+import { Clock, TrendingUp, Users } from 'lucide-react';
 
 interface FeedFiltersProps {
-  currentSort: 'fresh' | 'top';
+  currentSort: 'fresh' | 'top' | 'following';
 }
 
 export function FeedFilters({ currentSort }: FeedFiltersProps) {
@@ -37,6 +37,13 @@ export function FeedFilters({ currentSort }: FeedFiltersProps) {
             >
               <TrendingUp className="w-4 h-4 mr-2" />
               Top Rated
+            </TabsTrigger>
+            <TabsTrigger
+              value="following"
+              className="px-6 py-2.5 rounded-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#c9a962] data-[state=active]:to-[#b87333] data-[state=active]:text-[#0a0f1a] data-[state=active]:font-bold text-[#d4cfc4] hover:text-[#f5f0e8] transition-all duration-300"
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Following
             </TabsTrigger>
           </TabsList>
         </Tabs>

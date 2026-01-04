@@ -5,7 +5,7 @@ import { createError } from '@/lib/errors/ServerActionError';
 import { logger } from '@/lib/logger';
 import { revalidatePath } from 'next/cache';
 
-export type NotificationType = 'FOLLOW' | 'MAP_POST' | 'COMMENT' | 'LIKE';
+export type NotificationType = 'FOLLOW' | 'MAP_POST' | 'COMMENT' | 'LIKE' | 'PROFILE_VIEW';
 
 export interface Notification {
     id: string;

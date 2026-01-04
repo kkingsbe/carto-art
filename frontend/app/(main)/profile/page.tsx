@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getUserMaps, deleteMap, publishMap, unpublishMap } from '@/lib/actions/maps';
-import { getProfileStats } from '@/lib/actions/user';
+import { getProfileStats, type UserProfile } from '@/lib/actions/user';
 import { MyMapsList } from '@/components/profile/MyMapsList';
 import { ProfileHeader } from '@/components/profile/ProfileHeader';
 import { FeaturedMapsEditor } from '@/components/profile/FeaturedMapsEditor';
@@ -41,7 +41,7 @@ export default async function ProfilePage() {
   }
 
   // TypeScript needs explicit typing for profile after null check
-  const typedProfile: Profile = profile;
+  const typedProfile = profile as unknown as UserProfile;
 
   const [maps, stats] = await Promise.all([
     getUserMaps(),
@@ -63,8 +63,8 @@ export default async function ProfilePage() {
             <div className="lg:col-span-2 space-y-8">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">my maps</h2>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">Manage your saved designs</p>
+                  <h2 className="text-2xl font-bold text-[#f5f0e8]">my maps</h2>
+                  <p className="text-[#d4cfc4] text-sm">Manage your saved designs</p>
                 </div>
                 <a
                   href={`/user/${typedProfile.username}`}

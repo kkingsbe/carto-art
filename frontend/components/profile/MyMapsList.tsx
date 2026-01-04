@@ -37,6 +37,7 @@ function toFeedMap(map: SavedMap, author: MyMapsListProps['userProfile']): FeedM
     subtitle: map.subtitle,
     thumbnail_url: map.thumbnail_url,
     vote_score: map.vote_score,
+    view_count: map.view_count || 0,
     published_at: map.published_at || map.created_at,
     created_at: map.created_at,
     author: {
@@ -129,52 +130,45 @@ export function MyMapsList({ maps, userProfile, onDelete, onPublish, onUnpublish
               key={map.id}
               map={toFeedMap(map, userProfile)}
               actionSlot={
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center gap-3">
                   {map.is_published ? (
-                    <>
-                      <Link href={`/map/${map.id}`} className="flex-1">
-                        <Button variant="outline" size="sm" className="w-full border-white/20 bg-white/5 hover:bg-white/10 text-[#f5f0e8]">
-                          <Eye className="w-4 h-4 mr-2" />
-                          View
-                        </Button>
-                      </Link>
+                    <div className="flex-1 flex gap-2">
                       <Button
                         variant="outline"
-                        size="sm"
                         onClick={() => handleUnpublish(map.id)}
                         disabled={publishingId === map.id}
-                        className="border-white/20 bg-white/5 hover:bg-white/10 text-[#f5f0e8]"
+                        className="flex-1 border-white/20 bg-white/5 hover:bg-white/10 text-[#f5f0e8] h-10 rounded-xl"
                       >
-                        <EyeOff className="w-4 h-4" />
+                        <EyeOff className="w-4 h-4 mr-2" />
+                        Unpublish
                       </Button>
-                    </>
+                    </div>
                   ) : (
-                    <>
+                    <div className="flex-1 flex gap-2">
                       <Link href={`/editor?mapId=${map.id}`} className="flex-1">
-                        <Button variant="outline" size="sm" className="w-full border-white/20 bg-white/5 hover:bg-white/10 text-[#f5f0e8]">
+                        <Button variant="outline" className="w-full border-white/20 bg-white/5 hover:bg-white/10 text-[#f5f0e8] h-10 rounded-xl font-semibold">
                           <Edit className="w-4 h-4 mr-2" />
                           Edit
                         </Button>
                       </Link>
                       <Button
                         variant="default"
-                        size="sm"
                         onClick={() => handlePublishClick(map)}
                         disabled={publishingId === map.id}
-                        className="bg-[#c9a962] text-[#0a0f1a] hover:bg-[#d4b472] border-none font-bold"
+                        className="flex-1 bg-[#c9a962] text-[#0a0f1a] hover:bg-[#d4b472] border-none font-bold h-10 rounded-xl"
                       >
-                        {publishingId === map.id ? 'Publishing...' : 'Publish'}
+                        {publishingId === map.id ? '...' : 'Publish'}
                       </Button>
-                    </>
+                    </div>
                   )}
                   <Button
                     variant="ghost"
-                    size="sm"
+                    size="icon"
                     onClick={() => handleDelete(map.id)}
                     disabled={deletingId === map.id}
-                    className="hover:bg-red-500/20 hover:text-red-400 text-[#d4cfc4]/50"
+                    className="w-10 h-10 rounded-xl hover:bg-red-500/20 hover:text-red-400 text-[#d4cfc4]/30"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-5 h-5" />
                   </Button>
                 </div>
               }

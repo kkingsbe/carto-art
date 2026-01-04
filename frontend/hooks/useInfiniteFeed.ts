@@ -7,7 +7,7 @@ import type { FeedMap } from '@/lib/actions/feed';
 const INITIAL_PAGE = 0;
 const PAGE_SIZE = 24;
 
-export function useInfiniteFeed(sort: 'fresh' | 'top') {
+export function useInfiniteFeed(sortParameter: 'fresh' | 'top' | 'following') {
   const [maps, setMaps] = useState<FeedMap[]>([]);
   const [page, setPage] = useState(INITIAL_PAGE);
   const [hasMore, setHasMore] = useState(true);
@@ -15,12 +15,12 @@ export function useInfiniteFeed(sort: 'fresh' | 'top') {
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const pageRef = useRef(INITIAL_PAGE);
-  const sortRef = useRef(sort);
+  const sortRef = useRef(sortParameter);
 
   // Update refs when values change
   useEffect(() => {
-    sortRef.current = sort;
-  }, [sort]);
+    sortRef.current = sortParameter;
+  }, [sortParameter]);
 
   const loadMore = useCallback(async () => {
     if (loading || !hasMore) return;
@@ -30,9 +30,21 @@ export function useInfiniteFeed(sort: 'fresh' | 'top') {
 
     try {
       const currentPage = pageRef.current;
-      const currentSort = sortRef.current;
-      const newMaps = await getFeed(currentSort, currentPage, PAGE_SIZE);
-      
+      const currentSortParam = sortRef.current;
+
+      // Map the UI sort parameter to API args
+      let apiSort: 'fresh' | 'top' = 'fresh';
+      let apiFilter: 'all' | 'following' = 'all';
+
+      if (currentSortParam === 'following') {
+        apiSort = 'fresh';
+        apiFilter = 'following';
+      } else {
+        apiSort = currentSortParam;
+      }
+
+      const newMaps = await getFeed(apiSort, currentPage, PAGE_SIZE, apiFilter);
+
       if (newMaps.length === 0) {
         setHasMore(false);
       } else {
@@ -42,13 +54,13 @@ export function useInfiniteFeed(sort: 'fresh' | 'top') {
           const uniqueNewMaps = newMaps.filter(m => !existingIds.has(m.id));
           return [...prev, ...uniqueNewMaps];
         });
-        
+
         // If we got fewer than PAGE_SIZE, there are no more
         if (newMaps.length < PAGE_SIZE) {
           setHasMore(false);
         }
       }
-      
+
       pageRef.current = currentPage + 1;
       setPage(currentPage + 1);
     } catch (err: any) {
@@ -77,7 +89,10 @@ export function useInfiniteFeed(sort: 'fresh' | 'top') {
     setHasMore(true);
     setError(null);
     setInitialLoading(true);
-  }, [sort]);
+    setHasMore(true);
+    setError(null);
+    setInitialLoading(true);
+  }, [sortParameter]);
 
   // Load initial page
   useEffect(() => {

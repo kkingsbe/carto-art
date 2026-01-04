@@ -46,11 +46,12 @@ export default async function AdminDashboardPage() {
                 *,
                 profiles:user_id (
                     username,
-                    display_name
+                    display_name,
+                    avatar_url
                 )
             `)
             .order('created_at', { ascending: false })
-            .limit(5)
+            .limit(20)
     ]);
 
     return (
