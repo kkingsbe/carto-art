@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET() {
     try {
         await ensureAdmin();
-        const supabase = await createClient();
+        const supabase: any = await createClient();
         const { data: vistas, error } = await supabase
             .from('vistas')
             .select('*')
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     try {
         await ensureAdmin();
         const body = await req.json();
-        const supabase = await createClient();
+        const supabase: any = await createClient();
 
         // Get the max display_order to put new vista at end
         const { data: maxOrder } = await supabase
@@ -57,7 +57,7 @@ export async function PATCH(req: NextRequest) {
         await ensureAdmin();
         const body = await req.json();
         const { id, ...updates } = body;
-        const supabase = await createClient();
+        const supabase: any = await createClient();
 
         const { data: vista, error } = await supabase
             .from('vistas')
@@ -83,7 +83,7 @@ export async function DELETE(req: NextRequest) {
             return NextResponse.json({ error: 'Vista ID required' }, { status: 400 });
         }
 
-        const supabase = await createClient();
+        const supabase: any = await createClient();
         const { error } = await supabase
             .from('vistas')
             .delete()

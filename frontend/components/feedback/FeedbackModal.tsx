@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { FeedbackStarRating } from './FeedbackStarRating';
 import { FeedbackNPS } from './FeedbackNPS';
 import { FeedbackCheckboxGroup } from './FeedbackCheckboxGroup';
@@ -108,30 +110,48 @@ export function FeedbackModal({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div
+            className={cn(
+                "fixed inset-0 z-[100] flex items-end md:items-center justify-center",
+                "animate-in fade-in duration-200",
+                "p-0 md:p-4"
+            )}
+        >
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300"
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
                 onClick={() => onDismiss(false)}
             />
 
             {/* Modal */}
-            <div className="
-        relative w-full max-w-md
-        bg-white dark:bg-gray-900
-        rounded-t-2xl sm:rounded-2xl shadow-2xl
-        animate-in slide-in-from-bottom sm:zoom-in-95 duration-300
-        max-h-[85vh] overflow-hidden
-        flex flex-col
-        pb-safe
-      ">
+            <div
+                className={cn(
+                    "relative w-full max-w-md flex flex-col z-10",
+                    "bg-white dark:bg-gray-900",
+                    "shadow-2xl shadow-blue-500/10",
+                    "border border-gray-200 dark:border-gray-800",
+                    "rounded-t-2xl md:rounded-2xl overflow-hidden",
+                    "animate-in slide-in-from-bottom md:zoom-in-95 duration-300 transform",
+                    "pb-safe",
+                    "max-h-[85vh]"
+                )}
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Header with Close Button */}
+                <div className="absolute top-4 right-4 z-20">
+                    <button
+                        onClick={() => onDismiss(false)}
+                        className="p-2 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+                        aria-label="Close"
+                    >
+                        <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                    </button>
+                </div>
+
                 {/* Gradient header */}
-                <div className="
-          bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500
-          p-6 text-white relative overflow-hidden
-        ">
-                    <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10" />
-                    <div className="relative">
+                <div className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 p-6 text-white relative overflow-hidden shrink-0">
+                    <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay" />
+                    <div className="relative z-10">
                         <h2 className="text-xl font-semibold flex items-center gap-2">
                             <span>✨</span>
                             {showThankYou ? 'Thank you!' : "How's your experience?"}
@@ -142,21 +162,10 @@ export function FeedbackModal({
                             </p>
                         )}
                     </div>
-
-                    {/* Close button */}
-                    <button
-                        onClick={() => onDismiss(false)}
-                        className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/20 transition-colors"
-                        aria-label="Close"
-                    >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto overscroll-contain p-6">
                     {showThankYou ? (
                         <div className="text-center py-8 animate-in zoom-in-50 duration-300">
                             <div className="text-6xl mb-4">🎉</div>

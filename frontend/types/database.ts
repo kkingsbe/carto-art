@@ -537,6 +537,41 @@ export interface Database {
           shipping_country?: string | null;
         };
       };
+      vistas: {
+        Row: {
+          id: string;
+          name: string;
+          description: string | null;
+          location: Json;
+          enabled: boolean;
+          display_order: number;
+          thumbnail_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          description?: string | null;
+          location: Json;
+          enabled?: boolean;
+          display_order?: number;
+          thumbnail_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          description?: string | null;
+          location?: Json;
+          enabled?: boolean;
+          display_order?: number;
+          thumbnail_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;
