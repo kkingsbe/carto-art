@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe/client';
 import { z } from 'zod';
+import type { Database } from '@/types/database';
 
 // Define product prices (could be moved to DB or config)
 const PRICES: Record<number, number> = {
@@ -72,7 +73,8 @@ export async function POST(request: Request) {
         });
 
         // Create Order Record
-        const { error: dbError } = await supabase.from('orders').insert({
+        type OrdersInsert = Database['public']['Tables']['orders']['Insert'];
+        const orderData: OrdersInsert = {
             user_id: user.id,
             stripe_payment_intent_id: paymentIntent.id,
             amount_total: amount,
@@ -84,12 +86,13 @@ export async function POST(request: Request) {
             // Shipping Snapshot
             shipping_name: shipping.name,
             shipping_address_line1: shipping.address.line1,
-            shipping_address_line2: shipping.address.line2,
+            shipping_address_line2: shipping.address.line2 ?? null,
             shipping_city: shipping.address.city,
             shipping_state: shipping.address.state,
             shipping_zip: shipping.address.postal_code,
             shipping_country: shipping.address.country,
-        });
+        };
+        const { error: dbError } = await supabase.from('orders').insert(orderData);
 
         if (dbError) {
             console.error("DB Error", dbError);
