@@ -80,6 +80,16 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
 
   try {
     // Initialize export map
+    // Calculate the scale factor by comparing the export inner width to the preview inner width
+    const containerWidth = previewMap.getContainer().clientWidth;
+    const mapExportScale = drawWidth / containerWidth;
+
+    // Size the container to match the TARGET CSS dimensions (preview-like dimensions)
+    // The MapLibre pixelRatio will handle the upscaling to the full canvas size
+    hiddenContainer.style.width = `${drawWidth / mapExportScale}px`;
+    hiddenContainer.style.height = `${drawHeight / mapExportScale}px`;
+
+    // Initialize export map
     exportMap = new maplibregl.Map({
       container: hiddenContainer,
       style: originalStyle as any,
@@ -87,19 +97,13 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
       attributionControl: false,
       preserveDrawingBuffer: true,
       fadeDuration: 0,
+      pixelRatio: mapExportScale, // Use pixelRatio for resolution scaling instead of zoom
     });
 
-    // Calculate the scale factor by comparing the export inner width to the preview inner width
-    const containerWidth = previewMap.getContainer().clientWidth;
-    const mapExportScale = drawWidth / containerWidth;
-
-    // Calculate zoom offset
-    const zoomOffset = Math.log2(mapExportScale);
-
-    // Apply explicit state (No fitBounds due to pitch skewing bounds)
+    // Apply explicit state without zoom offset
     exportMap.jumpTo({
       center: originalCenter,
-      zoom: (originalZoom || 0) + zoomOffset,
+      zoom: originalZoom || 0,
       pitch: originalPitch,
       bearing: originalBearing
     });
@@ -162,7 +166,7 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
     exportCtx.restore();
 
     // 5. DRAW MARKER
-    if (config.layers.marker) {
+    if (config.layers.marker !== false) {
       const markerX = marginPx + drawWidth / 2;
       const markerY = marginPx + drawHeight / 2;
       const markerSize = exportResolution.width * 0.045;

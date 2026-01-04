@@ -24,6 +24,12 @@ export interface Database {
           created_at: string;
           updated_at: string;
           is_admin: boolean;
+          last_active_at: string | null;
+          first_map_at: string | null;
+          first_export_at: string | null;
+          first_publish_at: string | null;
+          first_view_editor_at: string | null;
+          acquisition_source: string | null;
         };
         Insert: {
           id: string;
@@ -34,6 +40,12 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
           is_admin?: boolean;
+          last_active_at?: string | null;
+          first_map_at?: string | null;
+          first_export_at?: string | null;
+          first_publish_at?: string | null;
+          first_view_editor_at?: string | null;
+          acquisition_source?: string | null;
         };
         Update: {
           id?: string;
@@ -44,6 +56,12 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
           is_admin?: boolean;
+          last_active_at?: string | null;
+          first_map_at?: string | null;
+          first_export_at?: string | null;
+          first_publish_at?: string | null;
+          first_view_editor_at?: string | null;
+          acquisition_source?: string | null;
         };
       };
       maps: {

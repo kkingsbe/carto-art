@@ -49,10 +49,20 @@ export function ActivityChart() {
     const supabase = createClient();
 
     useEffect(() => {
+        let abortController: AbortController | null = null;
+        let debounceTimer: NodeJS.Timeout | null = null;
+
         const fetchData = async (showLoading = true) => {
+            // Cancel any pending request
+            if (abortController) {
+                abortController.abort();
+            }
+            abortController = new AbortController();
+
             if (showLoading) {
                 setIsLoading(true);
             }
+
             try {
                 // Determine if this is a latency metric
                 const isLatencyMetric = selectedType === 'generation_latency' || selectedType === 'search_latency';
@@ -61,25 +71,48 @@ export function ActivityChart() {
                 if (isLatencyMetric) {
                     // Map to API type
                     const latencyType = selectedType === 'generation_latency' ? 'generation' : 'search';
-                    res = await fetch(`/api/admin/stats/latency?type=${latencyType}&days=${selectedDays}`);
+                    res = await fetch(`/api/admin/stats/latency?type=${latencyType}&days=${selectedDays}`, {
+                        signal: abortController.signal
+                    });
                 } else {
-                    res = await fetch(`/api/admin/stats/activity?type=${selectedType}&days=${selectedDays}`);
+                    res = await fetch(`/api/admin/stats/activity?type=${selectedType}&days=${selectedDays}`, {
+                        signal: abortController.signal
+                    });
                 }
 
                 if (res.ok) {
                     const stats = await res.json();
                     setData(stats);
                 }
-            } catch (err) {
+            } catch (err: any) {
+                if (err.name === 'AbortError') {
+                    // Ignore abort errors
+                    return;
+                }
                 console.error('Failed to fetch activity stats');
             } finally {
-                if (showLoading) {
+                // Only unset loading if this was the last request (not aborted)
+                // However, since we define 'abortController' in local scope of effect, 
+                // we need to be careful. Check signal.
+                if (showLoading && abortController && !abortController.signal.aborted) {
                     setIsLoading(false);
                 }
             }
         };
 
+        // Initial fetch
         fetchData();
+
+        // Debounced refetch function
+        const debouncedRefetch = () => {
+            if (debounceTimer) {
+                clearTimeout(debounceTimer);
+            }
+            debounceTimer = setTimeout(() => {
+                console.log('ActivityChart: Debounced refetch executing');
+                fetchData(false);
+            }, 1000); // Wait 1s of silence before refetching
+        };
 
         // Set up realtime subscriptions
         const pageEventsChannel = supabase
@@ -99,8 +132,8 @@ export function ActivityChart() {
                     const isUiGenerationLatency = selectedType === 'generation_latency' && payload.new.event_type === 'poster_export';
 
                     if (isRelevantEvent || isUiGenerationLatency) {
-                        console.log('ActivityChart: New page event detected, refetching data');
-                        await fetchData(false);
+                        // console.log('ActivityChart: New page event detected, scheduling refetch');
+                        debouncedRefetch();
                     }
                 }
             )
@@ -116,12 +149,9 @@ export function ActivityChart() {
                     table: 'api_usage'
                 },
                 async () => {
-                    // Refetch if viewing generation latency or 'all' (if 'all' includes API usage)
-                    // In current implementation 'all' comes from page_events, but generation_latency 
-                    // comes from api_usage.
                     if (selectedType === 'all' || selectedType === 'generation_latency') {
-                        console.log('ActivityChart: New API usage detected, refetching data');
-                        await fetchData(false);
+                        // console.log('ActivityChart: New API usage detected, scheduling refetch');
+                        debouncedRefetch();
                     }
                 }
             )
@@ -138,14 +168,16 @@ export function ActivityChart() {
                 },
                 async () => {
                     if (selectedType === 'all' || selectedType === 'total_users') {
-                        console.log('ActivityChart: New profile detected, refetching data');
-                        await fetchData(false);
+                        // console.log('ActivityChart: New profile detected, scheduling refetch');
+                        debouncedRefetch();
                     }
                 }
             )
             .subscribe();
 
         return () => {
+            if (abortController) abortController.abort();
+            if (debounceTimer) clearTimeout(debounceTimer);
             supabase.removeChannel(pageEventsChannel);
             supabase.removeChannel(apiUsageChannel);
             supabase.removeChannel(profilesChannel);
