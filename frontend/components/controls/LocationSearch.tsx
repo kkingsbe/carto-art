@@ -155,7 +155,7 @@ export function LocationSearch({ onLocationSelect, currentLocation }: LocationSe
     } finally {
       if (seq === requestSeq.current) setIsLoading(false);
     }
-  }, [close]);
+  }, [close, currentLocation]);
 
   // Sync query with currentLocation when it changes externally
   useEffect(() => {

@@ -56,6 +56,9 @@ export async function reverseGeocode(
   const resp = await fetch(`/api/geocode?${params.toString()}`, { signal });
 
   if (!resp.ok) {
+    if (resp.status === 404) {
+      return null;
+    }
     let errorDetail = '';
     try {
       const errorJson = await resp.json();

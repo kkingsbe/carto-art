@@ -62,6 +62,11 @@ export async function searchLocation(
                 throw createError.rateLimitExceeded('Geocoding rate limit exceeded');
             }
 
+            // LocationIQ returns 404 if no results found - treat as empty array
+            if (resp.status === 404) {
+                return [];
+            }
+
             const errorText = await resp.text().catch(() => 'Unknown error');
             logger.error('LocationIQ search failed', { status: resp.status, error: errorText });
             throw createError.internalError(`Geocoding failed: ${resp.status}`);
@@ -109,6 +114,10 @@ export async function reverseGeocode(
         const resp = await fetch(`https://us1.locationiq.com/v1/reverse.php?${params.toString()}`, { signal });
 
         if (!resp.ok) {
+            // "Unable to geocode" usually returns 404 or 400
+            if (resp.status === 404 || resp.status === 400) {
+                return null;
+            }
             if (resp.status === 429) {
                 throw createError.rateLimitExceeded('Geocoding rate limit exceeded');
             }

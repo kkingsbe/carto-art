@@ -22,6 +22,7 @@ interface MapPreviewProps {
   onError?: (error: any) => void;
   layers?: PosterConfig['layers'];
   layerToggles?: LayerToggle[];
+  onInteraction?: () => void;
 }
 
 export function MapPreview({
@@ -35,7 +36,8 @@ export function MapPreview({
   onMove,
   onError,
   layers,
-  layerToggles
+  layerToggles,
+  onInteraction
 }: MapPreviewProps) {
   const mapRef = useRef<MapRef>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -222,6 +224,10 @@ export function MapPreview({
         onMove={handleMove}
         onMoveEnd={handleMove}
         onError={handleError}
+        onMouseDown={onInteraction}
+        onTouchStart={onInteraction}
+        onWheel={onInteraction}
+        onContextMenu={onInteraction}
         antialias={true}
         pixelRatio={MAP.PIXEL_RATIO}
         maxZoom={MAP.MAX_ZOOM}

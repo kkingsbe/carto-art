@@ -6,7 +6,7 @@ import { useSavedProjects } from '@/hooks/useSavedProjects';
 import { useMapExport } from '@/hooks/useMapExport';
 import { useProjectManager } from '@/hooks/useProjectManager';
 import { useEditorKeyboardShortcuts } from '@/hooks/useEditorKeyboardShortcuts';
-import { Maximize, Plus, Minus, X, Map as MapIcon, Type, Layout, Sparkles, Palette, User, Layers } from 'lucide-react';
+import { Maximize, Plus, Minus, X, Map as MapIcon, Type, Layout, Sparkles, Palette, User, Layers, MousePointer2, RotateCw } from 'lucide-react';
 import { styles } from '@/lib/styles';
 import { MapPreview } from '@/components/map/MapPreview';
 import { PosterCanvas } from '@/components/map/PosterCanvas';
@@ -20,6 +20,7 @@ import { TabNavigation, type Tab } from './TabNavigation';
 import { ControlDrawer } from './ControlDrawer';
 import { ErrorToastContainer } from '@/components/ui/ErrorToast';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
+import { reverseGeocode } from '@/lib/geocoding/nominatim';
 import type MapLibreGL from 'maplibre-gl';
 import { FeedbackModal, useFeedback } from '@/components/feedback';
 import type { FeedbackFormData } from '@/components/feedback';
@@ -129,31 +130,99 @@ export function PosterEditor() {
     mapId: currentMapId || undefined,
   });
 
+  // Map Interaction Helpers Logic
+  const [showHelpers, setShowHelpers] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const interactionTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const clearInteractionTimer = useCallback(() => {
+    if (interactionTimerRef.current) {
+      clearTimeout(interactionTimerRef.current);
+      interactionTimerRef.current = null;
+    }
+  }, []);
+
+  const handleMapInteraction = useCallback(() => {
+    if (!hasInteracted) {
+      setHasInteracted(true);
+      setShowHelpers(false);
+      clearInteractionTimer();
+    }
+  }, [hasInteracted, clearInteractionTimer]);
+
+  useEffect(() => {
+    // Start timer on mount
+    interactionTimerRef.current = setTimeout(() => {
+      if (!hasInteracted) {
+        setShowHelpers(true);
+      }
+    }, 7000); // 7 seconds
+
+    return () => clearInteractionTimer();
+  }, [hasInteracted, clearInteractionTimer]);
+
   // Randomization Logic
-  const handleRandomize = useCallback(() => {
+  const handleRandomize = useCallback(async () => {
     // Pick Random Style
     const randomStyle = styles[Math.floor(Math.random() * styles.length)];
     // Pick Random Palette
     const randomPalette = randomStyle.palettes[Math.floor(Math.random() * randomStyle.palettes.length)];
 
-    // Purely Random Location
-    const randomLng = (Math.random() * 360) - 180;
-    const randomLat = (Math.random() * 170) - 85;
-    const randomZoom = Math.random() * 13 + 2; // Zoom 2 to 15
+    // Variables to hold generated location data
+    let newCenter: [number, number] = [0, 20];
+    let newZoom = 2;
+    let locationSubtitle = '';
+    let locationData: any = null;
 
     // Randomize Pitch & Bearing
-    const randomPitch = Math.floor(Math.random() * 61); // 0 to 60
-    const randomBearing = Math.floor(Math.random() * 361) - 180; // -180 to 180
+    const randomPitch = Math.floor(Math.random() * 61);
+    const randomBearing = Math.floor(Math.random() * 361) - 180;
 
+    // Randomize Aspect Ratio & Border
+    const aspectRatios = ['2:3', '3:4', '4:5', '1:1', 'ISO', '16:9', '16:10', '9:16', '9:19.5'] as const;
+    const borderStyles = ['none', 'thin', 'thick', 'double', 'inset'] as const;
+
+    const randomAspectRatio = aspectRatios[Math.floor(Math.random() * aspectRatios.length)];
+    const randomBorderStyle = borderStyles[Math.floor(Math.random() * borderStyles.length)];
+
+    try {
+      const res = await fetch('/api/random-location');
+      if (res.ok) {
+        const data = await res.json();
+        locationData = data;
+        if (data.center) {
+          newCenter = data.center;
+          newZoom = data.zoom;
+
+          if (data.country) {
+            locationSubtitle = data.country;
+          } else {
+            locationSubtitle = `${newCenter[1].toFixed(4)}°, ${newCenter[0].toFixed(4)}°`;
+          }
+        }
+      } else {
+        throw new Error('API response not ok');
+      }
+    } catch (e) {
+      console.error("Failed to fetch random location", e);
+      // Fallback to purely random if API fails
+      const randomLng = (Math.random() * 360) - 180;
+      const randomLat = (Math.random() * 170) - 85;
+      newCenter = [randomLng, randomLat];
+      newZoom = Math.random() * 13 + 2;
+      locationSubtitle = `${randomLat.toFixed(4)}°, ${randomLng.toFixed(4)}°`;
+    }
+
+    // Initial random config (will update title/subtitle if geocoding succeeds)
     const newConfig = {
       ...config,
       location: {
         ...config.location,
         name: 'Random Exploration',
         city: 'Somewhere on Earth',
-        subtitle: `${randomLat.toFixed(4)}°, ${randomLng.toFixed(4)}°`,
-        center: [randomLng, randomLat] as [number, number],
-        zoom: randomZoom,
+        subtitle: locationSubtitle,
+        center: newCenter,
+        zoom: newZoom,
       },
       style: randomStyle,
       palette: randomPalette,
@@ -161,11 +230,60 @@ export function PosterEditor() {
         ...config.rendering,
         pitch: randomPitch,
         bearing: randomBearing,
+      },
+      format: {
+        ...config.format,
+        aspectRatio: randomAspectRatio,
+        borderStyle: randomBorderStyle,
       }
     };
 
     setConfig(newConfig);
     trackEventAction({ eventType: 'interaction', eventName: 'randomize_pure' });
+
+    // Attempt to reverse geocode and update title/subtitle
+    try {
+      const [lng, lat] = newCenter;
+      const location = await reverseGeocode(lat, lng);
+
+      if (location) {
+        // Update with geocoded info but keep our random style/rendering
+        setConfig({
+          ...newConfig,
+          location: {
+            ...newConfig.location,
+            name: location.name,
+            city: location.city,
+            subtitle: location.subtitle,
+            zoom: location.zoom || newConfig.location.zoom,
+            bounds: location.bounds || newConfig.location.bounds,
+          }
+        });
+      } else if (locationData && locationData.country) {
+        // Fallback: If precise geocoding failed (e.g. ocean) but we have a country from the randomizer
+        setConfig({
+          ...newConfig,
+          location: {
+            ...newConfig.location,
+            name: locationData.country,
+            city: '', // Clear "Somewhere on Earth"
+          }
+        });
+      }
+    } catch (error) {
+      // Silently fail and keep the "Random Exploration" title, OR use country if we have it
+      if (locationData && locationData.country) {
+        setConfig({
+          ...newConfig,
+          location: {
+            ...newConfig.location,
+            name: locationData.country,
+            city: '',
+          }
+        });
+      }
+      console.error('Failed to reverse geocode random location', error);
+    }
   }, [config, setConfig]);
 
   // Wrap exportToPNG to handle errors and track export count
@@ -333,7 +451,24 @@ export function PosterEditor() {
             onMove={handleMapMove}
             layers={config.layers}
             layerToggles={config.style.layerToggles}
+            onInteraction={handleMapInteraction}
           />
+
+          {/* Map Interaction Helpers Overlay */}
+          <div
+            className={`absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md px-4 py-2.5 rounded-full border border-gray-200 dark:border-gray-700 shadow-lg pointer-events-none transition-all duration-500 z-20 ${showHelpers ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
+              }`}
+          >
+            <div className="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-300">
+              <MousePointer2 className="w-4 h-4 text-blue-500" />
+              <span>Left Click to Pan</span>
+            </div>
+            <div className="w-px h-4 bg-gray-300 dark:bg-gray-600" />
+            <div className="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-300">
+              <RotateCw className="w-4 h-4 text-blue-500" />
+              <span>Right Click to Rotate</span>
+            </div>
+          </div>
 
           {/* Floating Map Controls - Inside the paper */}
           <div className="absolute bottom-4 right-4 flex flex-col items-center gap-1 z-10 md:bottom-4 md:right-4">
