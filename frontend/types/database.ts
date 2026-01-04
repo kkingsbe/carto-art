@@ -543,7 +543,10 @@ export interface Database {
     };
     Functions: {
       get_retention_rate: {
-        Args: any;
+        Args: {
+          days_since_signup: number;
+          lookback_days?: number;
+        };
         Returns: number;
       };
       get_weekly_cohort_retention: {

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import type { Database } from '@/types/database';
 import { isAdmin } from '@/lib/admin-auth';
 import { NextResponse } from 'next/server';
 
@@ -15,9 +16,9 @@ export async function GET() {
 
         // 1. Fetch Retention Rates via RPC
         const [day1Res, day7Res, day30Res] = await Promise.all([
-            supabase.rpc('get_retention_rate', { days_since_signup: 1 }),
-            supabase.rpc('get_retention_rate', { days_since_signup: 7 }),
-            supabase.rpc('get_retention_rate', { days_since_signup: 30 })
+            supabase.rpc('get_retention_rate', { days_since_signup: 1 } as any),
+            supabase.rpc('get_retention_rate', { days_since_signup: 7 } as any),
+            supabase.rpc('get_retention_rate', { days_since_signup: 30 } as any)
         ]);
 
         // 2. Calculate Churn/Risk metrics
