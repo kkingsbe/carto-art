@@ -25,7 +25,8 @@ interface FeatureFlag {
     key: string;
     name: string;
     description: string;
-    enabled: boolean;
+    enabled_production: boolean;
+    enabled_development: boolean;
     enabled_percentage: number;
     created_at: string;
 }
@@ -41,7 +42,8 @@ export default function FeatureFlagsPage() {
     const [formName, setFormName] = useState('');
     const [formKey, setFormKey] = useState('');
     const [formDescription, setFormDescription] = useState('');
-    const [formEnabled, setFormEnabled] = useState(false);
+    const [formEnabledProduction, setFormEnabledProduction] = useState(false);
+    const [formEnabledDevelopment, setFormEnabledDevelopment] = useState(false);
     const [formPercentage, setFormPercentage] = useState(100);
 
     useEffect(() => {
@@ -72,16 +74,20 @@ export default function FeatureFlagsPage() {
         }
     };
 
-    const toggleFlag = async (id: string, currentState: boolean) => {
+    const toggleFlag = async (id: string, environment: 'production' | 'development', currentState: boolean) => {
         try {
+            const update = environment === 'production'
+                ? { enabled_production: !currentState }
+                : { enabled_development: !currentState };
+
             const res = await fetch('/api/admin/feature-flags', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, enabled: !currentState })
+                body: JSON.stringify({ id, ...update })
             });
 
             if (res.ok) {
-                setFlags(prev => prev.map(f => f.id === id ? { ...f, enabled: !currentState } : f));
+                setFlags(prev => prev.map(f => f.id === id ? { ...f, ...update } : f));
                 toast.success('Flag updated');
             }
         } catch (error) {
@@ -93,7 +99,8 @@ export default function FeatureFlagsPage() {
         setFormName('');
         setFormKey('');
         setFormDescription('');
-        setFormEnabled(false);
+        setFormEnabledProduction(false);
+        setFormEnabledDevelopment(false);
         setFormPercentage(100);
         setCreatedFlagId(null);
     };
@@ -123,7 +130,8 @@ export default function FeatureFlagsPage() {
                     key: formKey,
                     name: formName,
                     description: formDescription,
-                    enabled: formEnabled,
+                    enabled_production: formEnabledProduction,
+                    enabled_development: formEnabledDevelopment,
                     enabled_percentage: formPercentage
                 })
             });
@@ -304,12 +312,23 @@ if (!isEnabled) redirect('/');`}
 
                                     <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
                                         <div>
-                                            <p className="font-medium">Enable on creation</p>
-                                            <p className="text-sm text-gray-500">Turn on the flag immediately</p>
+                                            <p className="font-medium">Enable in Production</p>
+                                            <p className="text-sm text-gray-500">Active for live users</p>
                                         </div>
                                         <Switch
-                                            checked={formEnabled}
-                                            onCheckedChange={setFormEnabled}
+                                            checked={formEnabledProduction}
+                                            onCheckedChange={setFormEnabledProduction}
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                                        <div>
+                                            <p className="font-medium">Enable in Development</p>
+                                            <p className="text-sm text-gray-500">Active for local dev</p>
+                                        </div>
+                                        <Switch
+                                            checked={formEnabledDevelopment}
+                                            onCheckedChange={setFormEnabledDevelopment}
                                         />
                                     </div>
 
@@ -369,7 +388,8 @@ if (!isEnabled) redirect('/');`}
                     <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
                         <tr>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Feature</th>
-                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Status</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Production</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Development</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Rollout</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Created</th>
                             <th className="px-6 py-4 text-right"></th>
@@ -408,11 +428,22 @@ if (!isEnabled) redirect('/');`}
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
                                             <Switch
-                                                checked={flag.enabled}
-                                                onCheckedChange={() => toggleFlag(flag.id, flag.enabled)}
+                                                checked={flag.enabled_production}
+                                                onCheckedChange={() => toggleFlag(flag.id, 'production', flag.enabled_production)}
                                             />
-                                            <Badge variant={flag.enabled ? "default" : "secondary"}>
-                                                {flag.enabled ? "Active" : "Disabled"}
+                                            <Badge variant={flag.enabled_production ? "default" : "secondary"}>
+                                                {flag.enabled_production ? "Active" : "Off"}
+                                            </Badge>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <Switch
+                                                checked={flag.enabled_development}
+                                                onCheckedChange={() => toggleFlag(flag.id, 'development', flag.enabled_development)}
+                                            />
+                                            <Badge variant={flag.enabled_development ? "default" : "secondary"}>
+                                                {flag.enabled_development ? "Active" : "Off"}
                                             </Badge>
                                         </div>
                                     </td>

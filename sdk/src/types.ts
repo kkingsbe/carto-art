@@ -91,6 +91,37 @@ export interface Style {
     palettes: StylePalette[];
 }
 
+
 export interface ListStylesResponse {
     styles: Style[];
 }
+
+export interface Comment {
+    id: string;
+    content: string;
+    created_at: string;
+    updated_at: string;
+    user_id: string;
+    profile?: {
+        username: string;
+        display_name: string | null;
+        avatar_url: string | null;
+    };
+}
+
+export interface ListCommentsResponse {
+    comments: Comment[];
+}
+
+export interface SavedMap {
+    id: string;
+    title: string;
+    subtitle: string | null;
+    is_published: boolean;
+    thumbnail_url: string | null;
+    created_at: string;
+    updated_at: string;
+    user_id: string;
+}
+
+export type VoteValue = 1 | -1;

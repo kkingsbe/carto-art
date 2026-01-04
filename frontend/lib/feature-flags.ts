@@ -11,7 +11,7 @@ export const getFeatureFlags = cache(async () => {
     const { data: flags } = await supabase
         .from('feature_flags')
         .select('*')
-        .eq('enabled', true);
+        .eq(process.env.NODE_ENV === 'development' ? 'enabled_development' : 'enabled_production', true);
 
     return flags || [];
 });
@@ -26,17 +26,44 @@ export const getFeatureFlags = cache(async () => {
 export async function isFeatureEnabled(key: string, userId?: string, sessionId?: string): Promise<boolean> {
     const supabase = await createClient();
 
-    const { data: flag } = await supabase
+    // We select * so we get all columns. 
+    // We can't easily filter by dynamic column in the query if we want to support 
+    // both old and new schema without complex logic. 
+    // Ideally we filter in memory or update query after migration.
+    // For now, let's fetch all and filter in JS to be safe, or just filter by 'enabled' if using old schema.
+    // BUT 'getFeatureFlags' is likely used for client bootstrapping.
+
+    const { data: flags } = await supabase
         .from('feature_flags')
-        .select('*')
-        .eq('key', key)
-        .single();
+        .select('*');
+
+    // Filter in-memory to handle environment logic
+    const isDev = process.env.NODE_ENV === 'development';
+    const activeFlags: Database['public']['Tables']['feature_flags']['Row'][] = (flags || []).filter((flag: any) => {
+        return isDev
+            ? (flag.enabled_development ?? flag.enabled ?? false)
+            : (flag.enabled_production ?? flag.enabled ?? false);
+    });
+
+    // Find the specific flag by key from the active flags
+    const flag = activeFlags.find(f => f.key === key);
 
     if (!flag) return false;
-    
+
     // Type assertion to help TypeScript understand the type
     const typedFlag: Database['public']['Tables']['feature_flags']['Row'] = flag;
-    if (!typedFlag.enabled) return false;
+
+    // Check environment-specific flags first, fallback to global enabled
+    // This handles the transition period where DB might not have new columns yet
+    // or if we decide to fallback.
+    // Note: TypeScript assumes columns exist based on types, but runtime might vary.
+    // We cast to any to safely access potentially missing properties during migration.
+    const row = typedFlag as any;
+    const isEnvEnabled = isDev
+        ? (row.enabled_development ?? row.enabled ?? false)
+        : (row.enabled_production ?? row.enabled ?? false);
+
+    if (!isEnvEnabled) return false;
 
     // Check targeted users
     if (userId && typedFlag.enabled_for_users?.includes(userId)) {

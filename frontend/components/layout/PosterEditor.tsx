@@ -23,10 +23,13 @@ import type MapLibreGL from 'maplibre-gl';
 import { FeedbackModal, useFeedback } from '@/components/feedback';
 import type { FeedbackFormData } from '@/components/feedback';
 import type { ExportResolution } from '@/lib/export/resolution';
+import { ProductModal } from '@/components/ecommerce/ProductModal';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 
 export function PosterEditor() {
   const [activeTab, setActiveTab] = useState<Tab>('location');
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
+  const isEcommerceEnabled = useFeatureFlag('ecommerce');
 
   const {
     config,
@@ -56,6 +59,8 @@ export function PosterEditor() {
 
   // Modal coordination
   const [showDonationModal, setShowDonationModal] = useState(false);
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [exportedImage, setExportedImage] = useState<string | null>(null);
 
   const { isExporting, isExportingRef, exportToPNG, setMapRef, fitToLocation, zoomIn, zoomOut } = useMapExport(config);
 
@@ -103,7 +108,11 @@ export function PosterEditor() {
   // Wrap exportToPNG to handle errors and track export count
   const handleExport = useCallback(async (resolution?: ExportResolution) => {
     try {
-      await exportToPNG(resolution);
+      const blob = await exportToPNG(resolution);
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        setExportedImage(url);
+      }
       // Increment export count on successful export
       setExportCount(prev => prev + 1);
     } catch (error) {
@@ -193,6 +202,10 @@ export function PosterEditor() {
         currentMapId={currentMapId}
         showDonationModal={showDonationModal}
         onDonationModalChange={setShowDonationModal}
+        onBuyPrint={isEcommerceEnabled ? () => {
+          setShowDonationModal(false);
+          setShowProductModal(true);
+        } : undefined}
       />
 
       {/* Floating Sidebar Container */}
@@ -291,12 +304,21 @@ export function PosterEditor() {
 
       {/* Feedback Modal - Only show if indicated AND donation modal is closed */}
       <FeedbackModal
-        isOpen={shouldShowFeedback && !showDonationModal}
+        isOpen={shouldShowFeedback && !showDonationModal && !showProductModal}
         onClose={hideFeedback}
         onSubmit={handleFeedbackSubmit}
         isSubmitting={isFeedbackSubmitting}
         onDismiss={dismissFeedback}
       />
+
+      {/* Product Modal */}
+      {exportedImage && isEcommerceEnabled && (
+        <ProductModal
+          isOpen={showProductModal}
+          onClose={() => setShowProductModal(false)}
+          imageUrl={exportedImage}
+        />
+      )}
     </div>
   );
 }

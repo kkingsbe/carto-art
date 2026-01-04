@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Download, Loader2, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ExportOptionsModal } from './ExportOptionsModal';
-import { BuyMeACoffeeModal } from './BuyMeACoffeeModal';
+import { ExportSuccessModal } from './ExportSuccessModal';
 import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 import { useFeedback } from '@/components/feedback/useFeedback';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -19,6 +19,11 @@ interface ExportButtonProps {
   className?: string;
   showDonationModal: boolean;
   onDonationModalChange: (show: boolean) => void;
+  onBuyPrint?: () => void;
+  onSave: (name: string) => Promise<void>;
+  isAuthenticated: boolean;
+  currentMapName?: string | null;
+  hasUnsavedChanges?: boolean;
 }
 
 export function ExportButton({
@@ -27,7 +32,12 @@ export function ExportButton({
   format,
   className,
   showDonationModal,
-  onDonationModalChange
+  onDonationModalChange,
+  onBuyPrint,
+  onSave,
+  isAuthenticated,
+  currentMapName,
+  hasUnsavedChanges
 }: ExportButtonProps) {
   const [showOptionsModal, setShowOptionsModal] = useState(false);
 
@@ -41,7 +51,7 @@ export function ExportButton({
     onDonationModalChange(true);
   };
 
-  const handleCloseBmc = () => {
+  const handleCloseSuccess = () => {
     onDonationModalChange(false);
   };
 
@@ -102,9 +112,14 @@ export function ExportButton({
         format={format}
       />
 
-      <BuyMeACoffeeModal
+      <ExportSuccessModal
         isOpen={showDonationModal}
-        onClose={handleCloseBmc}
+        onClose={handleCloseSuccess}
+        onBuyPrint={onBuyPrint}
+        onSave={onSave}
+        isAuthenticated={isAuthenticated}
+        currentMapName={currentMapName}
+        hasUnsavedChanges={hasUnsavedChanges}
       />
     </>
   );

@@ -8,9 +8,10 @@ import Image from 'next/image';
 interface BuyMeACoffeeModalProps {
     isOpen: boolean;
     onClose: () => void;
+    onBuyPrint?: () => void;
 }
 
-export function BuyMeACoffeeModal({ isOpen, onClose }: BuyMeACoffeeModalProps) {
+export function BuyMeACoffeeModal({ isOpen, onClose, onBuyPrint }: BuyMeACoffeeModalProps) {
     const [isMobile, setIsMobile] = useState(false);
 
     // Detect mobile on mount and resize
@@ -87,8 +88,8 @@ export function BuyMeACoffeeModal({ isOpen, onClose }: BuyMeACoffeeModalProps) {
                 <div className="h-32 bg-[#FFDD00] flex items-center justify-center relative overflow-hidden">
                     {/* Decorative pattern or logo could go here */}
                     <div className="absolute inset-0 opacity-10 pattern-dots" />
-                    <div className="text-4xl font-black text-black tracking-tight transform -rotate-3">
-                        Buy Me a Coffee
+                    <div className="text-xl font-black text-black tracking-tight transform -rotate-3 p-4 text-center">
+                        Your Map is Ready!
                     </div>
                 </div>
 
@@ -101,11 +102,32 @@ export function BuyMeACoffeeModal({ isOpen, onClose }: BuyMeACoffeeModalProps) {
                     </div>
 
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                        Enjoying Carto-Art?
+                        Want a physical copy?
                     </h2>
 
                     <p className="text-gray-600 dark:text-gray-300 max-w-sm">
-                        Carto-Art is free and open source. If you created something cool, consider supporting the development!
+                        Order a museum-quality framed print of your map, shipped directly to your door.
+                    </p>
+
+                    {onBuyPrint && (
+                        <button
+                            onClick={onBuyPrint}
+                            className={cn(
+                                "w-full max-w-sm flex items-center justify-center gap-2",
+                                "px-6 py-4 rounded-xl font-bold text-lg",
+                                "bg-gray-900 hover:bg-gray-800 text-white",
+                                "dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900",
+                                "transition-all duration-200 shadow-md hover:shadow-lg hover:scale-[1.02]",
+                            )}
+                        >
+                            Order Framed Print
+                        </button>
+                    )}
+
+                    <div className="w-full max-w-sm border-t border-gray-200 dark:border-gray-700 my-2" />
+
+                    <p className="text-sm text-gray-500">
+                        Or support the developer directly:
                     </p>
 
                     <a
@@ -114,14 +136,13 @@ export function BuyMeACoffeeModal({ isOpen, onClose }: BuyMeACoffeeModalProps) {
                         rel="noopener noreferrer"
                         className={cn(
                             "w-full max-w-sm flex items-center justify-center gap-2",
-                            "px-6 py-4 rounded-xl font-bold text-lg",
+                            "px-6 py-3 rounded-xl font-bold text-base",
                             "bg-[#FFDD00] hover:bg-[#ffea00] active:scale-[0.98]",
-                            "text-black transition-all duration-200 shadow-md hover:shadow-lg",
-                            "ring-offset-2 focus:ring-2 ring-[#FFDD00]"
+                            "text-black transition-all duration-200 shadow-sm hover:shadow-md",
                         )}
                     >
-                        Support on Buy Me a Coffee
-                        <ExternalLink className="w-5 h-5 opacity-60" />
+                        Buy Me a Coffee
+                        <ExternalLink className="w-4 h-4 opacity-60" />
                     </a>
 
                     <div className="pt-4 border-t border-gray-200 dark:border-gray-700 w-full">

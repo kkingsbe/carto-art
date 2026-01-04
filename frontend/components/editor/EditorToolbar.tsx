@@ -31,6 +31,7 @@ interface EditorToolbarProps {
     currentMapId: string | null;
     showDonationModal: boolean;
     onDonationModalChange: (show: boolean) => void;
+    onBuyPrint?: () => void;
 }
 
 export function EditorToolbar({
@@ -49,7 +50,8 @@ export function EditorToolbar({
     format,
     currentMapId,
     showDonationModal,
-    onDonationModalChange
+    onDonationModalChange,
+    onBuyPrint
 }: EditorToolbarProps) {
     return (
         <div className="absolute top-6 right-8 z-50 pointer-events-auto flex items-center gap-3">
@@ -115,6 +117,11 @@ export function EditorToolbar({
                     className="shadow-lg backdrop-blur-md"
                     showDonationModal={showDonationModal}
                     onDonationModalChange={onDonationModalChange}
+                    onBuyPrint={onBuyPrint}
+                    onSave={onSave}
+                    isAuthenticated={isAuthenticated}
+                    currentMapName={currentMapName}
+                    hasUnsavedChanges={hasUnsavedChanges}
                 />
             </div>
         </div>

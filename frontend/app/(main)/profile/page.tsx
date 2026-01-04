@@ -5,6 +5,7 @@ import { getProfileStats, type UserProfile } from '@/lib/actions/user';
 import { MyMapsList } from '@/components/profile/MyMapsList';
 import { ProfileHeader } from '@/components/profile/ProfileHeader';
 import { FeaturedMapsEditor } from '@/components/profile/FeaturedMapsEditor';
+import { OrderSuccessToast } from '@/components/ecommerce/OrderSuccessToast';
 import { SITE_URL } from '@/lib/utils/env';
 import type { Database } from '@/types/database';
 
@@ -51,6 +52,7 @@ export default async function ProfilePage() {
   return (
     <div className="min-h-screen bg-[#0a0f1a] pb-20">
       <div className="w-full">
+        <OrderSuccessToast />
         <ProfileHeader
           profile={typedProfile}
           stats={stats}

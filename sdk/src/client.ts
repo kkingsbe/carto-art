@@ -1,5 +1,8 @@
 import { Posters } from './resources/posters';
 import { Styles } from './resources/styles';
+import { Users } from './resources/users';
+import { Maps } from './resources/maps';
+import { Comments } from './resources/comments';
 
 export interface CartoArtClientOptions {
     apiKey: string;
@@ -8,10 +11,12 @@ export interface CartoArtClientOptions {
 
 export class CartoArtClient {
     private apiKey: string;
-    private baseUrl: string;
-
+    public baseUrl: string;
     public posters: Posters;
     public styles: Styles;
+    public users: Users;
+    public maps: Maps;
+    public comments: Comments;
 
     constructor(options: CartoArtClientOptions) {
         if (!options.apiKey) {
@@ -22,9 +27,12 @@ export class CartoArtClient {
 
         this.posters = new Posters(this);
         this.styles = new Styles(this);
+        this.users = new Users(this);
+        this.maps = new Maps(this);
+        this.comments = new Comments(this);
     }
 
-    private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
+    public async request<T>(path: string, options: RequestInit = {}): Promise<T> {
         const url = `${this.baseUrl}${path}`;
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',

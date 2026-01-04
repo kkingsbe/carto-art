@@ -30,7 +30,8 @@ export async function POST(req: Request) {
                 key: body.key,
                 name: body.name,
                 description: body.description,
-                enabled: body.enabled ?? false,
+                enabled_production: body.enabled_production ?? false,
+                enabled_development: body.enabled_development ?? false,
                 enabled_percentage: body.enabled_percentage ?? 0,
                 enabled_for_users: body.enabled_for_users ?? []
             }])

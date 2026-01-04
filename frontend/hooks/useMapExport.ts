@@ -75,6 +75,7 @@ export function useMapExport(config: PosterConfig) {
           render_time_ms: duration
         }
       });
+      return blob;
     } catch (error) {
       logger.error('Export failed:', error);
       throw error;
