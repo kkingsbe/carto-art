@@ -95,11 +95,24 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
     // Initialize export map
     // Calculate the scale factor by comparing the export inner width to the preview inner width
     const containerWidth = previewMap.getContainer().clientWidth;
+
+    if (!containerWidth) {
+      throw new Error('Could not determine map container width');
+    }
+
     const mapExportScale = drawWidth / containerWidth;
+
+    logger.info('Initializing High-Res Export', {
+      drawWidth,
+      drawHeight,
+      containerWidth,
+      mapExportScale,
+      targetCanvasWidth: drawWidth
+    });
 
     // Size the container to match the TARGET CSS dimensions (preview-like dimensions)
     // The MapLibre pixelRatio will handle the upscaling to the full canvas size
-    hiddenContainer.style.width = `${drawWidth / mapExportScale}px`;
+    hiddenContainer.style.width = `${containerWidth}px`;
     hiddenContainer.style.height = `${drawHeight / mapExportScale}px`;
 
     // Prepare export style - strip native terrain if using volumetric terrain
@@ -120,6 +133,7 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
       interactive: false,
       attributionControl: false,
       preserveDrawingBuffer: true,
+      trackResize: false, // Critical: prevent auto-resize which might reset pixelRatio
       fadeDuration: 0,
       pixelRatio: mapExportScale, // Use pixelRatio for resolution scaling instead of zoom
       center: originalCenter,
@@ -137,6 +151,10 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
       pitch: config.layers.volumetricTerrain ? 0 : (originalPitch || 0),
       bearing: config.layers.volumetricTerrain ? 0 : (originalBearing || 0)
     });
+
+    // Force a resize to ensure the map respects the pixelRatio and container dimensions
+    // This addresses issues where the initial canvas size might default to 1x scale
+    exportMap.resize();
 
     // Closed-loop tile loading detection
     // Uses MapLibre events to deterministically wait for all tiles to be loaded and rendered
