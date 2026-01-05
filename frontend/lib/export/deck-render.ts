@@ -169,6 +169,19 @@ async function renderSingleDeckTerrain({
     const exaggeration = settings.volumetricTerrainExaggeration ?? 1.5;
 
     return new Promise((resolve, reject) => {
+        // Create a hidden container to attach the canvas to
+        // This ensures deck.gl's resize logic sees valid clientWidth/clientHeight
+        // instead of 0x0 for detached elements
+        const hiddenContainer = document.createElement('div');
+        hiddenContainer.style.width = `${renderWidth}px`;
+        hiddenContainer.style.height = `${renderHeight}px`;
+        hiddenContainer.style.position = 'fixed';
+        hiddenContainer.style.top = '-9999px';
+        hiddenContainer.style.left = '-9999px';
+        hiddenContainer.style.opacity = '0';
+        hiddenContainer.style.pointerEvents = 'none';
+        document.body.appendChild(hiddenContainer);
+
         const canvas = document.createElement('canvas');
         canvas.width = Math.floor(renderWidth);
         canvas.height = Math.floor(renderHeight);
@@ -178,11 +191,27 @@ async function renderSingleDeckTerrain({
         canvas.style.width = `${renderWidth}px`;
         canvas.style.height = `${renderHeight}px`;
 
+        // Attach canvas to container BEFORE deck.gl initialization
+        // This ensures clientWidth/clientHeight are valid
+        hiddenContainer.appendChild(canvas);
+
         // Verify allocation success
         if (canvas.width !== Math.floor(renderWidth) || canvas.height !== Math.floor(renderHeight)) {
+            // Clean up container on error
+            if (document.body.contains(hiddenContainer)) {
+                document.body.removeChild(hiddenContainer);
+            }
             reject(new Error(`Failed to allocate deck.gl canvas: requested ${renderWidth}x${renderHeight}, got ${canvas.width}x${canvas.height}. This usually indicates you have exceeded your browser or hardware's maximum canvas size.`));
             return;
         }
+
+        // Verify the canvas has valid client dimensions now that it's attached
+        logger.info('Canvas attached to DOM', {
+            canvasWidth: canvas.width,
+            canvasHeight: canvas.height,
+            clientWidth: canvas.clientWidth,
+            clientHeight: canvas.clientHeight
+        });
 
         const detailLevel = settings.terrainDetailLevel || 'normal';
         const zoomOffset = detailLevel === 'ultra' ? 2 : detailLevel === 'high' ? 1 : 0;
@@ -220,6 +249,10 @@ async function renderSingleDeckTerrain({
             if (deck) {
                 deck.finalize();
                 deck = null;
+            }
+            // Remove hidden container from DOM
+            if (document.body.contains(hiddenContainer)) {
+                document.body.removeChild(hiddenContainer);
             }
         };
 

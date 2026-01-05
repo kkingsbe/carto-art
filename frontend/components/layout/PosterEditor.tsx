@@ -537,6 +537,7 @@ export function PosterEditor() {
         onFormatChange={updateFormat}
         onCopyState={handleCopyState}
         showCopyStateButton={isCopyStateEnabled}
+        exportCount={exportCount}
       />
 
       {/* Floating Sidebar Container - Hidden on mobile */}
@@ -652,7 +653,7 @@ export function PosterEditor() {
             </div>
 
             {/* Feedback Widget - Independent */}
-            <div className="absolute bottom-32 right-0 z-10 pointer-events-auto">
+            <div className="hidden md:block absolute bottom-32 right-0 z-10 pointer-events-auto">
               <FeedbackWidget />
             </div>
 
@@ -803,6 +804,7 @@ export function PosterEditor() {
             currentMapName={currentMapName}
             hasUnsavedChanges={currentMapStatus?.hasUnsavedChanges}
             onFormatChange={updateFormat}
+            exportCount={exportCount}
           />
         </div>
       </div>

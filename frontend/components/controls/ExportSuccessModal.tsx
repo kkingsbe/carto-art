@@ -14,6 +14,7 @@ interface ExportSuccessModalProps {
     isAuthenticated: boolean;
     currentMapName?: string | null;
     hasUnsavedChanges?: boolean;
+    exportCount?: number;
 }
 
 export function ExportSuccessModal({
@@ -23,10 +24,36 @@ export function ExportSuccessModal({
     onSave,
     isAuthenticated,
     currentMapName,
-    hasUnsavedChanges
+    hasUnsavedChanges,
+    exportCount = 0
 }: ExportSuccessModalProps) {
     const router = useRouter();
     const [copied, setCopied] = useState(false);
+
+    // Personalized donation messaging based on export count
+    const getDonationMessage = () => {
+        if (exportCount >= 5) {
+            return {
+                title: `You've Created ${exportCount} Posters, All Free!`,
+                description: "You're clearly getting value from CartoArt. This tool took 100+ hours to build and costs money to run.",
+                cta: "Support the Project"
+            };
+        } else if (exportCount >= 3) {
+            return {
+                title: "Loving CartoArt? Keep It Free!",
+                description: "You've created multiple posters for free. A small tip helps keep this project alive for everyone.",
+                cta: "Buy Me a Coffee"
+            };
+        } else {
+            return {
+                title: "Keep CartoArt Free & Ad-Free",
+                description: "You just created something awesome for free! This tool took 100+ hours to build and costs money to run.",
+                cta: "Buy Me a Coffee"
+            };
+        }
+    };
+
+    const donationMessage = getDonationMessage();
     // Handle ESC key to close
     useEffect(() => {
         if (!isOpen) return;
@@ -112,36 +139,36 @@ export function ExportSuccessModal({
                 </div>
 
                 {/* Hero Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 md:p-8 text-white text-center relative overflow-hidden shrink-0">
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-3 md:p-6 text-white text-center relative overflow-hidden shrink-0">
                     <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
                     <div className="relative z-10">
-                        <div className="mx-auto bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mb-4 backdrop-blur-sm">
-                            <Check className="w-8 h-8 text-white" />
+                        <div className="mx-auto bg-white/20 w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center mb-2 md:mb-3 backdrop-blur-sm">
+                            <Check className="w-5 h-5 md:w-6 md:h-6 text-white" />
                         </div>
-                        <h2 className="text-2xl font-bold mb-2">Export Complete!</h2>
-                        <p className="text-blue-100">Your high-resolution poster is downloading...</p>
+                        <h2 className="text-lg md:text-xl font-bold mb-0.5 md:mb-1">Export Complete!</h2>
+                        <p className="text-xs md:text-sm text-blue-100">Your high-resolution poster is downloading...</p>
                     </div>
                 </div>
 
                 {/* Content Grid */}
-                <div className="p-6 grid gap-6 md:grid-cols-2 flex-1 overflow-y-auto overscroll-contain">
+                <div className="p-3 md:p-4 grid gap-3 md:gap-4 md:grid-cols-2 flex-1 overflow-y-auto overscroll-contain">
 
-                    {/* Primary Action: Print (if enabled) or Save */}
-                    <div className="col-span-1 md:col-span-2 space-y-4">
-                        {onBuyPrint ? (
-                            <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row items-center gap-6">
+                    {/* Primary Action: Print (if enabled) */}
+                    {onBuyPrint && (
+                        <div className="col-span-1 md:col-span-2">
+                            <div className="bg-gray-50 dark:bg-gray-800/50 p-3 md:p-4 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row items-center gap-3 md:gap-4">
                                 <div className="flex-1 text-center sm:text-left">
-                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                                    <h3 className="text-sm md:text-base font-semibold text-gray-900 dark:text-white mb-0.5 md:mb-1">
                                         Love your design?
                                     </h3>
-                                    <p className="text-gray-500 dark:text-gray-400 text-sm">
+                                    <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm">
                                         Get a museum-quality framed print shipped to your door.
                                     </p>
                                 </div>
                                 <button
                                     onClick={onBuyPrint}
                                     className={cn(
-                                        "whitespace-nowrap flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white",
+                                        "whitespace-nowrap flex items-center gap-2 px-4 md:px-5 py-2 md:py-2.5 rounded-xl font-bold text-white text-xs md:text-sm",
                                         "bg-gray-900 hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100",
                                         "transition-all shadow-lg hover:shadow-xl hover:scale-105"
                                     )}
@@ -150,7 +177,51 @@ export function ExportSuccessModal({
                                     Order Print
                                 </button>
                             </div>
-                        ) : null}
+                        </div>
+                    )}
+
+                    {/* Featured Donation CTA */}
+                    <div className="col-span-1 md:col-span-2">
+                        <div className="relative overflow-hidden rounded-xl border border-yellow-200 dark:border-yellow-900/50 bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-100 dark:from-yellow-900/20 dark:via-amber-900/20 dark:to-yellow-800/20 p-3 md:p-4 shadow-lg">
+                            {/* Decorative pattern */}
+                            <div className="absolute inset-0 opacity-5 dark:opacity-10" style={{
+                                backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)',
+                                backgroundSize: '24px 24px'
+                            }} />
+
+                            <div className="relative flex flex-col sm:flex-row items-center gap-3 md:gap-4">
+                                <div className="flex-shrink-0">
+                                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-lg">
+                                        <Heart className="w-5 h-5 md:w-6 md:h-6 text-white fill-white" />
+                                    </div>
+                                </div>
+                                <div className="flex-1 text-center sm:text-left">
+                                    <h3 className="text-sm md:text-base font-bold text-gray-900 dark:text-white mb-0.5 md:mb-1">
+                                        {donationMessage.title}
+                                    </h3>
+                                    <p className="text-gray-700 dark:text-gray-300 text-xs md:text-sm leading-snug md:leading-relaxed">
+                                        {donationMessage.description}
+                                    </p>
+                                </div>
+                                <div className="flex-shrink-0">
+                                    <a
+                                        href="https://buymeacoffee.com/kkingsbe"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={cn(
+                                            "inline-flex items-center gap-2 px-4 md:px-5 py-2 md:py-2.5 rounded-xl font-bold text-xs md:text-sm",
+                                            "bg-gradient-to-r from-yellow-400 to-amber-500 text-gray-900",
+                                            "hover:from-yellow-500 hover:to-amber-600",
+                                            "transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95",
+                                            "whitespace-nowrap"
+                                        )}
+                                    >
+                                        <Heart className="w-4 h-4 fill-current" />
+                                        {donationMessage.cta}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Secondary Actions */}
@@ -164,7 +235,7 @@ export function ExportSuccessModal({
                                     {isAuthenticated ? 'Save to Profile' : 'Don\'t Lose This!'}
                                 </div>
                             </div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 h-10">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
                                 {isAuthenticated
                                     ? "Save this map to your collection to edit it later."
                                     : "Create a free account to save your design and edit it anytime."}
@@ -203,7 +274,7 @@ export function ExportSuccessModal({
                                     Share Design
                                 </div>
                             </div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 h-10">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
                                 Show off your map creation with friends.
                             </p>
                             <div className="grid grid-cols-2 gap-2">
@@ -227,25 +298,31 @@ export function ExportSuccessModal({
 
                 </div>
 
-                {/* Footer Links */}
-                <div className="bg-gray-50 dark:bg-gray-800/50 p-4 flex flex-wrap items-center justify-center gap-4 border-t border-gray-100 dark:border-gray-700 text-sm">
-                    <a
-                        href="https://buymeacoffee.com/kkingsbe"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-gray-600 hover:text-yellow-600 dark:text-gray-400 dark:hover:text-yellow-400 transition-colors"
-                    >
-                        <Heart className="w-4 h-4" />
-                        <span>Buy me a coffee</span>
-                    </a>
-                    <div className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
-                    <button
-                        onClick={() => window.open('https://discord.gg/UVKEfcfZVc', '_blank', 'noopener,noreferrer')}
-                        className="flex items-center gap-2 text-gray-600 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors"
-                    >
-                        <MessageCircle className="w-4 h-4" />
-                        <span>Join Discord</span>
-                    </button>
+                {/* Discord Community CTA */}
+                <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 p-3 md:p-4 border-t border-indigo-500/20">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 md:gap-3">
+                        <div className="flex items-center gap-2.5 md:gap-3 text-center sm:text-left">
+                            <div className="flex-shrink-0 w-9 h-9 md:w-10 md:h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                                <MessageCircle className="w-4.5 h-4.5 md:w-5 md:h-5 text-white" />
+                            </div>
+                            <div>
+                                <h4 className="text-white font-bold text-xs md:text-sm mb-0 md:mb-0.5">Join the CartoArt Community</h4>
+                                <p className="text-indigo-100 text-[10px] md:text-xs leading-tight">Get help, share designs, and request features</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => window.open('https://discord.gg/UVKEfcfZVc', '_blank', 'noopener,noreferrer')}
+                            className={cn(
+                                "flex items-center gap-1.5 md:gap-2 px-4 md:px-5 py-2 md:py-2.5 rounded-xl font-bold text-xs md:text-sm whitespace-nowrap",
+                                "bg-white text-indigo-600 hover:bg-indigo-50",
+                                "transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
+                            )}
+                        >
+                            <MessageCircle className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                            Join Discord
+                            <ExternalLink className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

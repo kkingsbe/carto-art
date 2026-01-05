@@ -30,6 +30,7 @@ interface ExportButtonProps {
   currentMapName?: string | null;
   hasUnsavedChanges?: boolean;
   onFormatChange: (format: Partial<PosterConfig['format']>) => void;
+  exportCount?: number;
 }
 
 export function ExportButton({
@@ -47,7 +48,8 @@ export function ExportButton({
   isAuthenticated,
   currentMapName,
   hasUnsavedChanges,
-  onFormatChange
+  onFormatChange,
+  exportCount
 }: ExportButtonProps) {
   const [showOptionsModal, setShowOptionsModal] = useState(false);
 
@@ -143,6 +145,7 @@ export function ExportButton({
         isAuthenticated={isAuthenticated}
         currentMapName={currentMapName}
         hasUnsavedChanges={hasUnsavedChanges}
+        exportCount={exportCount}
       />
     </>
   );

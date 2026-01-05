@@ -7,6 +7,7 @@ import { BuyMeACoffeeWidget } from "@/components/third-party/BuyMeACoffeeWidget"
 import { Navbar } from "@/components/layout/Navbar";
 import { Toaster } from "sonner";
 import { PageViewTracker } from "@/components/analytics/PageViewTracker";
+import { StructuredData } from "@/components/seo/StructuredData";
 import { Suspense } from "react";
 
 const geistSans = Geist({
@@ -75,6 +76,7 @@ export default function RootLayout({
             </Script>
           </>
         )}
+        <StructuredData type="software" />
         <BuyMeACoffeeWidget />
         <Navbar />
         <Suspense fallback={null}>
