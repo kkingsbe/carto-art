@@ -44,6 +44,7 @@ export function PosterEditor() {
   const [isAdvancedControlsOpen, setIsAdvancedControlsOpen] = useState(false);
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
   const isEcommerceEnabled = useFeatureFlag('ecommerce');
+  const isCopyStateEnabled = useFeatureFlag('copy_editor_state_to_json');
 
   // Handle responsive drawer state
   useEffect(() => {
@@ -424,6 +425,23 @@ export function PosterEditor() {
     });
   }, [saveProject, config, currentMapId]);
 
+  const handleCopyState = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(config, null, 2));
+      trackEventAction({ eventType: 'interaction', eventName: 'copy_state_json' });
+      // You might want to show a toast here, but relying on button feedback for now or we can add a toast if requested.
+      // Ideally we would use the toast system like:
+      // toast.success('Editor state copied to clipboard'); 
+      // But looking at imports, we have ErrorToastContainer/useErrorHandler.
+      // I'll stick to just copying for now as per minimal requirment, 
+      // maybe add a console log for dev confirmation.
+      console.log('Editor state copied to clipboard');
+    } catch (err) {
+      console.error('Failed to copy state:', err);
+      handleError(err);
+    }
+  }, [config, handleError]);
+
   const numericRatio = useMemo(() => {
     return getNumericRatio(config.format.aspectRatio, config.format.orientation);
   }, [config.format.aspectRatio, config.format.orientation]);
@@ -517,6 +535,8 @@ export function PosterEditor() {
           setShowProductModal(true);
         } : undefined}
         onFormatChange={updateFormat}
+        onCopyState={handleCopyState}
+        showCopyStateButton={isCopyStateEnabled}
       />
 
       {/* Floating Sidebar Container - Hidden on mobile */}

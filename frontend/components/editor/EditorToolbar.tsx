@@ -40,6 +40,8 @@ interface EditorToolbarProps {
     onOpenCommandMenu: () => void;
     onBuyPrint?: () => void;
     onFormatChange: (format: Partial<PosterConfig['format']>) => void;
+    onCopyState?: () => void;
+    showCopyStateButton?: boolean;
 }
 
 export function EditorToolbar({
@@ -65,7 +67,9 @@ export function EditorToolbar({
     onDonationModalChange,
     onOpenCommandMenu,
     onBuyPrint,
-    onFormatChange
+    onFormatChange,
+    onCopyState,
+    showCopyStateButton
 }: EditorToolbarProps) {
     return (
         <div className="absolute top-2 right-2 md:top-6 md:right-8 z-45 pointer-events-auto flex items-center gap-2 md:gap-3 flex-wrap justify-end max-w-[calc(100vw-4rem)]">
@@ -117,6 +121,16 @@ export function EditorToolbar({
                     <RotateCcw className="w-5 h-5 md:w-4 md:h-4" />
                 </button>
                 <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
+                {showCopyStateButton && onCopyState && (
+                    <button
+                        onClick={onCopyState}
+                        className="flex items-center gap-2 p-1.5 md:p-1 pr-3 md:pr-2 rounded-lg transition-all text-gray-700 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-300 dark:hover:text-blue-400 dark:hover:bg-blue-900/30 group"
+                        title="Copy Editor State to JSON"
+                    >
+                        <Copy className="w-5 h-5 md:w-4 md:h-4" />
+                    </button>
+                )}
+                {showCopyStateButton && <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />}
                 <button
                     onClick={onOpenCommandMenu}
                     className="flex items-center gap-2 p-1.5 md:p-1 pr-3 md:pr-2 rounded-lg transition-all text-gray-700 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-300 dark:hover:text-blue-400 dark:hover:bg-blue-900/30 group"
