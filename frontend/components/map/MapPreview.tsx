@@ -198,7 +198,7 @@ export function MapPreview({
   const isEdgeCase = location.center[1] < -60 || Math.abs(location.center[0]) > 170;
 
   return (
-    <div className="relative w-full h-full overflow-hidden">
+    <div id="walkthrough-map" className="relative w-full h-full overflow-hidden">
       {/* Initial Loading Skeleton */}
       {!hasRenderedOnce && !hasError && (
         <div className="absolute inset-0 z-15 flex items-center justify-center bg-gray-50 dark:bg-gray-900">

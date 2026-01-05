@@ -29,11 +29,17 @@ import { ProductModal } from '@/components/ecommerce/ProductModal';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { SaveButton } from '@/components/controls/SaveButton';
 import { ExportButton } from '@/components/controls/ExportButton';
+import { CommandMenu } from '@/components/ui/CommandMenu';
+import { AdvancedControls } from '@/components/controls/AdvancedControls';
+import { Walkthrough } from '@/components/ui/Walkthrough';
+import type { Step } from 'react-joyride';
 
 export function PosterEditor() {
   const [activeTab, setActiveTab] = useState<Tab>('location');
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+  const [isAdvancedControlsOpen, setIsAdvancedControlsOpen] = useState(false);
+  const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
   const isEcommerceEnabled = useFeatureFlag('ecommerce');
 
   // Handle responsive drawer state
@@ -160,6 +166,70 @@ export function PosterEditor() {
 
     return () => clearInteractionTimer();
   }, [hasInteracted, clearInteractionTimer]);
+
+  // Walkthrough State
+  const [runTour, setRunTour] = useState(false);
+  const [hasCheckedTour, setHasCheckedTour] = useState(false);
+
+  useEffect(() => {
+    if (!hasCheckedTour) {
+      const hasSeenTour = localStorage.getItem('hasSeenWalkthrough');
+      if (!hasSeenTour) {
+        setRunTour(true);
+      }
+      setHasCheckedTour(true);
+    }
+  }, [hasCheckedTour]);
+
+  const handleTourFinish = useCallback(() => {
+    setRunTour(false);
+    localStorage.setItem('hasSeenWalkthrough', 'true');
+  }, []);
+
+  const handleTourSkip = useCallback(() => {
+    setRunTour(false);
+    localStorage.setItem('hasSeenWalkthrough', 'true');
+  }, []);
+
+  const tourSteps: Step[] = [
+    {
+      target: 'body',
+      placement: 'center',
+      title: 'Welcome to Carto Art!',
+      content: 'Let\'s take a quick tour to show you how to create stunning map posters in minutes.',
+      disableBeacon: true,
+    },
+    {
+      target: '#walkthrough-map',
+      title: 'Explore the Map',
+      content: 'Use Left Click to pan around and Right Click to rotate or tilt the map. Try exploring 3D buildings by tilting!',
+      placement: 'right',
+    },
+    {
+      target: '#walkthrough-sidebar',
+      title: 'Customize Your Poster',
+      content: 'Here you can change the location, choose from designer styles, adjust colors, and customize the text and frame.',
+      placement: 'right',
+    },
+    {
+      target: '#walkthrough-randomize',
+      title: 'Feeling Lucky?',
+      content: 'Click the shuffle icon to instantly generate a completely random theme and location. It\'s a great way to find inspiration!',
+      placement: 'left',
+    },
+    {
+      target: '#walkthrough-save',
+      title: 'Save Your Progress',
+      content: 'Sign in to save your designs and access them later from any device.',
+      placement: 'left',
+    },
+    {
+      target: '#walkthrough-export',
+      title: 'Ready to Print?',
+      content: 'Export your design as a high-resolution PNG image, perfect for professional printing.',
+      placement: 'left',
+    },
+  ];
 
   // Randomization Logic
   const handleRandomize = useCallback(async () => {
@@ -400,6 +470,7 @@ export function PosterEditor() {
         currentMapId={currentMapId}
         showDonationModal={showDonationModal}
         onDonationModalChange={setShowDonationModal}
+        onOpenCommandMenu={() => setIsCommandMenuOpen(true)}
         onBuyPrint={isEcommerceEnabled ? () => {
           setShowDonationModal(false);
           setShowProductModal(true);
@@ -408,7 +479,7 @@ export function PosterEditor() {
 
       {/* Floating Sidebar Container - Hidden on mobile */}
       <div className="hidden md:flex absolute top-16 left-2 bottom-2 md:top-4 md:left-4 md:bottom-4 z-40 flex-row pointer-events-none max-w-[calc(100vw-1rem)]">
-        <div className="pointer-events-auto flex flex-row h-full shadow-2xl rounded-2xl overflow-hidden bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200 dark:border-gray-700/50">
+        <div id="walkthrough-sidebar" className="pointer-events-auto flex flex-row h-full shadow-2xl rounded-2xl overflow-hidden bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200 dark:border-gray-700/50">
           <TabNavigation
             activeTab={activeTab}
             isDrawerOpen={isDrawerOpen}
@@ -446,76 +517,85 @@ export function PosterEditor() {
         className="absolute inset-0 flex items-center justify-center p-4 pb-32 md:p-12 md:pb-12 overflow-hidden"
         style={{ containerType: 'size' }}
       >
-        <PosterCanvas
-          config={config}
-          style={{
-            width: `min(calc(100% - 4rem), calc((100cqh - 4rem) * ${numericRatio}))`,
-            height: 'auto',
-            maxHeight: 'calc(100cqh - 4rem)',
-            boxShadow: '0 50px 100px -20px rgba(0, 0, 0, 0.25), 0 30px 60px -30px rgba(0, 0, 0, 0.3)',
-          }}
-          className="transition-all duration-500 ease-out"
-        >
-          <MapPreview
-            mapStyle={mapStyle}
-            location={config.location}
-            format={config.format}
-            rendering={config.rendering}
-            showMarker={config.layers.marker}
-            markerColor={config.layers.markerColor || config.palette.primary || config.palette.accent || config.palette.text}
-            onMapLoad={handleMapLoad}
-            onMove={handleMapMove}
-            onMoveEnd={handleMapMoveEnd}
-            layers={config.layers}
-            layerToggles={config.style.layerToggles}
-            onInteraction={handleMapInteraction}
-          />
-
-          {/* Map Interaction Helpers Overlay */}
-          <div
-            className={`absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md px-4 py-2.5 rounded-full border border-gray-200 dark:border-gray-700 shadow-lg pointer-events-none transition-all duration-500 z-20 ${showHelpers ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
-              }`}
+        <div className="flex items-center justify-center w-full h-full max-h-[calc(100cqh-4rem)]">
+          <PosterCanvas
+            config={config}
+            style={{
+              width: `min(calc(100% - 4rem), calc((100cqh - 4rem) * ${numericRatio}))`,
+              height: 'auto',
+              maxHeight: 'calc(100cqh - 4rem)',
+              boxShadow: '0 50px 100px -20px rgba(0, 0, 0, 0.25), 0 30px 60px -30px rgba(0, 0, 0, 0.3)',
+            }}
+            className="transition-all duration-500 ease-out"
           >
-            <div className="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-300">
-              <MousePointer2 className="w-4 h-4 text-blue-500" />
-              <span>Left Click to Pan</span>
-            </div>
-            <div className="w-px h-4 bg-gray-300 dark:bg-gray-600" />
-            <div className="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-300">
-              <RotateCw className="w-4 h-4 text-blue-500" />
-              <span>Right Click to Rotate</span>
-            </div>
-          </div>
+            <MapPreview
+              mapStyle={mapStyle}
+              location={config.location}
+              format={config.format}
+              rendering={config.rendering}
+              showMarker={config.layers.marker}
+              markerColor={config.layers.markerColor || config.palette.primary || config.palette.accent || config.palette.text}
+              onMapLoad={handleMapLoad}
+              onMove={handleMapMove}
+              onMoveEnd={handleMapMoveEnd}
+              layers={config.layers}
+              layerToggles={config.style.layerToggles}
+              onInteraction={handleMapInteraction}
+            />
 
-          {/* Floating Map Controls - Inside the paper */}
-          <div className="absolute bottom-4 right-4 flex flex-col items-center gap-1 z-10 md:bottom-4 md:right-4">
-            <div className="flex flex-col bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <button
-                onClick={zoomIn}
-                className="p-2 hover:bg-gray-50 transition-colors text-gray-700 active:bg-gray-100"
-                title="Zoom In"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-              <div className="h-px w-full bg-gray-200" />
-              <button
-                onClick={zoomOut}
-                className="p-2 hover:bg-gray-50 transition-colors text-gray-700 active:bg-gray-100"
-                title="Zoom Out"
-              >
-                <Minus className="h-4 w-4" />
-              </button>
-            </div>
-
-            <button
-              onClick={fitToLocation}
-              className="p-2 bg-white/90 hover:bg-gray-50 backdrop-blur-sm border border-gray-200 rounded-lg shadow-sm transition-colors text-gray-700 mt-1"
-              title="Snap map to original bounds"
+            {/* Map Interaction Helpers Overlay */}
+            <div
+              className={`absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md px-4 py-2.5 rounded-full border border-gray-200 dark:border-gray-700 shadow-lg pointer-events-none transition-all duration-500 z-20 ${showHelpers ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
+                }`}
             >
-              <Maximize className="h-4 w-4" />
-            </button>
-          </div>
-        </PosterCanvas>
+              <div className="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-300">
+                <MousePointer2 className="w-4 h-4 text-blue-500" />
+                <span>Left Click to Pan</span>
+              </div>
+              <div className="w-px h-4 bg-gray-300 dark:bg-gray-600" />
+              <div className="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-300">
+                <RotateCw className="w-4 h-4 text-blue-500" />
+                <span>Right Click to Rotate</span>
+              </div>
+            </div>
+
+            {/* Floating Map Controls - Inside the paper */}
+            <div className="absolute bottom-4 right-4 flex flex-col items-center gap-1 z-10 md:bottom-4 md:right-4">
+              <div className="flex flex-col bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <button
+                  onClick={zoomIn}
+                  className="p-2 hover:bg-gray-50 transition-colors text-gray-700 active:bg-gray-100"
+                  title="Zoom In"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+                <div className="h-px w-full bg-gray-200" />
+                <button
+                  onClick={zoomOut}
+                  className="p-2 hover:bg-gray-50 transition-colors text-gray-700 active:bg-gray-100"
+                  title="Zoom Out"
+                >
+                  <Minus className="h-4 w-4" />
+                </button>
+              </div>
+
+              <button
+                onClick={fitToLocation}
+                className="p-2 bg-white/90 hover:bg-gray-50 backdrop-blur-sm border border-gray-200 rounded-lg shadow-sm transition-colors text-gray-700 mt-1"
+                title="Snap map to original bounds"
+              >
+                <Maximize className="h-4 w-4" />
+              </button>
+            </div>
+          </PosterCanvas>
+        </div>
+
+        <Walkthrough
+          steps={tourSteps}
+          run={runTour}
+          onFinish={handleTourFinish}
+          onSkip={handleTourSkip}
+        />
       </main>
 
       {/* Feedback Modal - Only show if indicated AND donation modal is closed */}
@@ -570,7 +650,7 @@ export function PosterEditor() {
       {/* Mobile Bottom Sheet */}
       {
         mobileSheetOpen && (
-          <div className="fixed inset-0 z-50 md:hidden">
+          <div className="fixed inset-0 z-45 md:hidden">
             {/* Backdrop */}
             <div
               className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
@@ -619,7 +699,7 @@ export function PosterEditor() {
       }
 
       {/* Mobile Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200 dark:border-gray-700 px-4 py-3" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}>
+      <div className="fixed bottom-0 left-0 right-0 z-45 md:hidden bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200 dark:border-gray-700 px-4 py-3" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}>
         <div className="flex items-center justify-center gap-3">
           <SaveButton
             onSave={handleSaveClick}
@@ -647,6 +727,30 @@ export function PosterEditor() {
           />
         </div>
       </div>
+
+      <CommandMenu
+        onRandomize={handleRandomize}
+        onReset={() => {
+          resetProject();
+          trackEventAction({ eventType: 'interaction', eventName: 'reset_project' });
+        }}
+        onExport={() => handleExport()}
+        onToggleStudio={() => setIsAdvancedControlsOpen(prev => !prev)}
+        onStartWalkthrough={() => setRunTour(true)}
+        config={config}
+        updateLocation={updateLocation}
+        updateStyle={updateStyle}
+        updateLayers={updateLayers}
+        isOpen={isCommandMenuOpen}
+        onOpenChange={setIsCommandMenuOpen}
+      />
+
+      <AdvancedControls
+        config={config}
+        updateLayers={updateLayers}
+        isOpen={isAdvancedControlsOpen}
+        onClose={() => setIsAdvancedControlsOpen(false)}
+      />
     </div>
   );
 }

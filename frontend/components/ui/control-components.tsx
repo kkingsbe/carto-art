@@ -93,6 +93,9 @@ interface CollapsibleSectionProps {
 
 export function CollapsibleSection({ title, children, defaultOpen = true, className }: CollapsibleSectionProps) {
   const [isOpen, setIsOpen] = React.useState(defaultOpen);
+  // Dynamically import motion to avoid hydration mismatch if needed, but standard import is fine for client components.
+  // Since this file is 'use client', we can use framer-motion directly.
+  const { motion, AnimatePresence } = require('framer-motion');
 
   return (
     <div className={cn("space-y-2", className)}>
@@ -100,18 +103,29 @@ export function CollapsibleSection({ title, children, defaultOpen = true, classN
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 w-full text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
       >
-        {isOpen ? (
-          <ChevronDown className="w-4 h-4" />
-        ) : (
+        <motion.div
+          animate={{ rotate: isOpen ? 90 : 0 }}
+          transition={{ duration: 0.2 }}
+        >
           <ChevronRight className="w-4 h-4" />
-        )}
+        </motion.div>
         {title}
       </button>
-      {isOpen && (
-        <div className="pl-6 space-y-2">
-          {children}
-        </div>
-      )}
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="pl-6 space-y-2 pt-1 pb-2">
+              {children}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
