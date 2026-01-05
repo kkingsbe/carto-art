@@ -14,11 +14,11 @@ import {
     Area
 } from 'recharts';
 import { Loader2 } from 'lucide-react';
+import { MultiMetricSelector } from './MultiMetricSelector';
 
 interface ActivityPoint {
     date: string;
-    count?: number;
-    value?: number;
+    [key: string]: any; // Allow dynamic metric keys
 }
 
 const METRICS = [
@@ -30,6 +30,7 @@ const METRICS = [
     { id: 'total_users', label: 'Total Users', color: '#8b5cf6' },
     { id: 'search_location', label: 'Searches', color: '#8b5cf6' },
     { id: 'style_change', label: 'Styles', color: '#ec4899' },
+    { id: 'donations', label: 'Donations', color: '#facc15' },
     { id: 'generation_latency', label: 'Generation Latency', color: '#ef4444' },
     { id: 'search_latency', label: 'Search Latency', color: '#f97316' },
 ];
@@ -45,7 +46,7 @@ const TIMEFRAMES = [
 export function ActivityChart() {
     const [data, setData] = useState<ActivityPoint[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [selectedType, setSelectedType] = useState('all');
+    const [selectedTypes, setSelectedTypes] = useState<string[]>(['all']);
     const [selectedDays, setSelectedDays] = useState('1');
     const supabase = createClient();
 
@@ -54,7 +55,6 @@ export function ActivityChart() {
         let debounceTimer: NodeJS.Timeout | null = null;
 
         const fetchData = async (showLoading = true) => {
-            // Cancel any pending request
             if (abortController) {
                 abortController.abort();
             }
@@ -65,129 +65,105 @@ export function ActivityChart() {
             }
 
             try {
-                // Determine if this is a latency metric
-                const isLatencyMetric = selectedType === 'generation_latency' || selectedType === 'search_latency';
-
-                let res;
-                if (isLatencyMetric) {
-                    // Map to API type
-                    const latencyType = selectedType === 'generation_latency' ? 'generation' : 'search';
-                    res = await fetch(`/api/admin/stats/latency?type=${latencyType}&days=${selectedDays}`, {
-                        signal: abortController.signal
-                    });
-                } else {
-                    res = await fetch(`/api/admin/stats/activity?type=${selectedType}&days=${selectedDays}`, {
-                        signal: abortController.signal
-                    });
-                }
-
-                if (res.ok) {
-                    const stats = await res.json();
-                    setData(stats);
-                }
-            } catch (err: any) {
-                if (err.name === 'AbortError') {
-                    // Ignore abort errors
+                if (selectedTypes.length === 0) {
+                    setData([]);
                     return;
                 }
-                console.error('Failed to fetch activity stats');
+
+                // Fetch data for all selected metrics in parallel
+                const promises = selectedTypes.map(async (type) => {
+                    const isLatencyMetric = type === 'generation_latency' || type === 'search_latency';
+                    let url = '';
+                    if (isLatencyMetric) {
+                        const latencyType = type === 'generation_latency' ? 'generation' : 'search';
+                        url = `/api/admin/stats/latency?type=${latencyType}&days=${selectedDays}`;
+                    } else {
+                        url = `/api/admin/stats/activity?type=${type}&days=${selectedDays}`;
+                    }
+
+                    const res = await fetch(url, {
+                        signal: abortController?.signal
+                    });
+
+                    if (!res.ok) throw new Error(`Failed to fetch ${type}`);
+                    return { type, data: await res.json() };
+                });
+
+                const results = await Promise.all(promises);
+
+                // Merge data
+                // Assuming all APIs return sorted array of { date: string, count/value: number }
+                // We need to merge them into a single array of objects keyed by date
+                const mergedData: Record<string, ActivityPoint> = {};
+
+                // Initialize with dates from the first result (assuming all have same date ranges roughly)
+                // Actually, distinct metrics might have sparse data. It's safer to collect all unique dates first.
+                // However, the API returns a continuous range including zeros for the requested period.
+                // So we can iterate through the first one to set up structure, or just direct merge.
+                // NOTE: The API returns `count` for activity and `value` for latency.
+
+                results.forEach(({ type, data }) => {
+                    data.forEach((point: any) => {
+                        if (!mergedData[point.date]) {
+                            mergedData[point.date] = { date: point.date };
+                        }
+                        // Determine value key based on metric type logic from API
+                        const val = point.value !== undefined ? point.value : point.count;
+                        mergedData[point.date][type] = val;
+                    });
+                });
+
+                // Convert back to array and sort
+                const finalData = Object.values(mergedData).sort((a, b) => a.date.localeCompare(b.date));
+                setData(finalData);
+
+            } catch (err: any) {
+                if (err.name === 'AbortError') return;
+                console.error('Failed to fetch stats:', err);
             } finally {
-                // Only unset loading if this was the last request (not aborted)
-                // However, since we define 'abortController' in local scope of effect, 
-                // we need to be careful. Check signal.
                 if (showLoading && abortController && !abortController.signal.aborted) {
                     setIsLoading(false);
                 }
             }
         };
 
-        // Initial fetch
         fetchData();
 
-        // Debounced refetch function
         const debouncedRefetch = () => {
-            if (debounceTimer) {
-                clearTimeout(debounceTimer);
-            }
+            if (debounceTimer) clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
-                console.log('ActivityChart: Debounced refetch executing');
+                console.log('ActivityChart: Debounced refetch');
                 fetchData(false);
-            }, 1000); // Wait 1s of silence before refetching
+            }, 1000);
         };
 
-        // Set up realtime subscriptions
-        const pageEventsChannel = supabase
-            .channel('page_events_activity')
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'page_events'
-                },
-                async (payload) => {
-                    // Refetch if the event type matches our filter, or if we're showing all
-                    const isRelevantEvent = selectedType === 'all' || payload.new.event_type === selectedType;
+        // Realtime subscriptions
+        // We subscribe to all relevant tables regardless of selection for simplicity, 
+        // or we could optimize. For now, simple logic:
+        const channels: any[] = [];
 
-                    // Special case: generation_latency now comes from both api_usage AND page_events (poster_export)
-                    const isUiGenerationLatency = selectedType === 'generation_latency' && payload.new.event_type === 'poster_export';
-
-                    if (isRelevantEvent || isUiGenerationLatency) {
-                        // console.log('ActivityChart: New page event detected, scheduling refetch');
-                        debouncedRefetch();
-                    }
-                }
-            )
-            .subscribe();
-
-        const apiUsageChannel = supabase
-            .channel('api_usage_activity')
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'api_usage'
-                },
-                async () => {
-                    if (selectedType === 'all' || selectedType === 'generation_latency') {
-                        // console.log('ActivityChart: New API usage detected, scheduling refetch');
-                        debouncedRefetch();
-                    }
-                }
-            )
-            .subscribe();
-
-        const profilesChannel = supabase
-            .channel('profiles_activity')
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'profiles'
-                },
-                async () => {
-                    if (selectedType === 'all' || selectedType === 'total_users') {
-                        // console.log('ActivityChart: New profile detected, scheduling refetch');
-                        debouncedRefetch();
-                    }
-                }
-            )
-            .subscribe();
+        const tables = ['page_events', 'api_usage', 'profiles', 'donations'];
+        tables.forEach(table => {
+            const channel = supabase
+                .channel(`${table}_activity`)
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table }, () => {
+                    debouncedRefetch();
+                })
+                .subscribe();
+            channels.push(channel);
+        });
 
         return () => {
             if (abortController) abortController.abort();
             if (debounceTimer) clearTimeout(debounceTimer);
-            supabase.removeChannel(pageEventsChannel);
-            supabase.removeChannel(apiUsageChannel);
-            supabase.removeChannel(profilesChannel);
+            channels.forEach(ch => supabase.removeChannel(ch));
         };
-    }, [selectedType, selectedDays]);
+    }, [selectedTypes, selectedDays]);
 
-    const activeColor = METRICS.find(m => m.id === selectedType)?.color || '#3b82f6';
     const isHourly = parseFloat(selectedDays) <= 1;
-    const isLatencyMetric = selectedType === 'generation_latency' || selectedType === 'search_latency';
+
+    // Helper to get metric config
+    const getMetric = (id: string) => METRICS.find(m => m.id === id);
 
     return (
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
@@ -204,21 +180,12 @@ export function ActivityChart() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-4">
-                    {/* Metric Selector */}
-                    <div className="flex p-1 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800">
-                        {METRICS.map((metric) => (
-                            <button
-                                key={metric.id}
-                                onClick={() => setSelectedType(metric.id)}
-                                className={`px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-tight rounded-md transition-all ${selectedType === metric.id
-                                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-200 dark:ring-gray-600'
-                                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                                    }`}
-                            >
-                                {metric.label}
-                            </button>
-                        ))}
-                    </div>
+                    {/* Multi Metric Selector */}
+                    <MultiMetricSelector
+                        metrics={METRICS}
+                        selected={selectedTypes}
+                        onChange={setSelectedTypes}
+                    />
 
                     {/* Timeframe Selector */}
                     <div className="flex p-1 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100/50 dark:border-blue-800/20">
@@ -247,10 +214,15 @@ export function ActivityChart() {
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={data}>
                             <defs>
-                                <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor={activeColor} stopOpacity={0.1} />
-                                    <stop offset="95%" stopColor={activeColor} stopOpacity={0} />
-                                </linearGradient>
+                                {selectedTypes.map(type => {
+                                    const color = getMetric(type)?.color || '#3b82f6';
+                                    return (
+                                        <linearGradient key={type} id={`color-${type}`} x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor={color} stopOpacity={0.1} />
+                                            <stop offset="95%" stopColor={color} stopOpacity={0} />
+                                        </linearGradient>
+                                    );
+                                })}
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#88888820" />
                             <XAxis
@@ -280,7 +252,8 @@ export function ActivityChart() {
                                     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                                     fontSize: '12px'
                                 }}
-                                itemStyle={{ color: activeColor, fontWeight: 600 }}
+                                // Sort tooltip items by valuedescending
+                                itemSorter={(item) => (item.value as number) * -1}
                                 labelStyle={{ color: '#6b7280', marginBottom: '4px' }}
                                 labelFormatter={(label) => {
                                     const date = new Date(label);
@@ -298,23 +271,30 @@ export function ActivityChart() {
                                         year: 'numeric'
                                     });
                                 }}
-                                formatter={(value: any) => {
-                                    if (isLatencyMetric) {
-                                        return [`${value} ms`, 'Avg Latency'];
-                                    }
-                                    const label = METRICS.find(m => m.id === selectedType)?.label || 'Count';
-                                    return [value, label];
+                                formatter={(value: any, name: any) => {
+                                    const metric = getMetric(name as string);
+                                    const isLatency = name === 'generation_latency' || name === 'search_latency';
+                                    const suffix = isLatency ? ' ms' : '';
+                                    return [`${value}${suffix}`, metric?.label || name];
                                 }}
                             />
-                            <Area
-                                type="monotone"
-                                dataKey={isLatencyMetric ? "value" : "count"}
-                                stroke={activeColor}
-                                strokeWidth={2}
-                                fillOpacity={1}
-                                fill="url(#colorCount)"
-                                animationDuration={500}
-                            />
+                            {selectedTypes.map(type => {
+                                const metric = getMetric(type);
+                                if (!metric) return null;
+                                return (
+                                    <Area
+                                        key={type}
+                                        type="monotone"
+                                        dataKey={type}
+                                        stroke={metric.color}
+                                        strokeWidth={2}
+                                        fillOpacity={1}
+                                        fill={`url(#color-${type})`}
+                                        animationDuration={500}
+                                        connectNulls // In case some data points are missing for a metric
+                                    />
+                                );
+                            })}
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
@@ -322,3 +302,4 @@ export function ActivityChart() {
         </div>
     );
 }
+

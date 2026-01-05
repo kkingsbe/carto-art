@@ -11,9 +11,11 @@ import {
     Download,
     Share2,
     Key,
-    Eye
+    Eye,
+    Coffee
 } from 'lucide-react';
 import { RecentActivityFeed } from '@/components/admin/RecentActivityFeed';
+import { AddDonationDialog } from '@/components/admin/AddDonationDialog';
 
 export default async function AdminDashboardPage() {
     const supabase = await createClient();
@@ -30,7 +32,8 @@ export default async function AdminDashboardPage() {
         { count: publishedMaps },
         { count: activeApiKeys },
         { count: views24h },
-        { data: recentEvents }
+        { data: recentEvents },
+        { data: donationStats }
     ] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
         supabase.from('maps').select('*', { count: 'exact', head: true }),
@@ -51,16 +54,22 @@ export default async function AdminDashboardPage() {
                 )
             `)
             .order('created_at', { ascending: false })
-            .limit(20)
+            .limit(20),
+        (supabase as any).from('donations').select('amount').eq('status', 'success')
     ]);
+
+    const bmacRevenue = (donationStats || []).reduce((sum: number, d: any) => sum + Number(d.amount), 0);
 
     return (
         <div className="space-y-8">
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight">Dashboard Overview</h1>
-                <p className="text-gray-500 dark:text-gray-400">
-                    Real-time metrics and platform status.
-                </p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">Dashboard Overview</h1>
+                    <p className="text-gray-500 dark:text-gray-400">
+                        Real-time metrics and platform status.
+                    </p>
+                </div>
+                <AddDonationDialog />
             </div>
 
             {/* Quick Stats Grid */}
@@ -104,6 +113,12 @@ export default async function AdminDashboardPage() {
                     title="Feedback"
                     value={totalFeedback?.toLocaleString() || '0'}
                     icon={MessageSquare}
+                />
+                <MetricCard
+                    title="Monthly Donations"
+                    value={new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(bmacRevenue || 0)}
+                    icon={Coffee}
+                    className="bg-yellow-50/30 dark:bg-yellow-900/10 border-yellow-100 dark:border-yellow-800"
                 />
             </div>
 

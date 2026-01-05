@@ -32,6 +32,7 @@ import { ExportButton } from '@/components/controls/ExportButton';
 import { CommandMenu } from '@/components/ui/CommandMenu';
 import { AdvancedControls } from '@/components/controls/AdvancedControls';
 import { Walkthrough } from '@/components/ui/Walkthrough';
+import { CreationCelebrationModal } from '@/components/controls/CreationCelebrationModal';
 import type { Step } from 'react-joyride';
 
 export function PosterEditor() {
@@ -90,6 +91,7 @@ export function PosterEditor() {
 
   // Modal coordination
   const [showDonationModal, setShowDonationModal] = useState(false);
+  const [showCreationCelebration, setShowCreationCelebration] = useState(false);
   const [showProductModal, setShowProductModal] = useState(false);
   const [exportedImage, setExportedImage] = useState<string | null>(null);
 
@@ -391,6 +393,14 @@ export function PosterEditor() {
   // Wrapper for SaveButton that passes current config, to maintain simpler API for EditorToolbar
   const handleSaveClick = useCallback(async (name: string) => {
     await saveProject(name, config);
+
+    // Show celebration modal on first save only
+    const hasSeenCelebration = localStorage.getItem('hasSeenCreationCelebration');
+    if (!hasSeenCelebration) {
+      setShowCreationCelebration(true);
+      localStorage.setItem('hasSeenCreationCelebration', 'true');
+    }
+
     trackEventAction({
       eventType: 'map_publish',
       eventName: 'save_project',
@@ -612,11 +622,17 @@ export function PosterEditor() {
 
       {/* Feedback Modal - Only show if indicated AND donation modal is closed */}
       <FeedbackModal
-        isOpen={shouldShowFeedback && !showDonationModal && !showProductModal}
+        isOpen={shouldShowFeedback && !showDonationModal && !showProductModal && !showCreationCelebration}
         onClose={hideFeedback}
         onSubmit={handleFeedbackSubmit}
         isSubmitting={isFeedbackSubmitting}
         onDismiss={dismissFeedback}
+      />
+
+      {/* Creation Celebration Modal - First save only */}
+      <CreationCelebrationModal
+        isOpen={showCreationCelebration}
+        onClose={() => setShowCreationCelebration(false)}
       />
 
       {/* Product Modal */}
