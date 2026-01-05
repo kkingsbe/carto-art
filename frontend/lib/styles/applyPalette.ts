@@ -108,33 +108,48 @@ export function applyPaletteToStyle(
   const terrainSourceId = `terrain-${terrainLevel}`;
   const hillshadeSourceId = `hillshade-${terrainLevel}`;
 
-  if (updatedStyle.sources?.terrain) {
-    // If we're using a non-default level, we MUST create a new source with the correct ID
-    // and remove the old 'terrain' source to force a clean update
-    if (terrainLevel !== 'normal' || !updatedStyle.sources[terrainSourceId]) {
-      const originalSource = updatedStyle.sources.terrain;
-      const tileSize = TERRAIN_DETAIL_PRESETS[terrainLevel as TerrainDetailLevel] ?? 256;
+  // Robustly handle terrain source:
+  // 1. Check for standard 'terrain'
+  // 2. Check for previously renamed 'terrain-*'
+  // 3. Recreate if missing entirely
+  let originalTerrainSource = updatedStyle.sources?.terrain;
 
-      updatedStyle.sources[terrainSourceId] = {
-        ...originalSource,
-        tileSize: tileSize
-      };
-
-      // If the ID changed (i.e. not 'terrain'), delete the original generic 'terrain' source
-      if (terrainSourceId !== 'terrain') {
-        delete updatedStyle.sources.terrain;
+  if (!originalTerrainSource && updatedStyle.sources) {
+    // Try to find any existing terrain source to use as a base
+    const existingTerrainId = Object.keys(updatedStyle.sources).find(key => key.startsWith('terrain-'));
+    if (existingTerrainId) {
+      originalTerrainSource = updatedStyle.sources[existingTerrainId];
+      // Clean up the old source if we're going to create a new one with a different ID
+      if (existingTerrainId !== terrainSourceId) {
+        delete updatedStyle.sources[existingTerrainId];
       }
-    } else {
-      // Even for 'normal', ensure tileSize is correct in case it was mutated
-      updatedStyle.sources.terrain.tileSize = 256;
+    }
+  }
+
+  // If we still don't have a source (shouldn't happen in a valid style, but possible if stripped),
+  // we could theoretically recreate it, but usually 'terrain' is in the base style.
+  // For safety, let's just proceed if we have a source or if we can make the new one.
+
+  if (originalTerrainSource) {
+    const tileSize = TERRAIN_DETAIL_PRESETS[terrainLevel as TerrainDetailLevel] ?? 256;
+
+    // Create/Update the specific terrain source
+    updatedStyle.sources[terrainSourceId] = {
+      ...originalTerrainSource,
+      tileSize: tileSize
+    };
+
+    // If the expected source ID is different from 'terrain', ensure 'terrain' is removed
+    // (It might have been finding 'terrain' above)
+    if (terrainSourceId !== 'terrain' && updatedStyle.sources.terrain) {
+      delete updatedStyle.sources.terrain;
     }
 
     // Create a dedicated source for hillshade to avoid "same source" warning with 3D terrain
-    if (updatedStyle.sources[terrainSourceId]) {
-      updatedStyle.sources[hillshadeSourceId] = {
-        ...updatedStyle.sources[terrainSourceId]
-      };
-    }
+    // We clone the configured terrain source (with correct tileSize)
+    updatedStyle.sources[hillshadeSourceId] = {
+      ...updatedStyle.sources[terrainSourceId]
+    };
   }
 
   // detailed terrain configuration

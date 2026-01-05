@@ -51,8 +51,8 @@ export function TerrainControls({ layers, onLayersChange, showUnderwaterToggle }
                                 key={level}
                                 onClick={() => onLayersChange({ terrainDetailLevel: level })}
                                 className={`flex-1 py-1.5 px-2 text-[10px] font-medium rounded transition-colors ${(layers.terrainDetailLevel ?? 'normal') === level
-                                        ? 'bg-blue-500 text-white'
-                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                    ? 'bg-blue-500 text-white'
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                     }`}
                             >
                                 {level === 'normal' ? 'Normal' : level === 'high' ? 'High' : 'Ultra'}
@@ -68,12 +68,33 @@ export function TerrainControls({ layers, onLayersChange, showUnderwaterToggle }
                     </p>
                 </div>
 
+                {/* Exaggeration Control (Main UI) */}
+                {layers.volumetricTerrain && (
+                    <div className="space-y-1 pt-2 border-t border-gray-100 dark:border-gray-700">
+                        <ControlLabel className="text-[10px] uppercase text-gray-500">Height Scale</ControlLabel>
+                        <ControlSlider
+                            min="0"
+                            max="1"
+                            step="0.01"
+                            // Reverse the log conversion for display: slider = (exag/20)^(1/3.3)
+                            value={Math.pow((layers.volumetricTerrainExaggeration ?? 1) / 20, 1 / 3.3)}
+                            displayValue={`${(layers.volumetricTerrainExaggeration ?? 1).toFixed(1)}x`}
+                            onValueChange={(val) => {
+                                // Apply log conversion: exag = 20 * val^3.3
+                                const exag = 20 * Math.pow(val, 3.3);
+                                onLayersChange({ volumetricTerrainExaggeration: exag });
+                            }}
+                        // We don't parse/format directly because of the non-linear transform handled in props
+                        />
+                    </div>
+                )}
+
                 {/* Light Direction - controls hillshade illumination */}
                 <div className="space-y-1 pt-2 border-t border-gray-100 dark:border-gray-700">
                     <ControlLabel className="text-[10px] uppercase text-gray-500">Light Direction</ControlLabel>
                     <ControlSlider
                         min="0"
-                        max="360"
+                        max="359"
                         step="15"
                         value={layers.terrainLightAzimuth ?? 315}
                         displayValue={`${layers.terrainLightAzimuth ?? 315}°`}

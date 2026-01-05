@@ -69,25 +69,44 @@ export function AdvancedControls({ config, updateLayers, isOpen, onClose }: Adva
         });
 
         // Terrain
+
+        // Helper to convert linear slider (0-1) to non-linear exaggeration (0-20)
+        // Using power curve: y = 20 * x^3.3
+        // This puts 1.0 at approx slider position 0.4
+        const toExag = (v: number) => 20 * Math.pow(v, 3.3);
+        const toSlider = (v: number) => Math.pow(v / 20, 1 / 3.3);
+
+        const currentExag = config.layers.volumetricTerrainExaggeration || 1;
         const terrainParams = {
             enabled: config.layers.volumetricTerrain || false,
-            exaggeration: config.layers.volumetricTerrainExaggeration || 1,
+            sliderVal: toSlider(currentExag),
+            actualVal: currentExag,
         };
 
         terrainFolder.addBinding(terrainParams, 'enabled', {
             label: '3D Terrain'
         }).on('change', (ev: any) => {
             updateLayers({ volumetricTerrain: ev.value });
+            // Refresh slider disabled state if needed - Tweakpane might handle this better if we saved the binding ref
         });
 
-        terrainFolder.addBinding(terrainParams, 'exaggeration', {
+
+        const exagInput = terrainFolder.addBinding(terrainParams, 'sliderVal', {
             min: 0,
-            max: 5,
-            step: 0.1,
-            label: 'Elevation Scale',
-            disabled: !terrainParams.enabled
+            max: 1,
+            step: 0.01,
+            label: 'Height Scale (Log)',
         }).on('change', (ev: any) => {
-            updateLayers({ volumetricTerrainExaggeration: ev.value });
+            const newVal = toExag(ev.value);
+            terrainParams.actualVal = newVal;
+            updateLayers({ volumetricTerrainExaggeration: newVal });
+        });
+
+        // Add a monitor to see the real value
+        terrainFolder.addBinding(terrainParams, 'actualVal', {
+            readonly: true,
+            label: 'Exaggeration',
+            format: (v: number) => v.toFixed(2) + 'x',
         });
 
         // Buildings
