@@ -210,17 +210,22 @@ function handleContourSource(style: any) {
     return;
   }
 
-  // If source exists but URL is empty, try to regenerate it at runtime
-  // This handles cases where getBaseUrl() returned empty at module load time
+  // If we have tiles defined (e.g. contour:// protocol or direct ZXY), we are good.
+  // We don't want to fallback to MapTiler if we have a valid tiles definition.
+  if (contourSource.tiles && contourSource.tiles.length > 0) {
+    return;
+  }
+
+  // If source exists but URL is empty and no tiles are defined, try to regenerate it at runtime
+  // (Old behavior for MapTiler fallback, kept only for legacy configs that might rely on it)
   if (!contourSource.url || contourSource.url === '') {
     const url = getContourTileJsonUrl();
 
     if (url) {
-      // Set the URL if we can get it now (browser context has window.location)
+      // Set the URL if we can get it now
       contourSource.url = url;
     } else {
       // Only filter if we're certain the key is missing
-      // This should be rare if NEXT_PUBLIC_MAPTILER_KEY is set
       style.layers = style.layers.filter((layer: any) =>
         layer.id !== 'contours' &&
         !layer.id.includes('contour') &&
@@ -228,7 +233,6 @@ function handleContourSource(style: any) {
       );
     }
   }
-  // If URL exists (even if relative), don't filter - let MapLibre handle it
 }
 
 /**

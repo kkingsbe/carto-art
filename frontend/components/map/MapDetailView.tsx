@@ -12,6 +12,14 @@ import { Button } from '@/components/ui/control-components';
 import { Edit, Copy } from 'lucide-react';
 import type { SavedMap } from '@/lib/actions/maps';
 import type { Comment } from '@/lib/actions/comments';
+import { setupMapLibreContour } from '@/lib/map/setup';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
+
+// Initialize contour protocol
+if (typeof window !== 'undefined') {
+  setupMapLibreContour(maplibregl);
+}
 
 interface MapDetailViewProps {
   map: SavedMap;

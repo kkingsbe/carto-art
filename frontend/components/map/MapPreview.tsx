@@ -2,6 +2,7 @@
 
 import { useRef, useCallback, useEffect, useState } from 'react';
 import Map, { type MapRef } from 'react-map-gl/maplibre';
+import maplibregl from 'maplibre-gl';
 import { Loader2 } from 'lucide-react';
 import type { PosterLocation, LayerToggle, PosterConfig } from '@/types/poster';
 import { cn } from '@/lib/utils';
@@ -10,7 +11,14 @@ import { DeckTerrainLayer, TERRAIN_QUALITY_PRESETS } from './DeckTerrainLayer';
 import { getAwsTerrariumTileUrl } from '@/lib/styles/tileUrl';
 import { MAP, TIMEOUTS, TEXTURE } from '@/lib/constants';
 import { logger } from '@/lib/logger';
+import { setupMapLibreContour } from '@/lib/map/setup';
 import 'maplibre-gl/dist/maplibre-gl.css';
+
+// Initialize contour protocol
+// Initialize contour protocol
+if (typeof window !== 'undefined') {
+  setupMapLibreContour(maplibregl);
+}
 
 interface MapPreviewProps {
   mapStyle: any;
@@ -259,6 +267,7 @@ export function MapPreview({
         pixelRatio={MAP.PIXEL_RATIO}
         maxZoom={MAP.MAX_ZOOM}
         minZoom={MAP.MIN_ZOOM}
+        mapLib={maplibregl}
       >
         {/* Deck.gl Terrain Layer - Disabled for Preview to allow native texture draping
         {layers?.volumetricTerrain && (
