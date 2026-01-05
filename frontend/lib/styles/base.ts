@@ -39,9 +39,9 @@ export function getBaseSources(options: BaseSourcesOptions = {}) {
       type: 'vector',
       // Use maplibre-contour protocol which generates vector tiles client-side
       // from the free AWS Terrarium DEM tiles.
-      // We use 'tiles' array directly because the protocol handler might not support
-      // serving a TileJSON metadata response at the root URL.
-      tiles: ['contour://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+      // The URL here must match the pattern expected by the protocol handler (contour://z/x/y),
+      // effectively acting as a virtual URL. The actual S3 URL is configured in setup.ts DemSource.
+      tiles: ['contour://{z}/{x}/{y}'],
       minzoom: 9,
       maxzoom: 15,
     },

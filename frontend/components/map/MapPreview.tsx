@@ -58,6 +58,11 @@ export function MapPreview({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isMoving, setIsMoving] = useState(false);
 
+  // Ensure contour protocol is registered
+  useEffect(() => {
+    setupMapLibreContour(maplibregl);
+  }, []);
+
   // Store event handler references and timeout IDs for cleanup
   const loadingHandlerRef = useRef<(() => void) | null>(null);
   const idleHandlerRef = useRef<(() => void) | null>(null);
@@ -100,16 +105,19 @@ export function MapPreview({
   }, [layers?.buildings3DPitch, layers?.buildings3DBearing, isMoving]);
 
   const handleError = useCallback((e: any) => {
-    logger.error('MapLibre error details:', {
+    // Sanitize error object to avoid circular references and SecurityErrors
+    const safeError = {
       message: e.error?.message || e.message || 'Unknown map error',
-      error: e.error,
-      originalEvent: e
-    });
+      status: e.error?.status,
+      url: e.error?.url
+    };
+
+    logger.error('MapLibre error details:', safeError);
     setHasError(true);
-    const msg = e.error?.message || e.message || 'Unable to load map data';
+    const msg = safeError.message || 'Unable to load map data';
     setErrorMessage(msg);
     if (onError) {
-      onError(e);
+      onError(safeError);
     }
   }, [onError]);
 
