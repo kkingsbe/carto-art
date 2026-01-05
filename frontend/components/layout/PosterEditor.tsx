@@ -508,6 +508,7 @@ export function PosterEditor() {
           setShowDonationModal(false);
           setShowProductModal(true);
         } : undefined}
+        onFormatChange={updateFormat}
       />
 
       {/* Floating Sidebar Container - Hidden on mobile */}
@@ -772,6 +773,7 @@ export function PosterEditor() {
             isAuthenticated={isAuthenticated}
             currentMapName={currentMapName}
             hasUnsavedChanges={currentMapStatus?.hasUnsavedChanges}
+            onFormatChange={updateFormat}
           />
         </div>
       </div>

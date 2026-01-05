@@ -38,6 +38,7 @@ interface EditorToolbarProps {
     onDonationModalChange: (show: boolean) => void;
     onOpenCommandMenu: () => void;
     onBuyPrint?: () => void;
+    onFormatChange: (format: Partial<PosterConfig['format']>) => void;
 }
 
 export function EditorToolbar({
@@ -61,7 +62,8 @@ export function EditorToolbar({
     showDonationModal,
     onDonationModalChange,
     onOpenCommandMenu,
-    onBuyPrint
+    onBuyPrint,
+    onFormatChange
 }: EditorToolbarProps) {
     return (
         <div className="absolute top-2 right-2 md:top-6 md:right-8 z-45 pointer-events-auto flex items-center gap-2 md:gap-3 flex-wrap justify-end max-w-[calc(100vw-4rem)]">
@@ -162,6 +164,7 @@ export function EditorToolbar({
                         isAuthenticated={isAuthenticated}
                         currentMapName={currentMapName}
                         hasUnsavedChanges={hasUnsavedChanges}
+                        onFormatChange={onFormatChange}
                     />
                 </div>
             </div>

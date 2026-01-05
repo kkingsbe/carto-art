@@ -36,6 +36,7 @@ export const DEFAULT_CONFIG: PosterConfig = {
     backdropAlpha: 1.0,
     backdropSharpness: 50,
     maxWidth: 80,
+    offsetY: 0,
   },
   format: {
     aspectRatio: '2:3',

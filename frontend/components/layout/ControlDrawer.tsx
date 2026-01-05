@@ -4,6 +4,7 @@ import { Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { LocationSearch } from '@/components/controls/LocationSearch';
+import { CameraControls } from '@/components/controls/CameraControls';
 import { StyleSelector } from '@/components/controls/StyleSelector';
 import { ColorControls } from '@/components/controls/ColorControls';
 import { TypographyControls } from '@/components/controls/TypographyControls';
@@ -165,6 +166,18 @@ export function ControlDrawer({
                   <p className="opacity-90 leading-relaxed pr-4">Drag the map to reposition. Hold <kbd className="px-1 py-0.5 bg-white dark:bg-black rounded text-[10px]">Ctrl</kbd> to rotate and tilt the view.</p>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'camera' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
+              <div className="flex items-center justify-between md:block">
+                <h3 className="hidden md:block text-lg font-semibold text-gray-900 dark:text-white">Camera</h3>
+              </div>
+              <CameraControls
+                layers={config.layers}
+                onLayersChange={updateLayers}
+              />
             </div>
           )}
 

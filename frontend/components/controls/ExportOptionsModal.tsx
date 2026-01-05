@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { X, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ControlSlider, ControlLabel } from '@/components/ui/control-components';
 import { EXPORT_RESOLUTIONS, DEFAULT_EXPORT_RESOLUTION, type ExportResolutionKey } from '@/lib/export/constants';
 import { calculateTargetResolution, getPhysicalDimensions, type ExportResolution, type BaseExportResolution } from '@/lib/export/resolution';
 import type { PosterConfig } from '@/types/poster';
@@ -17,6 +18,7 @@ interface ExportOptionsModalProps {
     exportProgress?: { stage: string; percent: number } | null;
     gifProgress?: number;
     format: PosterConfig['format'];
+    onFormatChange: (format: Partial<PosterConfig['format']>) => void;
 }
 
 export function ExportOptionsModal({
@@ -26,7 +28,8 @@ export function ExportOptionsModal({
     isExporting,
     exportProgress,
     gifProgress,
-    format
+    format,
+    onFormatChange
 }: ExportOptionsModalProps) {
     const [selectedKey, setSelectedKey] = useState<string>('SMALL');
     const [gifDuration, setGifDuration] = useState(3);
@@ -122,6 +125,21 @@ export function ExportOptionsModal({
                             </p>
 
                             <div className="space-y-6">
+                                {/* Margin Control - Quick adjustment */}
+                                <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <ControlLabel className="mb-0">Map Padding (Margin)</ControlLabel>
+                                        <span className="text-xs font-mono text-gray-500">{format.margin}%</span>
+                                    </div>
+                                    <ControlSlider
+                                        min="0"
+                                        max="20"
+                                        step="0.5"
+                                        value={format.margin}
+                                        onValueChange={(value) => onFormatChange({ margin: value })}
+                                    />
+                                </div>
+
                                 {/* Print Category */}
                                 <div>
                                     <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Printing & Physical</div>

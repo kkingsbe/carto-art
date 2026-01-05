@@ -105,6 +105,7 @@ export interface PosterConfig {
     backdropAlpha?: number;  // opacity (0-1)
     backdropSharpness?: number; // New: 0-100 (soft to abrupt)
     maxWidth?: number; // New: max width percentage (0-100)
+    offsetY?: number; // New: vertical offset (-50 to 50)
   };
   format: {
     aspectRatio: '2:3' | '3:4' | '4:5' | '1:1' | 'ISO' | '16:9' | '16:10' | '9:16' | '9:19.5';

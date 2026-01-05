@@ -109,7 +109,10 @@ export function TextOverlay({ config }: TextOverlayProps) {
       {/* Text Container - has the padding for layout */}
       <div
         className={`absolute inset-0 flex justify-center ${positionClasses[typography.position]}`}
-        style={paddingStyle}
+        style={{
+          ...paddingStyle,
+          transform: typography.offsetY ? `translateY(${typography.offsetY}cqw)` : undefined,
+        }}
       >
         <div
           className="relative text-center flex flex-col items-center"
