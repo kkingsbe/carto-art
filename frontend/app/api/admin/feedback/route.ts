@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
         // Calculate statistics
         const statsQuery = (supabase as any)
             .from('feedback')
-            .select('overall_rating, nps_score');
+            .select('created_at, overall_rating, nps_score');
 
         // Apply same filters for stats
         let statsQueryFiltered = statsQuery;
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
             statsQueryFiltered = statsQueryFiltered.eq('trigger_type', triggerType);
         }
 
-        const { data: statsData, error: statsError } = await statsQueryFiltered as { data: Array<{ overall_rating: number; nps_score: number | null }> | null; error: any };
+        const { data: statsData, error: statsError } = await statsQueryFiltered as { data: Array<{ created_at: string; overall_rating: number; nps_score: number | null }> | null; error: any };
 
         if (statsError) throw statsError;
 
@@ -126,6 +126,33 @@ export async function GET(request: NextRequest) {
         const nps_percentage = total_with_nps > 0
             ? ((promoters - detractors) / total_with_nps) * 100
             : 0;
+
+        // Calculate Trend Data (Group by Day)
+        const trendMap = new Map<string, { total_rating: number; count: number; total_nps: number; nps_count: number }>();
+
+        statsData?.forEach(item => {
+            const date = new Date(item.created_at).toISOString().split('T')[0];
+            const current = trendMap.get(date) || { total_rating: 0, count: 0, total_nps: 0, nps_count: 0 };
+
+            current.total_rating += item.overall_rating;
+            current.count += 1;
+
+            if (item.nps_score !== null) {
+                current.total_nps += item.nps_score;
+                current.nps_count += 1;
+            }
+
+            trendMap.set(date, current);
+        });
+
+        const trend = Array.from(trendMap.entries())
+            .map(([date, data]) => ({
+                date,
+                rating: Math.round((data.total_rating / data.count) * 10) / 10,
+                nps: data.nps_count > 0 ? Math.round((data.total_nps / data.nps_count) * 10) / 10 : null,
+                count: data.count
+            }))
+            .sort((a, b) => a.date.localeCompare(b.date));
 
         // Format feedback data
         const formattedFeedback = feedback?.map(item => ({
@@ -161,6 +188,7 @@ export async function GET(request: NextRequest) {
                 passives,
                 detractors,
             },
+            trend,
             pagination: {
                 total: count || 0,
                 offset,

@@ -8,3 +8,4 @@ export { FeedbackRatingGrid } from './FeedbackRatingGrid';
 export { FeedbackTextarea } from './FeedbackTextarea';
 export { FeedbackTrigger } from './FeedbackTrigger';
 export { useFeedback } from './useFeedback';
+export { FeedbackWidget } from './FeedbackWidget';

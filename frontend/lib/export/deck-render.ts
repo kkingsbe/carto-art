@@ -248,10 +248,10 @@ async function renderSingleDeckTerrain({
             layers: [layer],
             effects: [lightingEffect],
             useDevicePixels: false,
-            glOptions: {
+            deviceProps: {
                 preserveDrawingBuffer: true,
                 depth: true,
-            },
+            } as any,
             onAfterRender: () => {
                 if (!deck || isResolved) return;
                 const layers = (deck as any).layerManager?.getLayers();

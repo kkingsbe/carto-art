@@ -23,7 +23,7 @@ import { ErrorToastContainer } from '@/components/ui/ErrorToast';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { reverseGeocode } from '@/lib/geocoding/nominatim';
 import type MapLibreGL from 'maplibre-gl';
-import { FeedbackModal, useFeedback } from '@/components/feedback';
+import { FeedbackModal, useFeedback, FeedbackWidget } from '@/components/feedback';
 import type { FeedbackFormData } from '@/components/feedback';
 import type { ExportResolution } from '@/lib/export/resolution';
 import { ProductModal } from '@/components/ecommerce/ProductModal';
@@ -621,6 +621,12 @@ export function PosterEditor() {
                 <Maximize className="h-4 w-4" />
               </button>
             </div>
+
+            {/* Feedback Widget - Independent */}
+            <div className="absolute bottom-32 right-0 z-10 pointer-events-auto">
+              <FeedbackWidget />
+            </div>
+
           </PosterCanvas>
         </div>
 

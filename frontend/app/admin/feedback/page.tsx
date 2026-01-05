@@ -27,6 +27,17 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import {
+    AreaChart,
+    Area,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip as RechartsTooltip,
+    ResponsiveContainer,
+    BarChart,
+    Bar
+} from 'recharts';
 
 interface FeedbackItem {
     id: string;
@@ -59,9 +70,17 @@ interface FeedbackStats {
     detractors: number;
 }
 
+interface FeedbackTrend {
+    date: string;
+    rating: number;
+    nps: number | null;
+    count: number;
+}
+
 export default function FeedbackPage() {
     const [feedback, setFeedback] = useState<FeedbackItem[]>([]);
     const [stats, setStats] = useState<FeedbackStats | null>(null);
+    const [trend, setTrend] = useState<FeedbackTrend[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [timeRange, setTimeRange] = useState('30d');
@@ -88,6 +107,7 @@ export default function FeedbackPage() {
                 const data = await res.json();
                 setFeedback(data.feedback);
                 setStats(data.stats);
+                setTrend(data.trend || []);
             } else {
                 toast.error('Failed to load feedback');
             }
@@ -238,6 +258,89 @@ export default function FeedbackPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Charts Section */}
+            {trend.length > 0 && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Rating Trend */}
+                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
+                        <h3 className="text-lg font-semibold mb-6">Rating Trend</h3>
+                        <div className="h-[300px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={trend}>
+                                    <defs>
+                                        <linearGradient id="colorRating" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1} />
+                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" opacity={0.3} />
+                                    <XAxis
+                                        dataKey="date"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: '#6b7280', fontSize: 12 }}
+                                        tickFormatter={(value) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                    />
+                                    <YAxis
+                                        domain={[0, 5]}
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: '#6b7280', fontSize: 12 }}
+                                    />
+                                    <RechartsTooltip
+                                        contentStyle={{ backgroundColor: 'var(--background)', borderRadius: '8px', border: '1px solid var(--border)' }}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="rating"
+                                        stroke="#3b82f6"
+                                        strokeWidth={2}
+                                        fillOpacity={1}
+                                        fill="url(#colorRating)"
+                                        name="Avg Rating"
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Volume Trend */}
+                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
+                        <h3 className="text-lg font-semibold mb-6">Feedback Volume</h3>
+                        <div className="h-[300px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={trend}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" opacity={0.3} />
+                                    <XAxis
+                                        dataKey="date"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: '#6b7280', fontSize: 12 }}
+                                        tickFormatter={(value) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                    />
+                                    <YAxis
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: '#6b7280', fontSize: 12 }}
+                                        allowDecimals={false}
+                                    />
+                                    <RechartsTooltip
+                                        contentStyle={{ backgroundColor: 'var(--background)', borderRadius: '8px', border: '1px solid var(--border)' }}
+                                        cursor={{ fill: 'rgba(0,0,0,0.05)' }}
+                                    />
+                                    <Bar
+                                        dataKey="count"
+                                        fill="#8b5cf6"
+                                        radius={[4, 4, 0, 0]}
+                                        name="Submissions"
+                                    />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Filters */}
             <div className="flex flex-col sm:flex-row gap-4">
