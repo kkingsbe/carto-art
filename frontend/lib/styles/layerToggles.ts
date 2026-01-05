@@ -140,6 +140,11 @@ export function getBaseLayerToggles(
       layerIds: customLayerIds.population || ['population-density'],
     },
     {
+      id: 'railroads',
+      name: 'Railroads',
+      layerIds: customLayerIds.railroads || ['railroad-casing', 'railroad-main'],
+    },
+    {
       id: 'pois',
       name: 'Points of Interest',
       layerIds: customLayerIds.pois || poiLayers,

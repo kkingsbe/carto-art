@@ -38,11 +38,8 @@ export function LayerControls({ layers, rendering, onLayersChange, onRenderingCh
   const landcoverLayers = availableToggles.filter(t =>
     ['landcoverWood', 'landcoverGrass', 'landcoverFarmland', 'landcoverIce'].includes(t.id)
   );
-  const landuseLayers = availableToggles.filter(t =>
-    ['landuseForest', 'landuseOrchard', 'landuseVineyard', 'landuseCemetery', 'landuseGrass'].includes(t.id)
-  );
   const dataLayers = availableToggles.filter(t =>
-    ['streets', 'population', 'pois'].includes(t.id)
+    ['streets', 'railroads', 'population', 'pois'].includes(t.id)
   );
 
   const renderLayerItem = (item: LayerToggle) => {
@@ -74,7 +71,7 @@ export function LayerControls({ layers, rendering, onLayersChange, onRenderingCh
         </div>
 
         {/* Geographic Features */}
-        {(geographicLayers.length > 0 || landcoverLayers.length > 0 || landuseLayers.length > 0) && (
+        {(geographicLayers.length > 0 || landcoverLayers.length > 0) && (
           <CollapsibleSection title="Geographic Features" defaultOpen={true}>
             <div className="space-y-2">
               {geographicLayers.map(renderLayerItem)}
@@ -131,15 +128,6 @@ export function LayerControls({ layers, rendering, onLayersChange, onRenderingCh
                 <CollapsibleSection title="Landcover" defaultOpen={true}>
                   <div className="space-y-2">
                     {landcoverLayers.map(renderLayerItem)}
-                  </div>
-                </CollapsibleSection>
-              )}
-
-              {/* Landuse */}
-              {landuseLayers.length > 0 && (
-                <CollapsibleSection title="Landuse" defaultOpen={true}>
-                  <div className="space-y-2">
-                    {landuseLayers.map(renderLayerItem)}
                   </div>
                 </CollapsibleSection>
               )}

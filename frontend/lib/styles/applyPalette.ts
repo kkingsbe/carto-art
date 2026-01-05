@@ -3,6 +3,7 @@ import { isColorDark, hexToRgb, rgbToHex, adjustColorHue, lightenColor, darkenCo
 import { getContourTileJsonUrl } from '@/lib/styles/tileUrl';
 import { logger } from '@/lib/logger';
 import { VisibilityManager } from './palette/VisibilityManager';
+import { TERRAIN_DETAIL_PRESETS, type TerrainDetailLevel } from './config';
 
 
 
@@ -58,6 +59,12 @@ export function applyPaletteToStyle(
   handleContourSource(updatedStyle);
   normalizeSpaceportsSource(updatedStyle);
 
+  // Update terrain source tile size based on detail level
+  if (layers?.terrainDetailLevel && updatedStyle.sources?.terrain) {
+    const tileSize = TERRAIN_DETAIL_PRESETS[layers.terrainDetailLevel as TerrainDetailLevel] ?? 256;
+    updatedStyle.sources.terrain.tileSize = tileSize;
+  }
+
   // Ensure water layers always come after hillshade to hide terrain under water
   reorderLayersForWater(updatedStyle.layers);
 
@@ -96,17 +103,84 @@ export function applyPaletteToStyle(
   }
 
   // detailed terrain configuration
+  // Handle terrain source with dynamic ID for quality level stability
+  const terrainLevel = layers?.terrainDetailLevel ?? 'normal';
+  const terrainSourceId = `terrain-${terrainLevel}`;
+  const hillshadeSourceId = `hillshade-${terrainLevel}`;
+
+  if (updatedStyle.sources?.terrain) {
+    // If we're using a non-default level, we MUST create a new source with the correct ID
+    // and remove the old 'terrain' source to force a clean update
+    if (terrainLevel !== 'normal' || !updatedStyle.sources[terrainSourceId]) {
+      const originalSource = updatedStyle.sources.terrain;
+      const tileSize = TERRAIN_DETAIL_PRESETS[terrainLevel as TerrainDetailLevel] ?? 256;
+
+      updatedStyle.sources[terrainSourceId] = {
+        ...originalSource,
+        tileSize: tileSize
+      };
+
+      // If the ID changed (i.e. not 'terrain'), delete the original generic 'terrain' source
+      if (terrainSourceId !== 'terrain') {
+        delete updatedStyle.sources.terrain;
+      }
+    } else {
+      // Even for 'normal', ensure tileSize is correct in case it was mutated
+      updatedStyle.sources.terrain.tileSize = 256;
+    }
+
+    // Create a dedicated source for hillshade to avoid "same source" warning with 3D terrain
+    if (updatedStyle.sources[terrainSourceId]) {
+      updatedStyle.sources[hillshadeSourceId] = {
+        ...updatedStyle.sources[terrainSourceId]
+      };
+    }
+  }
+
+  // detailed terrain configuration
   if (layers?.volumetricTerrain) {
     updatedStyle.terrain = {
-      source: 'terrain',
+      source: terrainSourceId,
       exaggeration: layers.volumetricTerrainExaggeration ?? 1.5
+    };
+
+    // Add atmospheric fog for depth perception
+    if (layers.terrainFog !== false) { // Default to enabled
+      updatedStyle.fog = {
+        range: layers.terrainFogRange ?? [0.5, 10],
+        color: layers.terrainFogColor ?? 'rgba(186, 210, 235, 0.5)',
+        'horizon-blend': 0.1,
+      };
+    } else {
+      delete updatedStyle.fog;
+    }
+
+    // Configure terrain lighting using MapLibre's light property
+    const azimuth = layers.terrainLightAzimuth ?? 315;
+    const altitude = layers.terrainLightAltitude ?? 45;
+    const intensity = layers.terrainAmbientLight ?? 0.35;
+
+    updatedStyle.light = {
+      ...updatedStyle.light,
+      anchor: 'viewport',
+      position: [1.5, azimuth, altitude],
+      intensity: intensity,
+      color: updatedStyle.light?.color ?? '#ffffff',
     };
   } else {
     delete updatedStyle.terrain;
+    delete updatedStyle.fog;
+  }
+
+  // Update hillshade layer to point to the correct source
+  const hillshadeLayer = updatedStyle.layers?.find((l: any) => l.type === 'hillshade');
+  if (hillshadeLayer) {
+    hillshadeLayer.source = hillshadeSourceId;
   }
 
   return updatedStyle;
 }
+
 
 function handleContourSource(style: any) {
   const contourSource = style.sources?.contours;
@@ -262,6 +336,9 @@ function updateLayerPaint(
     // Add exaggeration from config if available, clamped between 0 and 1
     const exaggeration = Math.min(Math.max(layers?.hillshadeExaggeration ?? 0.5, 0), 1);
 
+    // Light direction: 315° (NW) is the classic cartographic default
+    const illuminationDirection = layers?.terrainLightAzimuth ?? 315;
+
     if (palette.hillshade) {
       layer.paint = {
         ...layer.paint,
@@ -269,6 +346,8 @@ function updateLayerPaint(
         'hillshade-highlight-color': palette.background,
         'hillshade-accent-color': palette.hillshade,
         'hillshade-exaggeration': exaggeration,
+        'hillshade-illumination-direction': illuminationDirection,
+        'hillshade-illumination-anchor': 'map',
       };
     } else {
       layer.paint = {
@@ -277,6 +356,8 @@ function updateLayerPaint(
         'hillshade-highlight-color': isDark ? (palette.secondary || palette.text) : palette.background,
         'hillshade-accent-color': isDark ? '#000000' : (palette.secondary || palette.text),
         'hillshade-exaggeration': exaggeration,
+        'hillshade-illumination-direction': illuminationDirection,
+        'hillshade-illumination-anchor': 'map',
       };
     }
     return;
@@ -449,8 +530,8 @@ function updateLayerPaint(
     return;
   }
 
-  // Roads & Bridges
-  if (id.startsWith('road-') || id.startsWith('bridge-') || id.startsWith('tunnel-')) {
+  // Roads & Bridges & Railroads
+  if (id.startsWith('road-') || id.startsWith('bridge-') || id.startsWith('tunnel-') || id.startsWith('railroad-')) {
     updateRoadLayer(layer, palette, labelAdjustment);
 
     // Apply road weight multiplier correctly to interpolation arrays or numbers
@@ -713,6 +794,18 @@ function updateRoadLayer(layer: any, palette: ColorPalette, labelAdjustment: num
       }
       return;
     }
+  }
+
+  // Handle railroads
+  if (layer.id.startsWith('railroad-')) {
+    const color = palette.roads?.railroad || palette.secondary || palette.text;
+    if (layer.id === 'railroad-main') {
+      layer.paint['line-color'] = palette.background;
+    } else {
+      layer.paint['line-color'] = color;
+    }
+    layer.paint['line-opacity'] = (layer.paint?.['line-opacity'] ?? 1.0) * labelAdjustment;
+    return;
   }
 
   // Special handling for road-glow if it didn't match a class above

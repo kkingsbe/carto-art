@@ -7,6 +7,7 @@ import { createBoundaryLayers, BoundaryLayerOptions } from './layers/boundaries'
 import { createPOILayers, POILayerOptions } from './layers/poi';
 import { createTerrainLayers, TerrainLayerOptions } from './layers/terrain';
 import { createLandcoverLayers, LandcoverLayerOptions } from './layers/landcover';
+import { createRailroadLayers } from './layers/railroads';
 import { createBuilding3DLayer, createBuilding3DLight, Building3DLayerOptions } from './layers/buildings3d';
 import { getBaseLayerToggles, LayerToggleOptions } from './layerToggles';
 import { StyleVariantConfig, styleVariants } from './variants';
@@ -137,6 +138,10 @@ export function buildStyle(options: StyleBuildOptions): PosterStyle {
   // 8. Roads
   const roadLayers = createRoadLayers(defaultPalette, roadOptions);
   layers.push(...roadLayers);
+
+  // 8.5 Railroads (after roads, before 3D buildings)
+  const railroadLayers = createRailroadLayers(defaultPalette);
+  layers.push(...railroadLayers);
 
   // 9. 3D Buildings (after roads for proper occlusion)
   const buildings3DLayer = createBuilding3DLayer(defaultPalette);

@@ -17,6 +17,21 @@ interface DeckTerrainLayerProps {
     bounds?: [number, number, number, number];
     /** Optional visibility control */
     visible?: boolean;
+    /** Ambient light intensity (0-1) */
+    ambientLight?: number;
+    /** Diffuse light intensity (0-1) */
+    diffuseLight?: number;
+    /** Light azimuth angle in degrees (0-360) */
+    lightAzimuth?: number;
+    /** Light altitude angle in degrees (0-90) */
+    lightAltitude?: number;
+    /** 
+     * Zoom offset to force higher resolution tiles (0-3).
+     * Positive values fetch tiles at a higher zoom than the current view.
+     * E.g., zoomOffset=2 at camera zoom 8 will fetch zoom 10 tiles.
+     * Higher values = better quality but more tiles to load.
+     */
+    zoomOffset?: number;
 }
 
 /**
@@ -65,6 +80,11 @@ export function DeckTerrainLayer({
     elevationData,
     bounds,
     visible = true,
+    ambientLight = 0.35,
+    diffuseLight = 0.8,
+    lightAzimuth,
+    lightAltitude,
+    zoomOffset = 0,
 }: DeckTerrainLayerProps) {
 
     const terrainLayer = useMemo(() => {
@@ -73,6 +93,8 @@ export function DeckTerrainLayer({
             minZoom: 0,
             maxZoom: 14,
             strategy: 'no-overlap',
+            // Force higher resolution tiles when zoomOffset > 0
+            zoomOffset: Math.min(zoomOffset, 3), // Cap at 3 to prevent excessive tile loading
             elevationDecoder: {
                 // Terrarium encoding: elevation = (R * 256 + G + B / 256) - 32768
                 // Scale by exaggeration factor
@@ -91,8 +113,8 @@ export function DeckTerrainLayer({
             // Note: TerrainLayer uses elevation in its own units, we scale via shader
             wireframe: false,
             material: {
-                ambient: 0.35,
-                diffuse: 0.8,
+                ambient: ambientLight,
+                diffuse: diffuseLight,
                 shininess: 32,
                 specularColor: [30, 30, 30],
             },
@@ -100,7 +122,7 @@ export function DeckTerrainLayer({
             // Tell deck.gl this layer handles terrain + drawing
             operation: 'terrain+draw',
         });
-    }, [exaggeration, meshMaxError, elevationData, bounds, visible]);
+    }, [exaggeration, meshMaxError, elevationData, bounds, visible, zoomOffset]);
 
     // Use the overlay hook to integrate with MapLibre
     useDeckOverlay({
@@ -120,6 +142,7 @@ export const TERRAIN_QUALITY_PRESETS = {
     balanced: 2.0,  // Good quality, reasonable performance
     high: 1.0,      // High quality, slower rendering
     export: 0.5,    // Maximum quality for print export
+    ultra: 0.25,    // Ultra quality for artistic renders
 } as const;
 
 export type TerrainQualityPreset = keyof typeof TERRAIN_QUALITY_PRESETS;

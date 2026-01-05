@@ -73,6 +73,17 @@ export const DEFAULT_CONFIG: PosterConfig = {
     // 3D Terrain
     volumetricTerrain: false,
     volumetricTerrainExaggeration: 1.5,
+    terrainMeshQuality: 'balanced',
+    terrainDetailLevel: 'normal', // Tile resolution: 'normal' = 256px, 'high' = 128px (2x), 'ultra' = 64px (4x)
+    // Terrain Atmosphere & Fog
+    terrainFog: true,
+    terrainFogColor: 'rgba(186, 210, 235, 0.5)',
+    terrainFogRange: [0.5, 10],
+    // Terrain Lighting
+    terrainLightAzimuth: 315,    // Northwest light (classic cartographic)
+    terrainLightAltitude: 45,
+    terrainAmbientLight: 0.35,
+    terrainDiffuseLight: 0.8,
     // Landcover layers (enabled by default)
     landcoverWood: true,
     landcoverGrass: true,
@@ -84,6 +95,8 @@ export const DEFAULT_CONFIG: PosterConfig = {
     landuseVineyard: false,
     landuseCemetery: false,
     landuseGrass: false,
+    // Railroads
+    railroads: true,
   },
   rendering: {
     overzoom: 1,

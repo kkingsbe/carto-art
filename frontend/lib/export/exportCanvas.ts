@@ -51,17 +51,26 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
   // Instead of resizing the live map (which React fights against), we spawn a hidden map
   // with the exact export dimensions.
 
-  // Capture state from live map
+  // Capture state from live map, but prefer config values for camera orientation
   const originalStyle = previewMap.getStyle();
-  const originalPitch = previewMap.getPitch();
-  const originalBearing = previewMap.getBearing();
+  // Use config as primary source of truth for camera, fallback to map state
+  const originalPitch = config.layers.buildings3DPitch ?? previewMap.getPitch();
+  const originalBearing = config.layers.buildings3DBearing ?? previewMap.getBearing();
   const originalCenter = previewMap.getCenter();
   const originalZoom = previewMap.getZoom();
 
+  logger.info('Export Camera State', {
+    originalPitch,
+    originalBearing,
+    configPitch: config.layers.buildings3DPitch,
+    mapPitch: previewMap.getPitch(),
+    zoom: originalZoom
+  });
+
   // Calculate margins first to determine draw size
   const marginPx = Math.round(exportResolution.width * (config.format.margin / 100));
-  const drawWidth = exportResolution.width - (marginPx * 2);
-  const drawHeight = exportResolution.height - (marginPx * 2);
+  const drawWidth = Math.max(1, exportResolution.width - (marginPx * 2));
+  const drawHeight = Math.max(1, exportResolution.height - (marginPx * 2));
 
   // Create hidden container
   // We size the container to the DRAWING AREA (inside margins), not the full resolution.
@@ -90,10 +99,19 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
     hiddenContainer.style.width = `${drawWidth / mapExportScale}px`;
     hiddenContainer.style.height = `${drawHeight / mapExportScale}px`;
 
+    // Prepare export style - strip native terrain if using volumetric terrain
+    // to ensure the base map is rendered flat for use as a deck.gl texture
+    let exportStyle = originalStyle as any;
+    if (config.layers.volumetricTerrain && exportStyle) {
+      exportStyle = JSON.parse(JSON.stringify(exportStyle));
+      delete exportStyle.terrain;
+      delete exportStyle.fog;
+    }
+
     // Initialize export map
     exportMap = new maplibregl.Map({
       container: hiddenContainer,
-      style: originalStyle as any,
+      style: exportStyle,
       interactive: false,
       attributionControl: false,
       preserveDrawingBuffer: true,
@@ -139,8 +157,12 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
     exportCanvas.width = exportResolution.width;
     exportCanvas.height = exportResolution.height;
     const exportCtx = exportCanvas.getContext('2d');
-
     if (!exportCtx) throw createError.internalError('Could not create export canvas context');
+
+    // Debug map canvas
+    if (mapCanvas) {
+      logger.info('MapCanvas dimensions', { width: mapCanvas.width, height: mapCanvas.height });
+    }
 
     // Background
     exportCtx.fillStyle = config.palette.background;
@@ -169,17 +191,40 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
     // Draw Volumetric Terrain (Deck.gl)
     if (config.layers.volumetricTerrain) {
       try {
+        // Capture map texture from the base map we just rendered
+        // We use createImageBitmap for efficient texture transfer
+        let mapTexture: ImageBitmap | null = null;
+        if (mapCanvas && mapCanvas.width > 0 && mapCanvas.height > 0) {
+          mapTexture = await createImageBitmap(mapCanvas);
+        }
+
+        // Deck.gl treats zoom as 1:1 pixel mapping. Since we scaled up the canvas,
+        // we need to increase zoom to match the larger viewport.
+        const adjustedZoom = originalZoom + Math.log2(mapExportScale);
+
         const terrainCanvas = await renderDeckTerrain({
           config,
           width: drawWidth,
           height: drawHeight,
           center: { lng: originalCenter.lng, lat: originalCenter.lat },
-          zoom: originalZoom,
+          zoom: adjustedZoom,
           pitch: originalPitch,
           bearing: originalBearing,
-          texture: mapCanvas // Pass the rendered map as texture
+          fov: 36.87, // Match MapLibre's default FOV
+          texture: mapTexture,
         });
-        exportCtx.drawImage(terrainCanvas, marginPx, marginPx);
+
+        logger.info('Terrain canvas render result', {
+          width: terrainCanvas.width,
+          height: terrainCanvas.height,
+          isValid: terrainCanvas.width > 0 && terrainCanvas.height > 0
+        });
+
+        if (terrainCanvas.width > 0 && terrainCanvas.height > 0) {
+          exportCtx.drawImage(terrainCanvas, marginPx, marginPx);
+        } else {
+          logger.error('Terrain canvas has invalid dimensions, skipping draw');
+        }
       } catch (error) {
         logger.error('Failed to render terrain for export', error);
       }
@@ -284,6 +329,9 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
     // 10. WATERMARK
     drawWatermark(exportCtx, exportResolution.width, exportResolution.height);
 
+    // 11. ATTRIBUTION
+    drawAttribution(exportCtx, exportResolution.width, exportResolution.height, mapExportScale);
+
     return new Promise<Blob>((resolve, reject) => {
       exportCanvas.toBlob((blob) => {
         if (blob) resolve(blob);
@@ -324,6 +372,34 @@ function drawWatermark(
   const y = height - padding;
 
   ctx.fillText(watermarkText, x, y);
+  ctx.restore();
+}
+
+function drawAttribution(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  scale: number
+): void {
+  const attributionText = '© OpenFreeMap © OpenStreetMap';
+
+  // Calculate font size (very small and subtle)
+  const fontSize = Math.max(8, Math.round(width * 0.008));
+  const padding = Math.max(10, Math.round(width * 0.01));
+
+  ctx.save();
+  ctx.font = `${fontSize}px sans-serif`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'bottom';
+  ctx.globalAlpha = 0.4; // More subtle than watermark
+
+  // Use a neutral gray
+  ctx.fillStyle = '#666666';
+
+  const x = padding;
+  const y = height - padding;
+
+  ctx.fillText(attributionText, x, y);
   ctx.restore();
 }
 

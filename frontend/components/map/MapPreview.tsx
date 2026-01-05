@@ -310,6 +310,15 @@ export function MapPreview({
           }}
         />
       )}
+
+      {/* Map Attribution */}
+      <div className="absolute bottom-1 right-1 z-20 pointer-events-none">
+        <div className="bg-white/40 dark:bg-black/40 backdrop-blur-[2px] px-1.5 py-0.5 rounded-sm flex items-center gap-1">
+          <span className="text-[8px] text-gray-600 dark:text-gray-400 font-medium tracking-tight">
+            © <a href="https://openfreemap.org" className="hover:underline">OpenFreeMap</a> © <a href="https://www.openstreetmap.org/copyright" className="hover:underline">OpenStreetMap</a>
+          </span>
+        </div>
+      </div>
     </div>
   );
 }

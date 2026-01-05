@@ -28,6 +28,7 @@ export interface ColorPalette {
     tertiary: string;
     residential: string;
     service: string;
+    railroad?: string; // New: railroad line color
   };
 
   // Land features
@@ -143,7 +144,17 @@ export interface PosterConfig {
     // 3D Terrain
     volumetricTerrain?: boolean;       // Enable 3D terrain (RGB-encoded elevation)
     volumetricTerrainExaggeration?: number; // Exaggeration factor (0-5)
-    terrainMeshQuality?: 'fast' | 'balanced' | 'high' | 'export'; // Mesh resolution quality
+    terrainMeshQuality?: 'fast' | 'balanced' | 'high' | 'export' | 'ultra'; // Mesh resolution quality
+    terrainDetailLevel?: 'normal' | 'high' | 'ultra'; // Tile resolution: smaller tiles fetch from higher zoom levels
+    // Terrain Atmosphere & Fog
+    terrainFog?: boolean;              // Enable atmospheric fog depth effect
+    terrainFogColor?: string;          // Fog/atmosphere tint color
+    terrainFogRange?: [number, number]; // Fog near/far range [0-1, 0-10]
+    // Terrain Lighting
+    terrainLightAzimuth?: number;      // Light source horizontal angle (0-360°)
+    terrainLightAltitude?: number;     // Light source vertical angle (0-90°)
+    terrainAmbientLight?: number;      // Ambient light intensity (0-1)
+    terrainDiffuseLight?: number;      // Diffuse light intensity (0-1)
     // 3D Buildings
     buildings3D?: boolean;             // Enable 3D building extrusions
     buildings3DPitch?: number;         // Camera pitch angle (0-60°)
@@ -161,6 +172,7 @@ export interface PosterConfig {
     landuseVineyard?: boolean;
     landuseCemetery?: boolean;
     landuseGrass?: boolean;
+    railroads: boolean; // New: toggle for railroad lines
   };
   // Rendering quality settings
   rendering?: {

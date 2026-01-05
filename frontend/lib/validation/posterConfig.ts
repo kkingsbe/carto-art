@@ -46,6 +46,7 @@ export const PosterConfigSchema: z.ZodType<PosterConfig> = z.object({
       tertiary: z.string(),
       residential: z.string(),
       service: z.string(),
+      railroad: z.string().optional(),
     }),
     water: z.string(),
     waterLine: z.string(),
@@ -131,13 +132,23 @@ export const PosterConfigSchema: z.ZodType<PosterConfig> = z.object({
     // 3D Terrain
     volumetricTerrain: z.boolean().optional(),
     volumetricTerrainExaggeration: z.number().optional(),
-    terrainMeshQuality: z.enum(['fast', 'balanced', 'high', 'export']).optional(),
+    terrainMeshQuality: z.enum(['fast', 'balanced', 'high', 'export', 'ultra']).optional(),
+    // Terrain Atmosphere & Fog
+    terrainFog: z.boolean().optional(),
+    terrainFogColor: z.string().optional(),
+    terrainFogRange: z.tuple([z.number(), z.number()]).optional(),
+    // Terrain Lighting
+    terrainLightAzimuth: z.number().min(0).max(360).optional(),
+    terrainLightAltitude: z.number().min(0).max(90).optional(),
+    terrainAmbientLight: z.number().min(0).max(1).optional(),
+    terrainDiffuseLight: z.number().min(0).max(1).optional(),
     // 3D Buildings
     buildings3D: z.boolean().optional(),
     buildings3DPitch: z.number().optional(),
     buildings3DBearing: z.number().optional(),
     buildings3DHeightScale: z.number().optional(),
     buildings3DDefaultHeight: z.number().optional(),
+    railroads: z.boolean(),
   }),
   rendering: z.object({
     overzoom: z.union([z.literal(1), z.literal(2)]).optional(),

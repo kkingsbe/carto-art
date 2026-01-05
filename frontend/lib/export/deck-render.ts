@@ -1,5 +1,6 @@
-import { Deck } from '@deck.gl/core';
+import { Deck, LightingEffect, AmbientLight, DirectionalLight, MapView } from '@deck.gl/core';
 import { TerrainLayer } from '@deck.gl/geo-layers';
+
 import { getAwsTerrariumTileUrl } from '@/lib/styles/tileUrl';
 import { TERRAIN_QUALITY_PRESETS } from '@/components/map/DeckTerrainLayer';
 import type { PosterConfig } from '@/types/poster';
@@ -13,7 +14,8 @@ interface RenderDeckOptions {
     zoom: number;
     pitch: number;
     bearing: number;
-    texture?: HTMLCanvasElement | HTMLImageElement | null;
+    fov?: number;
+    texture?: HTMLCanvasElement | HTMLImageElement | ImageBitmap | null;
 }
 
 /**
@@ -28,13 +30,31 @@ export async function renderDeckTerrain({
     zoom,
     pitch,
     bearing,
+    fov = 36.87,
     texture
 }: RenderDeckOptions): Promise<HTMLCanvasElement> {
+    // Guard against zero-dimension canvases
+    if (width <= 0 || height <= 0) {
+        logger.warn('Skipping deck.gl terrain render due to invalid dimensions', { width, height });
+        const emptyCanvas = document.createElement('canvas');
+        emptyCanvas.width = Math.max(1, width);
+        emptyCanvas.height = Math.max(1, height);
+        return emptyCanvas;
+    }
+
     const settings = config.layers;
     const exaggeration = settings.volumetricTerrainExaggeration ?? 1.5;
 
     return new Promise((resolve, reject) => {
-        logger.info('Starting deck.gl terrain export render', { width, height, zoom, hasTexture: !!texture });
+        logger.info('Starting deck.gl terrain export render', {
+            width,
+            height,
+            zoom,
+            pitch,
+            bearing,
+            fov,
+            hasTexture: !!texture
+        });
 
         const canvas = document.createElement('canvas');
         canvas.width = width;
@@ -58,15 +78,15 @@ export async function renderDeckTerrain({
             meshMaxError: TERRAIN_QUALITY_PRESETS.export,
             color: [255, 255, 255],
             material: {
-                ambient: 0.35,
-                diffuse: 0.8,
+                ambient: settings.terrainAmbientLight ?? 0.35,
+                diffuse: settings.terrainDiffuseLight ?? 0.8,
                 shininess: 32,
                 specularColor: [30, 30, 30],
             },
             operation: 'terrain+draw',
         });
 
-        let deck: Deck | null = null;
+        let deck: Deck<any> | null = null;
         let timeoutId: NodeJS.Timeout;
 
         const cleanup = () => {
@@ -85,23 +105,57 @@ export async function renderDeckTerrain({
 
         let isResolved = false;
 
+        // Create lighting effect based on terrain light settings
+        const lightAzimuth = settings.terrainLightAzimuth ?? 315;
+        const lightAltitude = settings.terrainLightAltitude ?? 45;
+        const ambientIntensity = settings.terrainAmbientLight ?? 0.35;
+        const diffuseIntensity = settings.terrainDiffuseLight ?? 0.8;
+
+        // Convert azimuth (compass degrees) and altitude to deck.gl light direction
+        // deck.gl SunLight uses timestamp or direction vector
+        const azimuthRad = (lightAzimuth * Math.PI) / 180;
+        const altitudeRad = (lightAltitude * Math.PI) / 180;
+        const lightDirection = [
+            -Math.sin(azimuthRad) * Math.cos(altitudeRad),
+            -Math.cos(azimuthRad) * Math.cos(altitudeRad),
+            -Math.sin(altitudeRad)
+        ];
+
+        const ambientLight = new AmbientLight({
+            color: [255, 255, 255],
+            intensity: ambientIntensity
+        });
+
+        const directionalLight = new DirectionalLight({
+            color: [255, 255, 255],
+            intensity: diffuseIntensity,
+            direction: lightDirection as [number, number, number],
+        });
+
+        const lightingEffect = new LightingEffect({ ambientLight, directionalLight });
+
         deck = new Deck({
             canvas,
             width,
             height,
+            views: [new MapView({ id: 'view', controller: false, fovy: fov })],
             initialViewState: {
-                longitude: center.lng,
-                latitude: center.lat,
-                zoom,
-                pitch,
-                bearing,
+                view: {
+                    longitude: center.lng,
+                    latitude: center.lat,
+                    zoom,
+                    pitch,
+                    bearing,
+                },
             },
             controller: false,
             layers: [layer],
+            effects: [lightingEffect],
             useDevicePixels: false, // Canvas is already sized to physical pixels
             // @ts-ignore - glOptions is available in Deck class but missing in some type definitions
             glOptions: {
                 preserveDrawingBuffer: true,
+                depth: true,
             },
             onAfterRender: () => {
                 if (!deck || isResolved) return;
@@ -115,27 +169,27 @@ export async function renderDeckTerrain({
                     isResolved = true;
                     // Give one more frame to ensure draw
                     requestAnimationFrame(() => {
-                        resolve(canvas);
-                        // Don't finalize immediately, caller needs to read canvas
-                        // Caller is responsible for not holding onto it forever?
-                        // Actually, once resolved, we can finalize? 
-                        // If we finalize, the GL context might be lost/cleared.
-                        // We should finalize AFTER caller uses it. 
-                        // But we return canvas. We can't easily hook into caller's usage.
-                        // For now, we leave it open. The browser GC will clean up eventually, 
-                        // or we explicitly leak a GL context until page refresh?
-                        // Better: Copy to a new 2D canvas and finalize deck?
-                        // Yes, let's return a safe 2D canvas copy.
+                        logger.info('Deck.gl render complete', {
+                            glCanvasWidth: canvas.width,
+                            glCanvasHeight: canvas.height,
+                            hasCtx: !!canvas.getContext('webgl2') || !!canvas.getContext('webgl')
+                        });
 
+                        // Copy to a safe 2D canvas to prevent context loss
                         const safeCanvas = document.createElement('canvas');
                         safeCanvas.width = width;
                         safeCanvas.height = height;
                         const ctx = safeCanvas.getContext('2d');
-                        if (ctx) {
+                        if (ctx && canvas.width > 0 && canvas.height > 0) {
                             ctx.drawImage(canvas, 0, 0);
                             cleanup(); // Now safe to destroy GL context
                             resolve(safeCanvas); // Return the 2D copy
                         } else {
+                            logger.warn('Deck.gl fallback or invalid dimensions', {
+                                ctx: !!ctx,
+                                w: canvas.width,
+                                h: canvas.height
+                            });
                             // Fallback
                             cleanup();
                             resolve(canvas);
@@ -146,3 +200,4 @@ export async function renderDeckTerrain({
         });
     });
 }
+

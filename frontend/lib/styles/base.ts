@@ -1,14 +1,21 @@
-import { 
-  getOpenFreeMapPlanetTileJsonUrl, 
-  getContourTileJsonUrl, 
+import {
+  getOpenFreeMapPlanetTileJsonUrl,
+  getContourTileJsonUrl,
   getPopulationTileUrl,
   getAwsTerrariumTileUrl,
   getSpaceportsGeoJsonUrl
 } from './tileUrl';
-import { TERRAIN_TILE_SIZE } from './config';
+import { TERRAIN_TILE_SIZE, TERRAIN_DETAIL_PRESETS, type TerrainDetailLevel } from './config';
 
 export interface BaseSourcesOptions {
   includeSpaceports?: boolean;
+  /**
+   * Terrain detail level. Higher detail = smaller tile size = fetches tiles from higher zoom levels.
+   * - 'normal': Default (256px tiles)
+   * - 'high': 2x detail (128px tiles, fetches z+1)
+   * - 'ultra': 4x detail (64px tiles, fetches z+2)
+   */
+  terrainDetailLevel?: TerrainDetailLevel;
 }
 
 /**
@@ -16,8 +23,11 @@ export interface BaseSourcesOptions {
  * Centralizes tile source URLs to avoid duplication across style files.
  */
 export function getBaseSources(options: BaseSourcesOptions = {}) {
-  const { includeSpaceports = false } = options;
-  
+  const { includeSpaceports = false, terrainDetailLevel = 'normal' } = options;
+
+  // Determine tile size based on detail level
+  const terrainTileSize = TERRAIN_DETAIL_PRESETS[terrainDetailLevel] ?? TERRAIN_TILE_SIZE;
+
   const sources: any = {
     openmaptiles: {
       type: 'vector',
@@ -41,7 +51,7 @@ export function getBaseSources(options: BaseSourcesOptions = {}) {
     terrain: {
       type: 'raster-dem',
       tiles: [getAwsTerrariumTileUrl()],
-      tileSize: TERRAIN_TILE_SIZE,
+      tileSize: terrainTileSize,
       encoding: 'terrarium',
       maxzoom: 14,
     },
