@@ -18,8 +18,8 @@ interface UseGifExportReturn {
 }
 
 const DEFAULT_GIF_OPTIONS: GifExportOptions = {
-    duration: 3,
-    totalRotation: 360,
+    duration: 7,
+    totalRotation: 90,
 };
 
 export function useGifExport(

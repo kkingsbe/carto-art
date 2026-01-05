@@ -35,8 +35,8 @@ export function ExportOptionsModal({
     onFormatChange
 }: ExportOptionsModalProps) {
     const [selectedKey, setSelectedKey] = useState<string>('SMALL');
-    const [gifDuration, setGifDuration] = useState(3);
-    const [gifRotation, setGifRotation] = useState(360);
+    const [gifDuration, setGifDuration] = useState(7);
+    const [gifRotation, setGifRotation] = useState(90);
     const [videoDuration, setVideoDuration] = useState(5);
     const [videoRotation, setVideoRotation] = useState(360);
     const isGifExportEnabled = useFeatureFlag('gif_export');
