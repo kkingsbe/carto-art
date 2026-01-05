@@ -102,8 +102,8 @@ export function PosterEditor() {
   const mapInstanceRef = useRef<MapLibreGL.Map | null>(null);
 
   const { isExporting, isExportingRef, exportProgress, exportToPNG, setMapRef, fitToLocation, zoomIn, zoomOut } = useMapExport(config);
-  const { isGeneratingGif, isGeneratingGifRef, generateOrbitGif, progress } = useGifExport(mapInstanceRef);
-  const { isExportingVideo, isExportingVideoRef, exportVideo, progress: videoProgress } = useVideoExport(mapInstanceRef);
+  const { isGeneratingGif, isGeneratingGifRef, generateOrbitGif, progress } = useGifExport(mapInstanceRef, config);
+  const { isExportingVideo, isExportingVideoRef, exportVideo, progress: videoProgress } = useVideoExport(mapInstanceRef, config);
 
   // Project Manager Hook
   const {

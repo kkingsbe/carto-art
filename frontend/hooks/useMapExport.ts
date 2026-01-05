@@ -81,7 +81,7 @@ export function useMapExport(config: PosterConfig) {
           location_coords: config.location.center,
           style_id: config.style.id,
           style_name: config.style.name,
-          resolution: resolution || { width: 2400, height: 3600, pixelRatio: 1 }, // Default if not provided
+          resolution: resolution || { name: 'DEFAULT', width: 2400, height: 3600, dpi: 300 }, // Default if not provided
           source: 'in-app',
           render_time_ms: duration
         }

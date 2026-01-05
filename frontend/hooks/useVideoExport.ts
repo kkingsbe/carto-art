@@ -3,6 +3,8 @@
 import { useState, useRef, useCallback } from 'react';
 import type MapLibreGL from 'maplibre-gl';
 import { logger } from '@/lib/logger';
+import type { PosterConfig } from '@/types/poster';
+import { trackEventAction } from '@/lib/actions/events';
 
 export interface VideoExportOptions {
     duration: number; // seconds
@@ -24,7 +26,8 @@ const DEFAULT_VIDEO_OPTIONS: VideoExportOptions = {
 };
 
 export function useVideoExport(
-    mapRef: React.MutableRefObject<MapLibreGL.Map | null>
+    mapRef: React.MutableRefObject<MapLibreGL.Map | null>,
+    config: PosterConfig
 ): UseVideoExportReturn {
     const [isExportingVideo, setIsExportingVideo] = useState(false);
     const isExportingVideoRef = useRef(false);
@@ -47,6 +50,8 @@ export function useVideoExport(
         }
 
         logger.info('Starting Video generation (Frame Buffer Mode)...');
+        const startTime = Date.now();
+
         setIsExportingVideo(true);
         isExportingVideoRef.current = true;
         setProgress(0);
@@ -186,8 +191,8 @@ export function useVideoExport(
             await recordingComplete;
 
             // Save File
-            const blob = new Blob(chunks, { type: selectedMimeType });
-            const url = URL.createObjectURL(blob);
+            const videoBlob = new Blob(chunks, { type: selectedMimeType });
+            const url = URL.createObjectURL(videoBlob);
             const link = document.createElement('a');
             link.href = url;
             const ext = selectedMimeType.includes('mp4') ? 'mp4' : 'webm';
@@ -197,6 +202,27 @@ export function useVideoExport(
 
             logger.info('Video export complete');
             setProgress(100);
+
+            // Track export event
+            await trackEventAction({
+                eventType: 'poster_export',
+                eventName: 'Orbit Video Exported',
+                metadata: {
+                    location_name: config.location.name,
+                    location_coords: config.location.center,
+                    style_id: config.style.id,
+                    style_name: config.style.name,
+                    resolution: {
+                        name: 'ORBIT_VIDEO',
+                        width: canvas.width,
+                        height: canvas.height,
+                        dpi: 72
+                    },
+                    source: 'in-app',
+                    render_time_ms: Date.now() - startTime,
+                    options: { duration, totalRotation, fps }
+                }
+            });
 
             // Cleanup
             playbackCanvas.remove();
@@ -230,7 +256,7 @@ export function useVideoExport(
                 console.error('Error restoring map state', e);
             }
         }
-    }, [mapRef]);
+    }, [mapRef, config]);
 
     return {
         isExportingVideo,
@@ -239,3 +265,4 @@ export function useVideoExport(
         progress
     };
 }
+

@@ -37,8 +37,10 @@ export function ExportOptionsModal({
     const [selectedKey, setSelectedKey] = useState<string>('SMALL');
     const [gifDuration, setGifDuration] = useState(7);
     const [gifRotation, setGifRotation] = useState(90);
+    const [gifFps, setGifFps] = useState(20);
     const [videoDuration, setVideoDuration] = useState(5);
     const [videoRotation, setVideoRotation] = useState(360);
+    const [videoFps, setVideoFps] = useState(60);
     const isGifExportEnabled = useFeatureFlag('gif_export');
     const isVideoExportEnabled = useFeatureFlag('video_export');
 
@@ -261,6 +263,8 @@ export function ExportOptionsModal({
                                                     <div className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
                                                         <span>{gifDuration}s</span>
                                                         <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+                                                        <span>{gifFps} FPS</span>
+                                                        <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
                                                         <span>{gifRotation}° rotation</span>
                                                     </div>
                                                 </div>
@@ -311,6 +315,27 @@ export function ExportOptionsModal({
                                                             <span>720°</span>
                                                         </div>
                                                     </div>
+
+                                                    {/* FPS Slider */}
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Frames Per Second (FPS)</label>
+                                                            <span className="text-sm text-gray-500 dark:text-gray-400">{gifFps} fps</span>
+                                                        </div>
+                                                        <input
+                                                            type="range"
+                                                            min="5"
+                                                            max="50"
+                                                            step="1"
+                                                            value={gifFps}
+                                                            onChange={(e) => setGifFps(Number(e.target.value))}
+                                                            className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                                                        />
+                                                        <div className="flex justify-between text-xs text-gray-400 mt-1">
+                                                            <span>5 fps</span>
+                                                            <span>50 fps</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
@@ -332,14 +357,16 @@ export function ExportOptionsModal({
                                             >
                                                 <div className="flex-1">
                                                     <div className="flex items-center justify-between mb-1">
-                                                        <div className="font-semibold text-gray-900 dark:text-white">Orbit Video (60fps)</div>
+                                                        <div className="font-semibold text-gray-900 dark:text-white">Orbit Video</div>
                                                         {selectedKey === 'ORBIT_VIDEO' && <Check className="w-5 h-5 text-blue-500" />}
                                                     </div>
                                                     <div className="text-xs text-gray-400 dark:text-gray-500 mb-2">
-                                                        High quality 60fps video orbit.
+                                                        High quality video orbit.
                                                     </div>
                                                     <div className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
                                                         <span>{videoDuration}s</span>
+                                                        <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+                                                        <span>{videoFps} FPS</span>
                                                         <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
                                                         <span>{videoRotation}° rotation</span>
                                                     </div>
@@ -390,6 +417,27 @@ export function ExportOptionsModal({
                                                                 <span>720°</span>
                                                             </div>
                                                         </div>
+
+                                                        {/* FPS Slider */}
+                                                        <div>
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Frames Per Second (FPS)</label>
+                                                                <span className="text-sm text-gray-500 dark:text-gray-400">{videoFps} fps</span>
+                                                            </div>
+                                                            <input
+                                                                type="range"
+                                                                min="15"
+                                                                max="120"
+                                                                step="5"
+                                                                value={videoFps}
+                                                                onChange={(e) => setVideoFps(Number(e.target.value))}
+                                                                className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                                                            />
+                                                            <div className="flex justify-between text-xs text-gray-400 mt-1">
+                                                                <span>15 fps</span>
+                                                                <span>120 fps</span>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
@@ -408,13 +456,13 @@ export function ExportOptionsModal({
                             if (selectedKey === 'ORBIT_GIF') {
                                 onExport(
                                     { width: 0, height: 0, dpi: 72, name: 'ORBIT_GIF' },
-                                    { duration: gifDuration, totalRotation: gifRotation }
+                                    { duration: gifDuration, totalRotation: gifRotation, fps: gifFps }
                                 );
                             } else if (selectedKey === 'ORBIT_VIDEO') {
                                 onExport(
                                     { width: 0, height: 0, dpi: 72, name: 'ORBIT_VIDEO' },
                                     undefined,
-                                    { duration: videoDuration, totalRotation: videoRotation, fps: 60 }
+                                    { duration: videoDuration, totalRotation: videoRotation, fps: videoFps }
                                 );
                             } else {
                                 const base = EXPORT_RESOLUTIONS[selectedKey as ExportResolutionKey];

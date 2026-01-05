@@ -4,10 +4,13 @@ import { useState, useRef, useCallback } from 'react';
 import type MapLibreGL from 'maplibre-gl';
 import { logger } from '@/lib/logger';
 import GIF from 'gif.js';
+import type { PosterConfig } from '@/types/poster';
+import { trackEventAction } from '@/lib/actions/events';
 
 export interface GifExportOptions {
     duration: number; // seconds
     totalRotation: number; // degrees
+    fps: number; // frames per second
 }
 
 interface UseGifExportReturn {
@@ -20,10 +23,12 @@ interface UseGifExportReturn {
 const DEFAULT_GIF_OPTIONS: GifExportOptions = {
     duration: 7,
     totalRotation: 90,
+    fps: 20,
 };
 
 export function useGifExport(
-    mapRef: React.MutableRefObject<MapLibreGL.Map | null>
+    mapRef: React.MutableRefObject<MapLibreGL.Map | null>,
+    config: PosterConfig
 ): UseGifExportReturn {
     const [isGeneratingGif, setIsGeneratingGif] = useState(false);
     const isGeneratingGifRef = useRef(false);
@@ -31,7 +36,7 @@ export function useGifExport(
     const abortControllerRef = useRef<AbortController | null>(null);
 
     const generateOrbitGif = useCallback(async (options?: GifExportOptions) => {
-        const { duration, totalRotation } = { ...DEFAULT_GIF_OPTIONS, ...options };
+        const { duration, totalRotation, fps } = { ...DEFAULT_GIF_OPTIONS, ...options };
         if (!mapRef.current) {
             logger.error('generateOrbitGif: Map reference is null');
             return;
@@ -45,6 +50,7 @@ export function useGifExport(
         }
 
         logger.info('Starting GIF generation...');
+        const startTime = Date.now();
 
         setIsGeneratingGif(true);
         isGeneratingGifRef.current = true;
@@ -67,7 +73,7 @@ export function useGifExport(
                 workerScript: '/gif.worker.js',
             });
 
-            gif.on('finished', (blob) => {
+            gif.on('finished', async (blob) => {
                 logger.info('GIF encoding finished, size:', blob.size);
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
@@ -77,6 +83,27 @@ export function useGifExport(
                 URL.revokeObjectURL(url);
 
                 setProgress(100);
+
+                // Track export event
+                await trackEventAction({
+                    eventType: 'poster_export',
+                    eventName: 'Orbit GIF Exported',
+                    metadata: {
+                        location_name: config.location.name,
+                        location_coords: config.location.center,
+                        style_id: config.style.id,
+                        style_name: config.style.name,
+                        resolution: {
+                            name: 'ORBIT_GIF',
+                            width: map.getCanvas().width,
+                            height: map.getCanvas().height,
+                            dpi: 72
+                        },
+                        source: 'in-app',
+                        render_time_ms: Date.now() - startTime,
+                        options: { duration, totalRotation, fps }
+                    }
+                });
 
                 // Keep modal open for a few seconds to ensure download starts
                 setTimeout(() => {
@@ -128,7 +155,6 @@ export function useGifExport(
             };
 
             // animation loop
-            const fps = 20;
             const totalFrames = Math.round(duration * fps);
             const anglePerFrame = totalRotation / totalFrames;
             const frameDelay = Math.round(1000 / fps); // ms per frame
@@ -184,7 +210,7 @@ export function useGifExport(
             setIsGeneratingGif(false);
             isGeneratingGifRef.current = false;
         }
-    }, [mapRef]);
+    }, [mapRef, config]);
 
     return {
         isGeneratingGif,
