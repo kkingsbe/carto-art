@@ -5,6 +5,7 @@ import { usePosterConfig } from '@/hooks/usePosterConfig';
 import { useSavedProjects } from '@/hooks/useSavedProjects';
 import { useMapExport } from '@/hooks/useMapExport';
 import { useGifExport, type GifExportOptions } from '@/hooks/useGifExport';
+import { useVideoExport, type VideoExportOptions } from '@/hooks/useVideoExport';
 import { useProjectManager } from '@/hooks/useProjectManager';
 import { useEditorKeyboardShortcuts } from '@/hooks/useEditorKeyboardShortcuts';
 import { Maximize, Plus, Minus, X, Map as MapIcon, Type, Layout, Sparkles, Palette, User, Layers, MousePointer2, RotateCw } from 'lucide-react';
@@ -101,6 +102,7 @@ export function PosterEditor() {
 
   const { isExporting, isExportingRef, exportProgress, exportToPNG, setMapRef, fitToLocation, zoomIn, zoomOut } = useMapExport(config);
   const { isGeneratingGif, isGeneratingGifRef, generateOrbitGif, progress } = useGifExport(mapInstanceRef);
+  const { isExportingVideo, isExportingVideoRef, exportVideo, progress: videoProgress } = useVideoExport(mapInstanceRef);
 
   // Project Manager Hook
   const {
@@ -373,11 +375,16 @@ export function PosterEditor() {
   }, [config, setConfig]);
 
   // Wrap exportToPNG to handle errors and track export count
-  const handleExport = useCallback(async (resolution?: ExportResolution, gifOptions?: GifExportOptions) => {
+  const handleExport = useCallback(async (resolution?: ExportResolution, gifOptions?: GifExportOptions, videoOptions?: VideoExportOptions) => {
     try {
       if (resolution?.name === 'ORBIT_GIF') {
         await generateOrbitGif(gifOptions);
-        // Basic export count increment for GIF too?
+        setExportCount(prev => prev + 1);
+        return;
+      }
+
+      if (resolution?.name === 'ORBIT_VIDEO') {
+        await exportVideo(videoOptions);
         setExportCount(prev => prev + 1);
         return;
       }
@@ -392,7 +399,7 @@ export function PosterEditor() {
     } catch (error) {
       handleError(error);
     }
-  }, [exportToPNG, handleError, generateOrbitGif]);
+  }, [exportToPNG, handleError, generateOrbitGif, exportVideo]);
 
   // Handle feedback submission
   const handleFeedbackSubmit = useCallback(async (data: FeedbackFormData): Promise<boolean> => {
@@ -452,19 +459,19 @@ export function PosterEditor() {
 
   const handleMapMove = useCallback((center: [number, number], zoom: number, pitch: number, bearing: number) => {
     // Ignore map movements during export to prevent programmatic zooms from leaking into state
-    if (isExportingRef.current || isGeneratingGifRef.current) return;
+    if (isExportingRef.current || isGeneratingGifRef.current || isExportingVideoRef.current) return;
     throttledUpdateMapState(center, zoom, pitch, bearing);
-  }, [throttledUpdateMapState, isExportingRef, isGeneratingGifRef]);
+  }, [throttledUpdateMapState, isExportingRef, isGeneratingGifRef, isExportingVideoRef]);
 
   const handleMapMoveEnd = useCallback((center: [number, number], zoom: number, pitch: number, bearing: number) => {
-    if (isExportingRef.current || isGeneratingGifRef.current) return;
+    if (isExportingRef.current || isGeneratingGifRef.current || isExportingVideoRef.current) return;
 
     updateLocation({ center, zoom });
     updateLayers({
       buildings3DPitch: pitch,
       buildings3DBearing: bearing
     });
-  }, [updateLocation, updateLayers, isExportingRef, isGeneratingGifRef]);
+  }, [updateLocation, updateLayers, isExportingRef, isGeneratingGifRef, isExportingVideoRef]);
 
   return (
     <div className="relative h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden selection:bg-blue-500/30">
@@ -493,9 +500,10 @@ export function PosterEditor() {
           trackEventAction({ eventType: 'map_publish', eventName: 'save_copy', metadata: { name } });
         }}
         onExport={handleExport}
-        isExporting={isExporting || isGeneratingGif}
+        isExporting={isExporting || isGeneratingGif || isExportingVideo}
         exportProgress={exportProgress}
         gifProgress={progress}
+        videoProgress={videoProgress}
         currentMapName={currentMapName}
         hasUnsavedChanges={currentMapStatus?.hasUnsavedChanges}
         isAuthenticated={isAuthenticated}
@@ -575,7 +583,7 @@ export function PosterEditor() {
               layers={config.layers}
               layerToggles={config.style.layerToggles}
               onInteraction={handleMapInteraction}
-              locked={isGeneratingGif}
+              locked={isGeneratingGif || isExportingVideo}
             />
 
             {/* Map Interaction Helpers Overlay */}
@@ -758,9 +766,10 @@ export function PosterEditor() {
           />
           <ExportButton
             onExport={handleExport}
-            isExporting={isExporting || isGeneratingGif}
+            isExporting={isExporting || isGeneratingGif || isExportingVideo}
             exportProgress={exportProgress}
             gifProgress={progress}
+            videoProgress={videoProgress}
             format={config.format}
             className="flex-1 justify-center py-2.5 shadow-none h-auto"
             showDonationModal={showDonationModal}

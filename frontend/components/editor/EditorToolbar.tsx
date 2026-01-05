@@ -25,10 +25,11 @@ interface EditorToolbarProps {
     onRandomize?: () => void;
     onSave: (name: string) => Promise<void>;
     onSaveCopy: (name: string) => Promise<void>;
-    onExport: (resolution?: any) => Promise<void>;
+    onExport: (resolution?: any, gifOptions?: any, videoOptions?: any) => Promise<void>;
     isExporting: boolean;
     exportProgress: { stage: string; percent: number } | null;
     gifProgress: number;
+    videoProgress?: number;
     currentMapName: string | null;
     hasUnsavedChanges?: boolean;
     isAuthenticated: boolean;
@@ -54,6 +55,7 @@ export function EditorToolbar({
     isExporting,
     exportProgress,
     gifProgress,
+    videoProgress,
     currentMapName,
     hasUnsavedChanges,
     isAuthenticated,
@@ -155,6 +157,7 @@ export function EditorToolbar({
                         isExporting={isExporting}
                         exportProgress={exportProgress}
                         gifProgress={gifProgress}
+                        videoProgress={videoProgress}
                         format={format}
                         className="shadow-lg backdrop-blur-md"
                         showDonationModal={showDonationModal}

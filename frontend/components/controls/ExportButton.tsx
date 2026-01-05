@@ -12,12 +12,14 @@ import { EXPORT_RESOLUTIONS } from '@/lib/export/constants';
 import type { ExportResolution } from '@/lib/export/resolution';
 import type { PosterConfig } from '@/types/poster';
 import type { GifExportOptions } from '@/hooks/useGifExport';
+import type { VideoExportOptions } from '@/hooks/useVideoExport';
 
 interface ExportButtonProps {
-  onExport: (resolution: ExportResolution, gifOptions?: GifExportOptions) => Promise<void> | void;
+  onExport: (resolution: ExportResolution, gifOptions?: GifExportOptions, videoOptions?: VideoExportOptions) => Promise<void> | void;
   isExporting: boolean;
   exportProgress?: { stage: string; percent: number } | null;
   gifProgress?: number;
+  videoProgress?: number;
   format: PosterConfig['format'];
   className?: string;
   showDonationModal: boolean;
@@ -35,6 +37,7 @@ export function ExportButton({
   isExporting,
   exportProgress,
   gifProgress,
+  videoProgress,
   format,
   className,
   showDonationModal,
@@ -52,10 +55,10 @@ export function ExportButton({
     setShowOptionsModal(true);
   };
 
-  const handleStartExport = async (resolution: ExportResolution, gifOptions?: GifExportOptions) => {
+  const handleStartExport = async (resolution: ExportResolution, gifOptions?: GifExportOptions, videoOptions?: VideoExportOptions) => {
     // Keep modal open to show progress
     try {
-      await onExport(resolution, gifOptions);
+      await onExport(resolution, gifOptions, videoOptions);
       // Wait a moment for the "Done!" state to be visible
       setTimeout(() => {
         setShowOptionsModal(false);
@@ -127,6 +130,7 @@ export function ExportButton({
         isExporting={isExporting}
         exportProgress={exportProgress}
         gifProgress={gifProgress}
+        videoProgress={videoProgress}
         format={format}
         onFormatChange={onFormatChange}
       />
