@@ -174,6 +174,10 @@ export interface PosterConfig {
     landuseCemetery?: boolean;
     landuseGrass?: boolean;
     railroads: boolean; // New: toggle for railroad lines
+    graticules?: boolean;           // New: toggle for latitude/longitude gridlines
+    graticuleWeight?: number;       // New: control graticule line thickness
+    graticuleLabelSize?: number;    // New: control graticule label size
+    graticuleDensity?: number;      // New: control graticule line density (degrees)
   };
   // Rendering quality settings
   rendering?: {

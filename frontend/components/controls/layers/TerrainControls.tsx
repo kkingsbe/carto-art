@@ -40,7 +40,7 @@ export function TerrainControls({ layers, onLayersChange, showUnderwaterToggle }
                 {/* Terrain Detail Level */}
                 <div className="space-y-1.5 pt-2 border-t border-gray-100 dark:border-gray-700">
                     <div className="flex items-center justify-between">
-                        <ControlLabel className="text-[10px] uppercase text-gray-500">Detail Level</ControlLabel>
+                        <ControlLabel className="text-[10px] uppercase text-gray-500">Tile Detail</ControlLabel>
                         <Tooltip content="Higher detail loads more tiles for better quality when zoomed out">
                             <span className="text-[9px] text-gray-400">ⓘ</span>
                         </Tooltip>
@@ -55,17 +55,34 @@ export function TerrainControls({ layers, onLayersChange, showUnderwaterToggle }
                                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                     }`}
                             >
-                                {level === 'normal' ? 'Normal' : level === 'high' ? 'High' : 'Ultra'}
+                                {level === 'normal' ? '1x' : level === 'high' ? '2x' : '4x'}
                             </button>
                         ))}
                     </div>
-                    <p className="text-[9px] text-gray-400 italic">
-                        {(layers.terrainDetailLevel ?? 'normal') === 'normal'
-                            ? 'Default tile resolution'
-                            : (layers.terrainDetailLevel ?? 'normal') === 'high'
-                                ? '2× tile resolution (slower)'
-                                : '4× tile resolution (much slower)'}
-                    </p>
+                </div>
+
+                {/* Terrain Mesh Quality */}
+                <div className="space-y-1.5 pt-2 border-t border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center justify-between">
+                        <ControlLabel className="text-[10px] uppercase text-gray-500">Mesh Resolution</ControlLabel>
+                        <Tooltip content="Finer mesh allows for more detailed terrain shapes, especially mountains">
+                            <span className="text-[9px] text-gray-400">ⓘ</span>
+                        </Tooltip>
+                    </div>
+                    <div className="flex gap-1">
+                        {(['fast', 'balanced', 'export', 'ultra'] as const).map((quality) => (
+                            <button
+                                key={quality}
+                                onClick={() => onLayersChange({ terrainMeshQuality: quality })}
+                                className={`flex-1 py-1.5 px-1 text-[9px] font-medium rounded transition-colors ${(layers.terrainMeshQuality ?? 'export') === quality
+                                    ? 'bg-blue-500 text-white'
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                    }`}
+                            >
+                                {quality.charAt(0).toUpperCase() + quality.slice(1)}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Exaggeration Control (Main UI) */}

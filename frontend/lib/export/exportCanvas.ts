@@ -62,18 +62,19 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
   const originalCenter = previewMap.getCenter();
   const originalZoom = previewMap.getZoom();
 
-  logger.info('Export Camera State', {
+  logger.info('Export Camera Capture', {
     originalPitch,
     originalBearing,
     configPitch: config.layers.buildings3DPitch,
     mapPitch: previewMap.getPitch(),
-    zoom: originalZoom
+    originalCenter,
+    originalZoom
   });
 
   // Calculate margins first to determine draw size
   const marginPx = Math.round(exportResolution.width * (config.format.margin / 100));
-  const drawWidth = Math.max(1, exportResolution.width - (marginPx * 2));
-  const drawHeight = Math.max(1, exportResolution.height - (marginPx * 2));
+  const drawWidth = Math.max(1, Math.floor(exportResolution.width - (marginPx * 2)));
+  const drawHeight = Math.max(1, Math.floor(exportResolution.height - (marginPx * 2)));
 
   // Create hidden container
   // We size the container to the DRAWING AREA (inside margins), not the full resolution.
@@ -85,7 +86,7 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
   hiddenContainer.style.position = 'fixed'; // Fixed to avoid layout impact
   hiddenContainer.style.top = '-9999px';
   hiddenContainer.style.left = '-9999px';
-  hiddenContainer.style.visibility = 'hidden';
+  hiddenContainer.style.opacity = '0';
   hiddenContainer.style.pointerEvents = 'none';
   document.body.appendChild(hiddenContainer);
 
@@ -136,6 +137,7 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
       trackResize: false, // Critical: prevent auto-resize which might reset pixelRatio
       fadeDuration: 0,
       pixelRatio: mapExportScale, // Use pixelRatio for resolution scaling instead of zoom
+      maxCanvasSize: [16384, 16384], // Increase from default 4096 to support ultra-high res
       center: originalCenter,
       zoom: originalZoom || 0,
       // If using deck.gl terrain, we render the map FLAT (top-down) to use as a texture
@@ -273,7 +275,17 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
 
     // Debug map canvas
     if (mapCanvas) {
-      logger.info('MapCanvas dimensions', { width: mapCanvas.width, height: mapCanvas.height });
+      logger.info('MapCanvas dimensions', {
+        width: mapCanvas.width,
+        height: mapCanvas.height,
+        expectedWidth: drawWidth,
+        expectedHeight: drawHeight,
+        pixelRatio: mapExportScale,
+        containerSize: {
+          width: hiddenContainer.style.width,
+          height: hiddenContainer.style.height
+        }
+      });
     }
 
     // Background
@@ -303,12 +315,23 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
     // Draw Volumetric Terrain (Deck.gl)
     if (config.layers.volumetricTerrain) {
       onProgress?.('Rendering terrain...', 50);
+      logger.info('Starting 3D Terrain Render', {
+        originalPitch,
+        originalBearing,
+        adjustedZoom: originalZoom + Math.log2(mapExportScale),
+        mapExportScale
+      });
       try {
         // Capture map texture from the base map we just rendered
         // We use createImageBitmap for efficient texture transfer
         let mapTexture: ImageBitmap | null = null;
         if (mapCanvas && mapCanvas.width > 0 && mapCanvas.height > 0) {
+          logger.info('Capturing map texture for deck.gl', { width: mapCanvas.width, height: mapCanvas.height });
           mapTexture = await createImageBitmap(mapCanvas);
+          logger.info('Texture captured successfully', {
+            width: mapTexture.width,
+            height: mapTexture.height
+          });
         }
 
         // Deck.gl treats zoom as 1:1 pixel mapping. Since we scaled up the canvas,
@@ -338,10 +361,12 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
         if (terrainCanvas.width > 0 && terrainCanvas.height > 0) {
           exportCtx.drawImage(terrainCanvas, marginPx, marginPx);
         } else {
-          logger.error('Terrain canvas has invalid dimensions, skipping draw');
+          throw new Error('3D Terrain rendered an empty canvas. This is likely due to a GPU resource limit or driver crash during the high-resolution render.');
         }
       } catch (error) {
-        logger.error('Failed to render terrain for export', error);
+        // We throw the error here instead of just logging it, to fulfill the "Fail Loudly" requirement
+        const detail = error instanceof Error ? error.message : String(error);
+        throw new Error(`3D Terrain failure: ${detail}. Try lowering the "Mesh Resolution" or "Export Resolution" in the sidebar.`);
       }
     }
     exportCtx.restore();

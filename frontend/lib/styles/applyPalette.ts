@@ -674,6 +674,26 @@ function updateLayerPaint(
       'line-color': palette.grid,
       'line-opacity': layer.paint?.['line-opacity'] ?? 0.2,
     };
+    return;
+  }
+
+  // Graticules
+  if (id === 'graticule-lines') {
+    layer.paint = {
+      ...layer.paint,
+      'line-color': palette.grid || palette.text,
+      'line-opacity': layer.paint?.['line-opacity'] ?? 0.5,
+    };
+    return;
+  }
+
+  if (id === 'graticule-labels') {
+    layer.paint = {
+      ...layer.paint,
+      'text-color': palette.text,
+      'text-halo-color': palette.background,
+    };
+    return;
   }
 }
 

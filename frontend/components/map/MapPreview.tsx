@@ -1,7 +1,7 @@
 'use client';
 
-import { useRef, useCallback, useEffect, useState } from 'react';
-import Map, { type MapRef } from 'react-map-gl/maplibre';
+import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
+import Map, { type MapRef, Source, Layer } from 'react-map-gl/maplibre';
 import maplibregl from 'maplibre-gl';
 import { Loader2 } from 'lucide-react';
 import type { PosterLocation, LayerToggle, PosterConfig } from '@/types/poster';
@@ -12,6 +12,7 @@ import { getAwsTerrariumTileUrl } from '@/lib/styles/tileUrl';
 import { MAP, TIMEOUTS, TEXTURE } from '@/lib/constants';
 import { logger } from '@/lib/logger';
 import { setupMapLibreContour } from '@/lib/map/setup';
+import { generateGraticuleGeoJSON } from '@/lib/map/graticules';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 // Initialize contour protocol
@@ -84,6 +85,12 @@ export function MapPreview({
     bearing: layers?.buildings3DBearing ?? 0,
   });
 
+  // Generate graticule data
+  const graticuleData = useMemo(() => {
+    if (!layers?.graticules) return null;
+    return generateGraticuleGeoJSON(layers.graticuleDensity ?? 10);
+  }, [layers?.graticules, layers?.graticuleDensity]);
+
   // Sync with external location changes
   useEffect(() => {
     if (isMoving || locked) return;
@@ -105,6 +112,36 @@ export function MapPreview({
       bearing: layers?.buildings3DBearing ?? 0,
     }));
   }, [layers?.buildings3DPitch, layers?.buildings3DBearing, isMoving, locked]);
+
+  // Ensure graticule layers render on top to prevent z-fighting
+  useEffect(() => {
+    if (!mapRef.current || !layers?.graticules) return;
+
+    const map = mapRef.current.getMap();
+
+    // Wait for the map to be fully loaded and graticule layers to exist
+    const moveGraticulesToTop = () => {
+      if (map.getLayer('graticule-lines') && map.getLayer('graticule-labels')) {
+        // Move graticule layers to the top of the layer stack
+        try {
+          map.moveLayer('graticule-lines');
+          map.moveLayer('graticule-labels');
+        } catch (e) {
+          // Layer might not exist yet, will retry on next render
+        }
+      }
+    };
+
+    // Try immediately
+    moveGraticulesToTop();
+
+    // Also try after style changes
+    map.once('styledata', moveGraticulesToTop);
+
+    return () => {
+      map.off('styledata', moveGraticulesToTop);
+    };
+  }, [layers?.graticules, mapStyle]);
 
   const handleError = useCallback((e: any) => {
     // Sanitize error object to avoid circular references and SecurityErrors
@@ -279,6 +316,44 @@ export function MapPreview({
         minZoom={MAP.MIN_ZOOM}
         mapLib={maplibregl}
       >
+
+        {showMarker && (
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+            <MarkerIcon type={layers?.markerType || 'crosshair'} color={markerColor} size={40} />
+          </div>
+        )}
+
+        {layers?.graticules && graticuleData && (
+          <Source id="graticules" type="geojson" data={graticuleData}>
+            <Layer
+              id="graticule-lines"
+              type="line"
+              paint={{
+                'line-color': markerColor || '#888',
+                'line-width': layers.graticuleWeight ?? 1.0,
+                'line-opacity': 0.5
+              }}
+            />
+            <Layer
+              id="graticule-labels"
+              type="symbol"
+              layout={{
+                'text-field': ['get', 'text'],
+                'text-size': layers.graticuleLabelSize ?? 12,
+                'text-anchor': 'bottom',
+                'text-offset': [0, -0.5],
+                'symbol-placement': 'point'
+              }}
+              paint={{
+                'text-color': markerColor || '#888',
+                'text-opacity': 0.8,
+                'text-halo-color': 'rgba(255,255,255,0.5)',
+                'text-halo-width': 1
+              }}
+            />
+          </Source>
+        )}
+
         {/* Deck.gl Terrain Layer - Disabled for Preview to allow native texture draping
         {layers?.volumetricTerrain && (
           <DeckTerrainLayer
@@ -288,12 +363,6 @@ export function MapPreview({
           />
         )}
         */}
-
-        {showMarker && (
-          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-            <MarkerIcon type={layers?.markerType || 'crosshair'} color={markerColor} size={40} />
-          </div>
-        )}
       </Map>
 
       {/* Tile Loading Indicator */}

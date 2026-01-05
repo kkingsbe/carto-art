@@ -52,7 +52,16 @@ interface RenderDeckOptions {
  */
 export async function renderDeckTerrain(options: RenderDeckOptions): Promise<HTMLCanvasElement> {
     const { width, height, texture } = options;
-    const maxSize = Math.min(getMaxTextureSize(), 8192); // Cap at 8192 for browser stability
+    const maxTextureSize = getMaxTextureSize();
+    const maxSize = Math.min(maxTextureSize, 16384); // Increased from 8192 to support ultra-high res single-pass
+
+    logger.info('Deck.gl render constraints', {
+        width,
+        height,
+        maxTextureSize,
+        maxSize,
+        willTile: width > maxSize || height > maxSize
+    });
 
     // If within limits, render directly
     if (width <= maxSize && height <= maxSize) {
@@ -62,6 +71,11 @@ export async function renderDeckTerrain(options: RenderDeckOptions): Promise<HTM
     // Tiled rendering required
     const tilesX = Math.ceil(width / maxSize);
     const tilesY = Math.ceil(height / maxSize);
+
+    // Validate tiling config
+    if (tilesX <= 0 || tilesY <= 0) {
+        throw new Error(`Invalid tiling configuration: ${tilesX}x${tilesY} tiles for ${width}x${height} area`);
+    }
 
     logger.info('Dimensions exceed WebGL limits, performing tiled deck.gl render', {
         width,
@@ -138,26 +152,47 @@ async function renderSingleDeckTerrain({
 
     // Guard against zero-dimension canvases
     if (renderWidth <= 0 || renderHeight <= 0) {
-        logger.warn('Skipping deck.gl terrain render due to invalid dimensions', { renderWidth, renderHeight });
-        const emptyCanvas = document.createElement('canvas');
-        emptyCanvas.width = Math.max(1, renderWidth);
-        emptyCanvas.height = Math.max(1, renderHeight);
-        return emptyCanvas;
+        throw new Error(`Cannot render 3D terrain: invalid dimensions (${renderWidth}x${renderHeight})`);
     }
+
+    logger.info('renderSingleDeckTerrain start', {
+        renderWidth,
+        renderHeight,
+        pitch,
+        bearing,
+        zoom,
+        center,
+        hasTexture: !!texture
+    });
 
     const settings = config.layers;
     const exaggeration = settings.volumetricTerrainExaggeration ?? 1.5;
 
     return new Promise((resolve, reject) => {
         const canvas = document.createElement('canvas');
-        canvas.width = renderWidth;
-        canvas.height = renderHeight;
+        canvas.width = Math.floor(renderWidth);
+        canvas.height = Math.floor(renderHeight);
+
+        // Add CSS dimensions to prevent deck.gl from resizing to 0x0
+        // deck.gl's internal resize logic checks CSS dimensions, and without them it defaults to 0x0
+        canvas.style.width = `${renderWidth}px`;
+        canvas.style.height = `${renderHeight}px`;
+
+        // Verify allocation success
+        if (canvas.width !== Math.floor(renderWidth) || canvas.height !== Math.floor(renderHeight)) {
+            reject(new Error(`Failed to allocate deck.gl canvas: requested ${renderWidth}x${renderHeight}, got ${canvas.width}x${canvas.height}. This usually indicates you have exceeded your browser or hardware's maximum canvas size.`));
+            return;
+        }
+
+        const detailLevel = settings.terrainDetailLevel || 'normal';
+        const zoomOffset = detailLevel === 'ultra' ? 2 : detailLevel === 'high' ? 1 : 0;
 
         const layer = new TerrainLayer({
             id: 'terrain-export',
             minZoom: 0,
             maxZoom: 14,
             strategy: 'no-overlap',
+            zoomOffset,
             elevationDecoder: {
                 rScaler: 256 * exaggeration,
                 gScaler: 1 * exaggeration,
@@ -166,7 +201,7 @@ async function renderSingleDeckTerrain({
             },
             elevationData: getAwsTerrariumTileUrl(),
             texture: (texture || null) as any,
-            meshMaxError: TERRAIN_QUALITY_PRESETS.export,
+            meshMaxError: TERRAIN_QUALITY_PRESETS[settings.terrainMeshQuality || 'export'],
             color: [255, 255, 255],
             material: {
                 ambient: settings.terrainAmbientLight ?? 0.35,
@@ -190,8 +225,8 @@ async function renderSingleDeckTerrain({
 
         timeoutId = setTimeout(() => {
             cleanup();
-            reject(new Error('Deck.gl render timed out'));
-        }, 60000); // Increased timeout for high-res
+            reject(new Error('Deck.gl render timed out after 120s'));
+        }, 120000); // Massive timeout for ultra high-res
 
         let isResolved = false;
 
@@ -257,20 +292,41 @@ async function renderSingleDeckTerrain({
                 const layers = (deck as any).layerManager?.getLayers();
                 const terrainLayer = layers?.find((l: any) => l.id === 'terrain-export');
 
+                if (terrainLayer) {
+                    const { isLoaded, numInstances } = terrainLayer;
+                    // Only log occasionally to avoid flooding
+                    if (Math.random() < 0.05) {
+                        logger.info('onAfterRender status', { isLoaded, numInstances });
+                    }
+                }
                 if (terrainLayer && terrainLayer.isLoaded) {
                     isResolved = true;
                     requestAnimationFrame(() => {
+                        // Log canvas dimensions before capture for diagnostics
+                        logger.info('Capturing deck.gl canvas', {
+                            canvasWidth: canvas.width,
+                            canvasHeight: canvas.height,
+                            cssWidth: canvas.style.width,
+                            cssHeight: canvas.style.height
+                        });
+
                         const safeCanvas = document.createElement('canvas');
-                        safeCanvas.width = renderWidth;
-                        safeCanvas.height = renderHeight;
+                        safeCanvas.width = canvas.width;
+                        safeCanvas.height = canvas.height;
+
                         const ctx = safeCanvas.getContext('2d');
                         if (ctx && canvas.width > 0 && canvas.height > 0) {
-                            ctx.drawImage(canvas, 0, 0);
-                            cleanup();
-                            resolve(safeCanvas);
+                            try {
+                                ctx.drawImage(canvas, 0, 0);
+                                cleanup();
+                                resolve(safeCanvas);
+                            } catch (e) {
+                                cleanup();
+                                reject(new Error(`Failed to capture 3D terrain: ${e instanceof Error ? e.message : String(e)}`));
+                            }
                         } else {
                             cleanup();
-                            resolve(canvas);
+                            reject(new Error(`Failed to capture 3D terrain: invalid source canvas (${canvas.width}x${canvas.height}) or 2D context failure. This can happen if the GPU hangs during a high-resolution render.`));
                         }
                     });
                 }

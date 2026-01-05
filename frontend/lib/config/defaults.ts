@@ -98,6 +98,11 @@ export const DEFAULT_CONFIG: PosterConfig = {
     landuseGrass: false,
     // Railroads
     railroads: true,
+    // Graticules
+    graticules: false,
+    graticuleWeight: 1.0,
+    graticuleLabelSize: 12,
+    graticuleDensity: 10,
   },
   rendering: {
     overzoom: 1,

@@ -135,6 +135,62 @@ export function LayerControls({ layers, rendering, onLayersChange, onRenderingCh
           </CollapsibleSection>
         )}
 
+        {/* Graticules Section */}
+        <CollapsibleSection title="Graticules" defaultOpen={false}>
+          <div className="space-y-4">
+            <ControlCheckbox
+              label="Latitude/Longitude Grid"
+              description="Overlay geographical gridlines"
+              checked={Boolean(layers.graticules)}
+              onChange={() => toggleLayer('graticules')}
+            />
+
+            {layers.graticules && (
+              <div className="mt-3 ml-6 space-y-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                <div className="space-y-1.5">
+                  <ControlLabel>Line Weight</ControlLabel>
+                  <ControlSlider
+                    min={0.1}
+                    max={3}
+                    step={0.1}
+                    value={layers.graticuleWeight ?? 1.0}
+                    onValueChange={(val) => onLayersChange({ graticuleWeight: val })}
+                    displayValue={`${(layers.graticuleWeight ?? 1.0).toFixed(1)}px`}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <ControlLabel>Text Size</ControlLabel>
+                  <ControlSlider
+                    min={8}
+                    max={24}
+                    step={1}
+                    value={layers.graticuleLabelSize ?? 12}
+                    onValueChange={(val) => onLayersChange({ graticuleLabelSize: val })}
+                    displayValue={`${layers.graticuleLabelSize ?? 12}px`}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <ControlLabel>Line Density</ControlLabel>
+                  <ControlSelect
+                    value={String(layers.graticuleDensity ?? 10)}
+                    onChange={(e) => onLayersChange({ graticuleDensity: Number(e.target.value) })}
+                  >
+                    <option value="1">High (1°)</option>
+                    <option value="2">Medium-High (2°)</option>
+                    <option value="5">Medium (5°)</option>
+                    <option value="10">Standard (10°)</option>
+                    <option value="15">Low (15°)</option>
+                    <option value="20">Very Low (20°)</option>
+                    <option value="30">Sparse (30°)</option>
+                  </ControlSelect>
+                </div>
+              </div>
+            )}
+          </div>
+        </CollapsibleSection>
+
         {/* Data Layers */}
         {dataLayers.length > 0 && (
           <CollapsibleSection title="Data Layers" defaultOpen={true}>
