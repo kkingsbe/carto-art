@@ -15,7 +15,7 @@ export function TerrainControls({ layers, onLayersChange, showUnderwaterToggle }
         <div className="pl-8 pr-2 pb-2">
             <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-3">
                 {/* Hillshade Intensity */}
-                <div className="space-y-1">
+                <div id="terrain-shading-control" className="space-y-1">
                     <ControlLabel className="text-[10px] uppercase text-gray-500">Shading Intensity</ControlLabel>
                     <ControlSlider
                         min="0.0"

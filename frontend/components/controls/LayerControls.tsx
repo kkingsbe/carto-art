@@ -77,7 +77,7 @@ export function LayerControls({ layers, rendering, onLayersChange, onRenderingCh
               {geographicLayers.map(renderLayerItem)}
 
               {/* Volumetric Terrain Controls */}
-              <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+              <div id="volumetric-terrain-control" className="pt-2 border-t border-gray-100 dark:border-gray-800">
                 <ControlCheckbox
                   label="Volumetric 3D Terrain"
                   description="Render terrain height"

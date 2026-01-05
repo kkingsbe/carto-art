@@ -212,6 +212,18 @@ export function PosterEditor() {
       placement: 'right',
     },
     {
+      target: '#volumetric-terrain-control',
+      title: 'Go 3D with Volumetric Terrain',
+      content: 'Toggle this to enable true 3D elevation. Adjust the exaggeration to make mountains pop!',
+      placement: 'right',
+    },
+    {
+      target: '#terrain-shading-control',
+      title: 'Refine with Terrain Shading',
+      content: 'Control the strength of shadows and lighting direction to add depth and realism to your map.',
+      placement: 'right',
+    },
+    {
       target: '#walkthrough-randomize',
       title: 'Feeling Lucky?',
       content: 'Click the shuffle icon to instantly generate a completely random theme and location. It\'s a great way to find inspiration!',
