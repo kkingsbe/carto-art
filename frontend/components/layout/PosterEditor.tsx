@@ -4,6 +4,7 @@ import { useMemo, useCallback, useState, useRef, useEffect } from 'react';
 import { usePosterConfig } from '@/hooks/usePosterConfig';
 import { useSavedProjects } from '@/hooks/useSavedProjects';
 import { useMapExport } from '@/hooks/useMapExport';
+import { useGifExport, type GifExportOptions } from '@/hooks/useGifExport';
 import { useProjectManager } from '@/hooks/useProjectManager';
 import { useEditorKeyboardShortcuts } from '@/hooks/useEditorKeyboardShortcuts';
 import { Maximize, Plus, Minus, X, Map as MapIcon, Type, Layout, Sparkles, Palette, User, Layers, MousePointer2, RotateCw } from 'lucide-react';
@@ -95,10 +96,11 @@ export function PosterEditor() {
   const [showProductModal, setShowProductModal] = useState(false);
   const [exportedImage, setExportedImage] = useState<string | null>(null);
 
-  const { isExporting, isExportingRef, exportToPNG, setMapRef, fitToLocation, zoomIn, zoomOut } = useMapExport(config);
-
   // Keep a reference to the map instance for thumbnail generation
   const mapInstanceRef = useRef<MapLibreGL.Map | null>(null);
+
+  const { isExporting, isExportingRef, exportToPNG, setMapRef, fitToLocation, zoomIn, zoomOut } = useMapExport(config);
+  const { isGeneratingGif, isGeneratingGifRef, generateOrbitGif } = useGifExport(mapInstanceRef);
 
   // Project Manager Hook
   const {
@@ -371,8 +373,15 @@ export function PosterEditor() {
   }, [config, setConfig]);
 
   // Wrap exportToPNG to handle errors and track export count
-  const handleExport = useCallback(async (resolution?: ExportResolution) => {
+  const handleExport = useCallback(async (resolution?: ExportResolution, gifOptions?: GifExportOptions) => {
     try {
+      if (resolution?.name === 'ORBIT_GIF') {
+        await generateOrbitGif(gifOptions);
+        // Basic export count increment for GIF too?
+        setExportCount(prev => prev + 1);
+        return;
+      }
+
       const blob = await exportToPNG(resolution);
       if (blob) {
         const url = URL.createObjectURL(blob);
@@ -383,7 +392,7 @@ export function PosterEditor() {
     } catch (error) {
       handleError(error);
     }
-  }, [exportToPNG, handleError]);
+  }, [exportToPNG, handleError, generateOrbitGif]);
 
   // Handle feedback submission
   const handleFeedbackSubmit = useCallback(async (data: FeedbackFormData): Promise<boolean> => {
@@ -443,19 +452,19 @@ export function PosterEditor() {
 
   const handleMapMove = useCallback((center: [number, number], zoom: number, pitch: number, bearing: number) => {
     // Ignore map movements during export to prevent programmatic zooms from leaking into state
-    if (isExportingRef.current) return;
+    if (isExportingRef.current || isGeneratingGifRef.current) return;
     throttledUpdateMapState(center, zoom, pitch, bearing);
-  }, [throttledUpdateMapState, isExportingRef]);
+  }, [throttledUpdateMapState, isExportingRef, isGeneratingGifRef]);
 
   const handleMapMoveEnd = useCallback((center: [number, number], zoom: number, pitch: number, bearing: number) => {
-    if (isExportingRef.current) return;
+    if (isExportingRef.current || isGeneratingGifRef.current) return;
 
     updateLocation({ center, zoom });
     updateLayers({
       buildings3DPitch: pitch,
       buildings3DBearing: bearing
     });
-  }, [updateLocation, updateLayers, isExportingRef]);
+  }, [updateLocation, updateLayers, isExportingRef, isGeneratingGifRef]);
 
   return (
     <div className="relative h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden selection:bg-blue-500/30">
@@ -484,7 +493,7 @@ export function PosterEditor() {
           trackEventAction({ eventType: 'map_publish', eventName: 'save_copy', metadata: { name } });
         }}
         onExport={handleExport}
-        isExporting={isExporting}
+        isExporting={isExporting || isGeneratingGif}
         currentMapName={currentMapName}
         hasUnsavedChanges={currentMapStatus?.hasUnsavedChanges}
         isAuthenticated={isAuthenticated}
@@ -563,6 +572,7 @@ export function PosterEditor() {
               layers={config.layers}
               layerToggles={config.style.layerToggles}
               onInteraction={handleMapInteraction}
+              locked={isGeneratingGif}
             />
 
             {/* Map Interaction Helpers Overlay */}

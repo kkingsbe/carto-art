@@ -11,9 +11,10 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { EXPORT_RESOLUTIONS } from '@/lib/export/constants';
 import type { ExportResolution } from '@/lib/export/resolution';
 import type { PosterConfig } from '@/types/poster';
+import type { GifExportOptions } from '@/hooks/useGifExport';
 
 interface ExportButtonProps {
-  onExport: (resolution: ExportResolution) => void;
+  onExport: (resolution: ExportResolution, gifOptions?: GifExportOptions) => Promise<void> | void;
   isExporting: boolean;
   format: PosterConfig['format'];
   className?: string;
@@ -45,9 +46,9 @@ export function ExportButton({
     setShowOptionsModal(true);
   };
 
-  const handleStartExport = (resolution: ExportResolution) => {
+  const handleStartExport = async (resolution: ExportResolution, gifOptions?: GifExportOptions) => {
     setShowOptionsModal(false);
-    onExport(resolution);
+    await onExport(resolution, gifOptions);
     onDonationModalChange(true);
   };
 

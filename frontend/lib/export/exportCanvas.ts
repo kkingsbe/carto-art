@@ -128,26 +128,101 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
       bearing: config.layers.volumetricTerrain ? 0 : (originalBearing || 0)
     });
 
-    // Wait for load
+    // Closed-loop tile loading detection
+    // Uses MapLibre events to deterministically wait for all tiles to be loaded and rendered
     await new Promise<void>((resolve, reject) => {
       if (!exportMap) return reject('Map not initialized');
 
-      const timeout = setTimeout(() => reject(new Error('Export timed out')), 15000);
+      // Track source loading states - closed loop, no arbitrary timeouts
+      // Using plain object to avoid conflict with MapLibre's Map type
+      const sourceLoadingStates: Record<string, boolean> = {};
+      let isSettled = false;
+      let settleCheckScheduled = false;
 
-      const checkReady = () => {
-        if (exportMap?.loaded()) {
-          clearTimeout(timeout);
-          // extra frame for safety
-          requestAnimationFrame(() => resolve());
-        } else {
-          exportMap?.once('idle', checkReady);
+      const cleanup = () => {
+        if (!exportMap) return;
+        exportMap.off('sourcedata', onSourceData);
+        exportMap.off('idle', onIdle);
+        exportMap.off('error', onError);
+      };
+
+      const onError = (e: any) => {
+        logger.error('Map error during export', e);
+        cleanup();
+        reject(new Error(`Map error during export: ${e.error?.message || 'Unknown error'}`));
+      };
+
+      const onSourceData = (e: any) => {
+        if (e.sourceId && e.isSourceLoaded !== undefined) {
+          sourceLoadingStates[e.sourceId] = e.isSourceLoaded;
+          logger.debug('Source data event', { sourceId: e.sourceId, isLoaded: e.isSourceLoaded });
         }
       };
 
+      const checkAllLoaded = (): boolean => {
+        if (!exportMap) return false;
+
+        // Primary check: MapLibre's built-in methods
+        const mapLoaded = exportMap.loaded();
+        const tilesLoaded = exportMap.areTilesLoaded();
+
+        // Secondary check: verify no sources are still loading
+        const sourceIds = Object.keys(sourceLoadingStates);
+        const allSourcesLoaded = sourceIds.every((id) => sourceLoadingStates[id] === true);
+
+        logger.info('Export load check', {
+          mapLoaded,
+          tilesLoaded,
+          allSourcesLoaded,
+          sourceCount: sourceIds.length
+        });
+
+        return mapLoaded && tilesLoaded && allSourcesLoaded;
+      };
+
+      const scheduleSettleCheck = () => {
+        if (settleCheckScheduled || isSettled) return;
+        settleCheckScheduled = true;
+
+        // After idle, verify loading state is stable across multiple frames
+        // This ensures the GPU has finished rendering
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            settleCheckScheduled = false;
+
+            if (isSettled) return;
+
+            if (checkAllLoaded()) {
+              // Double-check on next frame to ensure stability
+              requestAnimationFrame(() => {
+                if (checkAllLoaded()) {
+                  isSettled = true;
+                  cleanup();
+                  logger.info('Export map fully loaded - proceeding with capture');
+                  resolve();
+                } else {
+                  // State changed, wait for next idle
+                  logger.info('Load state changed during settle check, waiting...');
+                }
+              });
+            }
+          });
+        });
+      };
+
+      const onIdle = () => {
+        if (isSettled) return;
+        scheduleSettleCheck();
+      };
+
+      // Set up event listeners
+      exportMap.on('sourcedata', onSourceData);
+      exportMap.on('idle', onIdle);
+      exportMap.on('error', onError);
+
+      // Handle case where map is already loaded
       if (exportMap.loaded()) {
-        checkReady();
-      } else {
-        exportMap.once('idle', checkReady);
+        scheduleSettleCheck();
       }
     });
 

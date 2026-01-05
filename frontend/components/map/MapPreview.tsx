@@ -34,6 +34,7 @@ interface MapPreviewProps {
   layers?: PosterConfig['layers'];
   layerToggles?: LayerToggle[];
   onInteraction?: () => void;
+  locked?: boolean;
 }
 
 export function MapPreview({
@@ -49,7 +50,8 @@ export function MapPreview({
   onError,
   layers,
   layerToggles,
-  onInteraction
+  onInteraction,
+  locked = false
 }: MapPreviewProps) {
   const mapRef = useRef<MapRef>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -84,7 +86,7 @@ export function MapPreview({
 
   // Sync with external location changes
   useEffect(() => {
-    if (isMoving) return;
+    if (isMoving || locked) return;
     const overzoomBoost = Math.log2(rendering?.overzoom ?? 1);
     setViewState(prev => ({
       ...prev,
@@ -92,17 +94,17 @@ export function MapPreview({
       latitude: location.center[1],
       zoom: location.zoom + overzoomBoost,
     }));
-  }, [location.center[0], location.center[1], location.zoom, rendering?.overzoom, isMoving]);
+  }, [location.center[0], location.center[1], location.zoom, rendering?.overzoom, isMoving, locked]);
 
   // Sync pitch/bearing
   useEffect(() => {
-    if (isMoving) return;
+    if (isMoving || locked) return;
     setViewState(prev => ({
       ...prev,
       pitch: layers?.buildings3DPitch ?? 0,
       bearing: layers?.buildings3DBearing ?? 0,
     }));
-  }, [layers?.buildings3DPitch, layers?.buildings3DBearing, isMoving]);
+  }, [layers?.buildings3DPitch, layers?.buildings3DBearing, isMoving, locked]);
 
   const handleError = useCallback((e: any) => {
     // Sanitize error object to avoid circular references and SecurityErrors
@@ -257,7 +259,7 @@ export function MapPreview({
 
       <Map
         ref={mapRef}
-        {...viewState}
+        {...(locked ? {} : viewState)}
         style={{ width: '100%', height: '100%' }}
         mapStyle={mapStyle}
         attributionControl={false}
