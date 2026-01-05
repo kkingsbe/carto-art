@@ -43,6 +43,8 @@ export function Walkthrough({ steps, run, onFinish, onSkip }: WalkthroughProps) 
             continuous
             showProgress
             showSkipButton
+            scrollOffset={100}
+            disableScrollParentFix={true}
             callback={handleJoyrideCallback}
             styles={{
                 options: {

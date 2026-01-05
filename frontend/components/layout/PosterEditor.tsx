@@ -492,7 +492,7 @@ export function PosterEditor() {
   }, [updateLocation, updateLayers, isExportingRef, isGeneratingGifRef, isExportingVideoRef]);
 
   return (
-    <div className="relative h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden selection:bg-blue-500/30">
+    <div className="relative h-full bg-gray-50 dark:bg-gray-950 overflow-hidden selection:bg-blue-500/30">
       <ErrorToastContainer errors={errors} onDismiss={clearError} />
 
       {/* Top Toolbar - Floating */}
