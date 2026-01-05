@@ -31,6 +31,7 @@ import { trackEventAction } from '@/lib/actions/events';
 export function useMapExport(config: PosterConfig) {
   const [isExporting, setIsExportingState] = useState(false);
   const isExportingRef = useRef(false);
+  const [exportProgress, setExportProgress] = useState<{ stage: string; percent: number } | null>(null);
   const mapRef = useRef<MapLibreGL.Map | null>(null);
 
   const setIsExporting = (val: boolean) => {
@@ -49,17 +50,27 @@ export function useMapExport(config: PosterConfig) {
 
     const filename = typeof filenameOrEvent === 'string' ? filenameOrEvent : undefined;
 
+    setIsExporting(true);
+    setExportProgress({ stage: 'Starting...', percent: 0 });
+
     const startTime = Date.now();
     try {
       const blob = await exportMapToPNG({
         map: mapRef.current,
         config,
         resolution,
+        onProgress: (stage, percent) => {
+          setExportProgress({ stage, percent });
+        }
       });
+
+      setExportProgress({ stage: 'Downloading...', percent: 100 });
 
       const duration = Date.now() - startTime;
       const exportFilename = filename || `${(config.location.name || 'poster').toString().replace(/[^a-z0-9]/gi, '-').toLowerCase()}-poster.png`;
       downloadBlob(blob, exportFilename);
+
+      setExportProgress({ stage: 'Download started!', percent: 100 });
 
       // Track export event
       await trackEventAction({
@@ -75,12 +86,17 @@ export function useMapExport(config: PosterConfig) {
           render_time_ms: duration
         }
       });
+
+      // Keep modal open for a few seconds to ensure download starts
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
       return blob;
     } catch (error) {
       logger.error('Export failed:', error);
       throw error;
     } finally {
       setIsExporting(false);
+      setExportProgress(null);
     }
   };
 
@@ -106,6 +122,7 @@ export function useMapExport(config: PosterConfig) {
   return {
     isExporting,
     isExportingRef,
+    exportProgress,
     exportToPNG,
     setMapRef,
     fitToLocation,

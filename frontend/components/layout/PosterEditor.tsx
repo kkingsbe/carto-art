@@ -99,8 +99,8 @@ export function PosterEditor() {
   // Keep a reference to the map instance for thumbnail generation
   const mapInstanceRef = useRef<MapLibreGL.Map | null>(null);
 
-  const { isExporting, isExportingRef, exportToPNG, setMapRef, fitToLocation, zoomIn, zoomOut } = useMapExport(config);
-  const { isGeneratingGif, isGeneratingGifRef, generateOrbitGif } = useGifExport(mapInstanceRef);
+  const { isExporting, isExportingRef, exportProgress, exportToPNG, setMapRef, fitToLocation, zoomIn, zoomOut } = useMapExport(config);
+  const { isGeneratingGif, isGeneratingGifRef, generateOrbitGif, progress } = useGifExport(mapInstanceRef);
 
   // Project Manager Hook
   const {
@@ -494,6 +494,8 @@ export function PosterEditor() {
         }}
         onExport={handleExport}
         isExporting={isExporting || isGeneratingGif}
+        exportProgress={exportProgress}
+        gifProgress={progress}
         currentMapName={currentMapName}
         hasUnsavedChanges={currentMapStatus?.hasUnsavedChanges}
         isAuthenticated={isAuthenticated}
@@ -749,7 +751,9 @@ export function PosterEditor() {
           />
           <ExportButton
             onExport={handleExport}
-            isExporting={isExporting}
+            isExporting={isExporting || isGeneratingGif}
+            exportProgress={exportProgress}
+            gifProgress={progress}
             format={config.format}
             className="flex-1 justify-center py-2.5 shadow-none h-auto"
             showDonationModal={showDonationModal}

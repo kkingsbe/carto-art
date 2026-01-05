@@ -18,10 +18,11 @@ interface ExportOptions {
     dpi: number;
     name: string;
   };
+  onProgress?: (stage: string, percent: number) => void;
 }
 
 export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
-  const { map: previewMap, config, resolution } = options;
+  const { map: previewMap, config, resolution, onProgress } = options;
 
   // 1. CALCULATE ACTUAL RESOLUTION
   let exportResolution: { width: number; height: number; dpi: number; name: string };
@@ -35,6 +36,8 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
       config.format.orientation
     );
   }
+
+  onProgress?.('Initializing...', 5);
 
   // Wait for fonts
   try {
@@ -108,6 +111,8 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
       delete exportStyle.fog;
     }
 
+    onProgress?.('Loading map...', 10);
+
     // Initialize export map
     exportMap = new maplibregl.Map({
       container: hiddenContainer,
@@ -117,13 +122,18 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
       preserveDrawingBuffer: true,
       fadeDuration: 0,
       pixelRatio: mapExportScale, // Use pixelRatio for resolution scaling instead of zoom
-    });
-
-    // Apply explicit state without zoom offset
-    exportMap.jumpTo({
       center: originalCenter,
       zoom: originalZoom || 0,
       // If using deck.gl terrain, we render the map FLAT (top-down) to use as a texture
+      pitch: config.layers.volumetricTerrain ? 0 : (originalPitch || 0),
+      bearing: config.layers.volumetricTerrain ? 0 : (originalBearing || 0)
+    });
+
+    // Apply explicit state without zoom offset
+    // Redundant but harmless safeguard - map is already initialized with these values
+    exportMap.jumpTo({
+      center: originalCenter,
+      zoom: originalZoom || 0,
       pitch: config.layers.volumetricTerrain ? 0 : (originalPitch || 0),
       bearing: config.layers.volumetricTerrain ? 0 : (originalBearing || 0)
     });
@@ -156,6 +166,12 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
         if (e.sourceId && e.isSourceLoaded !== undefined) {
           sourceLoadingStates[e.sourceId] = e.isSourceLoaded;
           logger.debug('Source data event', { sourceId: e.sourceId, isLoaded: e.isSourceLoaded });
+
+          // Estimate progress based on sources
+          const sourceIds = Object.keys(sourceLoadingStates);
+          const loadedCount = sourceIds.filter(id => sourceLoadingStates[id]).length;
+          const mapProgress = 10 + Math.round((loadedCount / Math.max(1, sourceIds.length)) * 30);
+          onProgress?.('Loading tiles...', Math.min(40, mapProgress));
         }
       };
 
@@ -199,6 +215,7 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
                   isSettled = true;
                   cleanup();
                   logger.info('Export map fully loaded - proceeding with capture');
+                  onProgress?.('Map loaded!', 40);
                   resolve();
                 } else {
                   // State changed, wait for next idle
@@ -225,6 +242,8 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
         scheduleSettleCheck();
       }
     });
+
+    onProgress?.('Compositing...', 45);
 
     // 4. DRAWING
     const mapCanvas = exportMap.getCanvas();
@@ -265,6 +284,7 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
 
     // Draw Volumetric Terrain (Deck.gl)
     if (config.layers.volumetricTerrain) {
+      onProgress?.('Rendering terrain...', 50);
       try {
         // Capture map texture from the base map we just rendered
         // We use createImageBitmap for efficient texture transfer
@@ -289,6 +309,8 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
           texture: mapTexture,
         });
 
+        onProgress?.('Compositing terrain...', 70);
+
         logger.info('Terrain canvas render result', {
           width: terrainCanvas.width,
           height: terrainCanvas.height,
@@ -308,8 +330,12 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
 
 
 
+    onProgress?.('Drawing overlays...', 80);
+
     // 6. TEXT OVERLAY
     drawTextOverlay(exportCtx, config, exportResolution.width, exportResolution.height, mapExportScale);
+
+    onProgress?.('Finalizing...', 90);
 
     // 7. BORDER
     if (config.format.borderStyle !== 'none') {
@@ -407,9 +433,14 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
     // 11. ATTRIBUTION
     drawAttribution(exportCtx, exportResolution.width, exportResolution.height, mapExportScale);
 
+    onProgress?.('Preparing file...', 95);
+
     return new Promise<Blob>((resolve, reject) => {
       exportCanvas.toBlob((blob) => {
-        if (blob) resolve(blob);
+        if (blob) {
+          onProgress?.('Done!', 100);
+          resolve(blob);
+        }
         else reject(new Error('Failed to create blob from canvas'));
       }, 'image/png');
     });

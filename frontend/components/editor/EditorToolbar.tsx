@@ -27,6 +27,8 @@ interface EditorToolbarProps {
     onSaveCopy: (name: string) => Promise<void>;
     onExport: (resolution?: any) => Promise<void>;
     isExporting: boolean;
+    exportProgress: { stage: string; percent: number } | null;
+    gifProgress: number;
     currentMapName: string | null;
     hasUnsavedChanges?: boolean;
     isAuthenticated: boolean;
@@ -49,6 +51,8 @@ export function EditorToolbar({
     onSaveCopy,
     onExport,
     isExporting,
+    exportProgress,
+    gifProgress,
     currentMapName,
     hasUnsavedChanges,
     isAuthenticated,
@@ -147,6 +151,8 @@ export function EditorToolbar({
                     <ExportButton
                         onExport={onExport}
                         isExporting={isExporting}
+                        exportProgress={exportProgress}
+                        gifProgress={gifProgress}
                         format={format}
                         className="shadow-lg backdrop-blur-md"
                         showDonationModal={showDonationModal}

@@ -16,6 +16,8 @@ import type { GifExportOptions } from '@/hooks/useGifExport';
 interface ExportButtonProps {
   onExport: (resolution: ExportResolution, gifOptions?: GifExportOptions) => Promise<void> | void;
   isExporting: boolean;
+  exportProgress?: { stage: string; percent: number } | null;
+  gifProgress?: number;
   format: PosterConfig['format'];
   className?: string;
   showDonationModal: boolean;
@@ -30,6 +32,8 @@ interface ExportButtonProps {
 export function ExportButton({
   onExport,
   isExporting,
+  exportProgress,
+  gifProgress,
   format,
   className,
   showDonationModal,
@@ -47,9 +51,18 @@ export function ExportButton({
   };
 
   const handleStartExport = async (resolution: ExportResolution, gifOptions?: GifExportOptions) => {
-    setShowOptionsModal(false);
-    await onExport(resolution, gifOptions);
-    onDonationModalChange(true);
+    // Keep modal open to show progress
+    try {
+      await onExport(resolution, gifOptions);
+      // Wait a moment for the "Done!" state to be visible
+      setTimeout(() => {
+        setShowOptionsModal(false);
+        onDonationModalChange(true);
+      }, 500);
+    } catch (error) {
+      // Modal stays open or closes on error? Let's close it so user can retry
+      setShowOptionsModal(false);
+    }
   };
 
   const handleCloseSuccess = () => {
@@ -107,9 +120,11 @@ export function ExportButton({
 
       <ExportOptionsModal
         isOpen={showOptionsModal}
-        onClose={() => setShowOptionsModal(false)}
+        onClose={() => !isExporting && setShowOptionsModal(false)}
         onExport={handleStartExport}
         isExporting={isExporting}
+        exportProgress={exportProgress}
+        gifProgress={gifProgress}
         format={format}
       />
 

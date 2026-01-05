@@ -76,9 +76,14 @@ export function useGifExport(
                 link.click();
                 URL.revokeObjectURL(url);
 
-                setIsGeneratingGif(false);
-                isGeneratingGifRef.current = false;
-                setProgress(0);
+                setProgress(100);
+
+                // Keep modal open for a few seconds to ensure download starts
+                setTimeout(() => {
+                    setIsGeneratingGif(false);
+                    isGeneratingGifRef.current = false;
+                    setProgress(0);
+                }, 2000);
 
                 // Restore original state
                 map.jumpTo({
