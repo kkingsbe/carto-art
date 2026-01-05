@@ -155,7 +155,7 @@ export default function LocationPage({ params }: { params: { city: string } }) {
                     <nav className="text-sm mb-8 text-[#f5f0e8]/60">
                         <Link href="/" className="hover:text-[#c9a962] transition-colors">Home</Link>
                         <span className="mx-2">/</span>
-                        <Link href="/map" className="hover:text-[#c9a962] transition-colors">Locations</Link>
+                        <Link href="/location" className="hover:text-[#c9a962] transition-colors">Locations</Link>
                         <span className="mx-2">/</span>
                         <span className="text-[#f5f0e8]">{location.name}</span>
                     </nav>
@@ -261,7 +261,7 @@ export default function LocationPage({ params }: { params: { city: string } }) {
                             .map((loc) => (
                                 <Link
                                     key={loc.slug}
-                                    href={`/map/${loc.slug}`}
+                                    href={`/location/${loc.slug}`}
                                     className="bg-[#0a0f1a] p-4 rounded-lg border border-[#c9a962]/20 hover:border-[#c9a962] transition-colors text-center"
                                 >
                                     <div className="font-semibold text-sm">{loc.name}</div>

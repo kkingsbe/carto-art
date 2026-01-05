@@ -1,0 +1,81 @@
+# Carto-Art
+
+> Free map poster maker with no watermarks. Create custom wall art from any location. Export at print-ready sizes up to 24×36". No signup required.
+
+## What is Carto-Art?
+
+Carto-Art is a free, browser-based tool for creating personalized map posters and wall art. Users can search for any location worldwide, customize the map style, colors, typography, and export high-resolution images suitable for professional printing. The tool is 100% free with no watermarks, subscriptions, or hidden costs.
+
+## Key Features
+
+- **Custom Map Creation**: Search any location and create personalized map posters
+- **No Watermarks**: All exports are completely free with no branding
+- **Print-Ready Quality**: Export up to 24×36 inches at 300 DPI (7200×10800 pixels)
+- **Multiple Map Styles**: Choose from various cartographic styles including standard, satellite, terrain, and artistic themes
+- **3D Terrain Visualization**: Enable volumetric 3D terrain for mountainous regions
+- **Animated Exports**: Create orbit GIF and video animations of your maps
+- **No Account Required**: Design and export anonymously without signup
+- **Save & Share**: Optional account creation for saving projects and publishing to gallery
+
+## Core Documentation
+
+- [Editor Tool](https://www.cartoart.net/editor): Main map poster creation interface
+- [Gallery](https://www.cartoart.net/gallery): Community-created map posters for inspiration
+- [Developer API](https://www.cartoart.net/developer/docs): API documentation for developers
+- [Blog](https://www.cartoart.net/blog): Guides and inspiration for map poster creation
+
+## Popular Locations
+
+- [New York Map Poster](https://www.cartoart.net/map/new-york)
+- [Salt Lake City Map Poster](https://www.cartoart.net/map/salt-lake-city)
+- [Mt Fuji Map Poster](https://www.cartoart.net/map/mt-fuji)
+- [Hawaii Map Poster](https://www.cartoart.net/map/hawaii)
+- [Denver Map Poster](https://www.cartoart.net/map/denver)
+- [Washington DC Map Poster](https://www.cartoart.net/map/washington-dc)
+
+## Frequently Asked Questions
+
+**Is Carto-Art really free?**
+Yes, completely free. No hidden costs, subscriptions, or trial periods. Every feature is free forever.
+
+**Do I need to create an account?**
+No. You can design and export posters anonymously. Accounts are optional for saving work and publishing to the gallery.
+
+**What's the maximum export size?**
+Up to 24×36 inches at 300 DPI (7200×10800 pixels) - professional print-shop quality.
+
+**Can I use these posters commercially?**
+Yes. Use them for personal or commercial purposes. Base map data is from OpenStreetMap under the ODbL license.
+
+**Where does the map data come from?**
+OpenStreetMap - a community-built map of the world, constantly updated by volunteers.
+
+**How long does it take to create a poster?**
+Most users finish in 5-10 minutes. Search location, pick style, customize, and export.
+
+## Use Cases
+
+- **Wedding Map Art**: Create custom maps of where you met, got engaged, or married
+- **New Home Gifts**: Personalized housewarming gifts featuring the new address
+- **Travel Memories**: Commemorate favorite vacation destinations
+- **Anniversary Gifts**: Mark special locations from your relationship
+- **Office Decor**: Professional map art for businesses and offices
+- **Real Estate Marketing**: Custom neighborhood maps for property listings
+
+## Technical Details
+
+- **Map Data Source**: OpenStreetMap (ODbL license)
+- **Rendering Engine**: MapLibre GL JS with custom 3D terrain support
+- **Export Formats**: PNG, JPEG, GIF (animated), MP4 (video)
+- **Supported Browsers**: Chrome, Firefox, Safari, Edge (latest versions)
+- **Mobile Support**: Full responsive design for tablets and phones
+
+## Comparison to Alternatives
+
+Carto-Art is a free alternative to paid services like Mapiful and Grafomap. Unlike these services:
+- No watermarks on free exports
+- Higher resolution exports (up to 10800px)
+- 3D terrain and animated exports
+- Open source codebase
+- No account required for basic use
+- Community gallery for inspiration

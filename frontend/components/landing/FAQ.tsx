@@ -44,6 +44,18 @@ export function FAQ() {
       question: 'Can I edit my poster later?',
       answer: 'If you create a free account, you can save unlimited projects and edit them anytime. Your work syncs across devices automatically.',
     },
+    {
+      question: 'What\'s the best free map poster maker?',
+      answer: 'Carto-Art offers the highest quality free map posters with no watermarks, exports up to 24×36", 3D terrain, and animated GIFs. It\'s a free alternative to Mapiful and Grafomap.',
+    },
+    {
+      question: 'How do I create a wedding map poster?',
+      answer: 'Search for meaningful locations like where you met or your wedding venue. Customize colors to match your theme and export at high resolution for printing.',
+    },
+    {
+      question: 'Are there watermarks on the free version?',
+      answer: 'No watermarks ever. All exports are completely clean with no branding or logos. Your map poster is 100% yours.',
+    },
   ];
 
   return (

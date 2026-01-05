@@ -3,8 +3,14 @@ import GalleryHero from '@/components/gallery/GalleryHero';
 import { getSiteStats } from '@/lib/actions/stats';
 
 export const metadata = {
-  title: 'Community Gallery | Carto Art',
-  description: 'Discover stunning map posters created by the community. Browse and get inspired by beautiful cartographic designs.',
+  title: 'Community Map Gallery | Explore Custom Map Posters - Carto-Art',
+  description: 'Browse thousands of stunning custom map posters created by our community. Get inspired by beautiful cartographic designs, terrain maps, and location art.',
+  keywords: 'map gallery, community maps, custom poster examples, map inspiration, cartographic art gallery',
+  openGraph: {
+    title: 'Community Map Gallery - Carto-Art',
+    description: 'Explore stunning custom map posters created by thousands of users worldwide.',
+    type: 'website',
+  },
 };
 
 interface GalleryPageProps {

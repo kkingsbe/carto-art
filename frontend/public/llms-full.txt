@@ -1,0 +1,417 @@
+# Carto-Art - Complete Documentation for AI Systems
+
+> Comprehensive guide to Carto-Art, a free map poster maker for creating custom wall art from any location worldwide.
+
+## Overview
+
+Carto-Art is a web-based application that enables users to create personalized, print-ready map posters of any location on Earth. The tool is completely free, requires no account signup for basic use, and produces high-quality exports without watermarks. It serves as a free alternative to commercial services like Mapiful and Grafomap.
+
+## Product Description
+
+### What It Does
+Carto-Art transforms geographic locations into beautiful, customizable wall art. Users search for any address, landmark, or coordinates, then customize the map's appearance through an intuitive editor. The final product can be exported as a high-resolution image suitable for professional printing at sizes up to 24×36 inches.
+
+### Target Audience
+- Individuals creating personalized gifts (weddings, anniversaries, housewarmings)
+- Interior designers and decorators
+- Real estate professionals
+- Travel enthusiasts documenting their journeys
+- Small businesses needing custom map graphics
+- Anyone wanting affordable, custom wall art
+
+### Key Differentiators
+1. **100% Free**: No watermarks, no subscriptions, no hidden costs
+2. **No Account Required**: Anonymous use for privacy-conscious users
+3. **High Resolution**: Up to 7200×10800 pixels (24×36" at 300 DPI)
+4. **3D Terrain**: Volumetric terrain visualization for mountainous regions
+5. **Animated Exports**: Orbit GIF and MP4 video animations
+6. **Open Source**: Transparent, community-driven development
+
+## Features in Detail
+
+### Map Customization
+- **Location Search**: Search by address, landmark name, or coordinates
+- **Map Styles**: Multiple cartographic styles including:
+  - Standard street maps
+  - Satellite imagery
+  - Terrain visualization
+  - Artistic/minimalist themes
+  - Dark mode variants
+- **Color Customization**: Full control over:
+  - Water bodies
+  - Land/terrain
+  - Roads and streets
+  - Buildings
+  - Parks and green spaces
+  - Labels and text
+- **Typography**: Multiple font families including:
+  - Montserrat, Poppins, Bebas Neue, Oswald
+  - Inter, Outfit, DM Sans
+  - JetBrains Mono, IBM Plex Mono, Space Mono
+  - Playfair Display, Crimson Text, EB Garamond
+
+### 3D Visualization
+- Enable volumetric 3D terrain for realistic topography
+- Adjustable camera tilt and rotation
+- Exaggeration controls for dramatic effect
+- Optimized for mountainous and coastal regions
+
+### Export Options
+- **Static Images**: PNG and JPEG formats
+- **Resolution Presets**:
+  - Social Media (1080×1080px, 1920×1080px)
+  - Standard Print (12×18", 18×24")
+  - Large Format (24×36" at 300 DPI)
+  - Ultra High-Res (custom dimensions)
+- **Animated Exports**:
+  - Orbit GIF: Rotating 360° animation
+  - Orbit Video: MP4 format with configurable duration and rotation
+  - Configurable FPS and rotation angles
+
+### Gallery & Community
+- Public gallery of user-created posters
+- Browse for inspiration
+- Publish your own creations (requires account)
+- Discover popular locations and styles
+
+### Developer Features
+- API documentation for programmatic access
+- Open source codebase on GitHub
+- Extensible architecture for custom integrations
+
+## How to Create a Map Poster (Step-by-Step)
+
+### Step 1: Search for Location
+1. Navigate to the editor at https://www.cartoart.net/editor
+2. Use the search bar to find your location by:
+   - Street address (e.g., "123 Main St, New York, NY")
+   - Landmark name (e.g., "Eiffel Tower")
+   - City name (e.g., "Tokyo, Japan")
+   - Coordinates (e.g., "40.7128, -74.0060")
+
+### Step 2: Choose Map Style
+1. Open the style panel in the sidebar
+2. Browse available map styles
+3. Preview different styles in real-time
+4. Select the style that best fits your aesthetic
+
+### Step 3: Customize Colors
+1. Open the color customization panel
+2. Adjust individual color elements:
+   - Water: Change ocean, lake, and river colors
+   - Land: Modify terrain and background colors
+   - Roads: Customize street and highway colors
+   - Buildings: Set building fill and outline colors
+   - Parks: Adjust green space colors
+   - Labels: Change text and label colors
+
+### Step 4: Adjust Typography
+1. Select font family for labels and text
+2. Adjust font size and weight
+3. Toggle label visibility as needed
+
+### Step 5: Configure 3D Terrain (Optional)
+1. Enable 3D terrain toggle
+2. Adjust camera tilt for desired perspective
+3. Set terrain exaggeration level
+4. Rotate the map to find the best angle
+
+### Step 6: Add Graticule (Optional)
+1. Enable latitude/longitude grid lines
+2. Adjust line weight and density
+3. Configure label text size
+
+### Step 7: Export Your Poster
+1. Click the Export button
+2. Choose export format (PNG, JPEG, GIF, or Video)
+3. Select resolution/size preset
+4. For animated exports, configure:
+   - Total rotation angle (degrees)
+   - Duration (seconds)
+   - Frames per second
+5. Click Export and wait for processing
+6. Download your high-resolution file
+
+## Frequently Asked Questions (Comprehensive)
+
+### Pricing & Access
+
+**Is Carto-Art really free?**
+Yes, completely free. No hidden costs, subscriptions, trial periods, or premium tiers. Every feature is accessible to everyone at no cost. We built this tool because we love maps and wanted to share it with the world.
+
+**Will it always be free?**
+Yes. The project is open source and community-driven. We may accept donations to cover hosting costs, but the tool will remain free forever.
+
+**Do I need to create an account?**
+No. You can design and export posters completely anonymously without any signup. Accounts are optional and only needed if you want to save your work across sessions or publish to the public gallery.
+
+**What information do you collect?**
+Minimal analytics to understand feature usage. We don't sell data, use tracking pixels, or share information with third parties. Anonymous usage is fully supported.
+
+### Export Quality & Usage
+
+**What's the maximum size I can export?**
+Up to 24×36 inches at 300 DPI, which equals 7200×10800 pixels. This is professional print-shop quality suitable for large format printing.
+
+**Are there watermarks on exports?**
+No. All exports are completely clean with no branding, watermarks, or logos.
+
+**Can I use these posters commercially?**
+Yes. Use them for personal or commercial purposes. The base map data is from OpenStreetMap under the Open Database License (ODbL), which allows commercial use with attribution. You should include "© OpenStreetMap contributors" if publishing or selling.
+
+**What file formats are supported?**
+- PNG (recommended for printing)
+- JPEG (smaller file size)
+- GIF (animated orbit)
+- MP4 (video orbit)
+
+**How do I get the best print quality?**
+1. Use PNG format for lossless quality
+2. Export at 300 DPI for professional printing
+3. Choose the largest size that fits your frame
+4. Use a professional printing service for best results
+
+### Map Data & Coverage
+
+**Where does the map data come from?**
+OpenStreetMap (OSM) - a collaborative, community-built map of the world created by millions of volunteers, similar to Wikipedia. It's constantly updated and covers virtually every location on Earth.
+
+**How current is the map data?**
+OpenStreetMap is updated continuously by contributors worldwide. Most urban areas are updated daily, while rural areas may have less frequent updates.
+
+**Can I create maps of any location?**
+Yes, anywhere on Earth. From major cities to remote villages, mountains, islands, and everything in between.
+
+**What if my location isn't showing correctly?**
+OpenStreetMap data quality varies by region. You can contribute to OpenStreetMap to improve the data for your area.
+
+### Technical Questions
+
+**How long does it take to create a poster?**
+Most users complete their poster in 5-10 minutes. The editor is designed for speed and simplicity.
+
+**How long does export take?**
+- Small/medium sizes: 5-30 seconds
+- Large format (24×36"): 1-3 minutes
+- Animated GIF/video: 2-5 minutes
+Export time depends on resolution, complexity, and server load.
+
+**What browsers are supported?**
+Latest versions of Chrome, Firefox, Safari, and Edge. Mobile browsers are also supported for design (though large exports work best on desktop).
+
+**Does it work on mobile devices?**
+Yes. The editor is fully responsive and works on tablets and phones. However, very high-resolution exports may be slower on mobile devices.
+
+**Can I edit my poster later?**
+If you create a free account, you can save unlimited projects and edit them anytime. Your work syncs across devices automatically.
+
+**Is there a limit to how many posters I can create?**
+No limits. Create as many posters as you want.
+
+### Troubleshooting
+
+**My export failed. What should I do?**
+- Try a smaller resolution first
+- Disable 3D terrain if enabled
+- Refresh the page and try again
+- Check your internet connection
+- For ultra-high-res exports, ensure your device has sufficient memory
+
+**The map looks different than I expected. Why?**
+Map appearance depends on the zoom level and style selected. Try adjusting the zoom or switching to a different style.
+
+**Can I get help or support?**
+- Browse the community gallery for inspiration
+- Check the developer documentation
+- Visit our GitHub repository for technical questions
+- Join our Discord community for real-time help
+
+## Popular Use Cases & Examples
+
+### Wedding Map Art
+Create custom maps commemorating special relationship locations:
+- Where you first met
+- Engagement location
+- Wedding venue
+- Honeymoon destination
+Combine multiple locations in a series for a complete love story.
+
+### New Home Gifts
+Perfect housewarming gift showing:
+- The new address with custom styling
+- Neighborhood context
+- Nearby landmarks and parks
+- Personalized colors matching home decor
+
+### Travel Memories
+Document your adventures:
+- Favorite vacation destinations
+- Road trip routes
+- Study abroad locations
+- Bucket list destinations
+Create a gallery wall of places you've visited.
+
+### Anniversary Gifts
+Meaningful gifts marking:
+- Where you met (with the date)
+- First date location
+- Proposal spot
+- Current home together
+
+### Office & Business Decor
+Professional applications:
+- Company headquarters location
+- Service area maps for local businesses
+- Real estate neighborhood maps
+- Conference venue maps
+- Historical business locations
+
+### Real Estate Marketing
+Enhance property listings:
+- Neighborhood overview maps
+- Proximity to amenities
+- School district boundaries
+- Custom branded property maps
+
+## Location-Specific Guides
+
+### New York City Maps
+Popular NYC locations for map posters:
+- Central Park
+- Times Square
+- Brooklyn Bridge
+- Statue of Liberty
+- Your NYC apartment or favorite neighborhood
+
+### Salt Lake City Maps
+Ideal for:
+- Temple Square
+- University of Utah campus
+- Ski resort locations (Alta, Snowbird, Park City)
+- Downtown SLC
+- Mountain backdrop views with 3D terrain
+
+### Mt Fuji Maps
+Showcase Japan's iconic mountain:
+- Enable 3D terrain for dramatic effect
+- Capture surrounding lakes (Kawaguchi, Yamanaka)
+- Include nearby towns and trails
+- Use satellite style for realistic appearance
+
+### Hawaii Maps
+Perfect for island memories:
+- Individual islands (Oahu, Maui, Kauai, Big Island)
+- Beach locations
+- Volcanic features with 3D terrain
+- Coastal areas with water color customization
+
+### Denver Maps
+Mile High City posters:
+- Downtown Denver grid
+- Rocky Mountain foothills with 3D terrain
+- Red Rocks Amphitheatre
+- University of Denver campus
+- Neighborhood maps (LoDo, RiNo, Capitol Hill)
+
+### Washington DC Maps
+Nation's capital maps:
+- National Mall and monuments
+- Capitol Building area
+- Georgetown neighborhood
+- Embassy Row
+- Your DC address or favorite landmark
+
+## Technical Architecture
+
+### Technology Stack
+- **Frontend**: Next.js (React framework)
+- **Mapping**: MapLibre GL JS
+- **3D Rendering**: deck.gl for volumetric terrain
+- **Map Data**: OpenStreetMap via vector tiles
+- **Hosting**: Vercel (frontend), custom tile server
+- **Database**: For user accounts and gallery (optional features)
+
+### API Access
+Developers can integrate Carto-Art functionality:
+- Programmatic map generation
+- Custom style definitions
+- Batch export processing
+- Gallery integration
+See https://www.cartoart.net/developer/docs for API documentation.
+
+### Open Source
+- GitHub repository available
+- MIT license (check repository for details)
+- Community contributions welcome
+- Transparent development process
+
+## Comparison to Competitors
+
+### vs. Mapiful
+- **Carto-Art**: Free, no watermarks, higher resolution
+- **Mapiful**: Paid service, watermarks on free tier, limited customization
+
+### vs. Grafomap
+- **Carto-Art**: 3D terrain, animated exports, open source
+- **Grafomap**: Paid, limited export sizes, no 3D features
+
+### vs. Printful/Custom Print Services
+- **Carto-Art**: Free digital files you can print anywhere
+- **Print Services**: Must purchase prints through their service
+
+### Unique Advantages
+1. Highest resolution exports in the free tier
+2. 3D terrain visualization
+3. Animated GIF and video exports
+4. No account required
+5. Open source and transparent
+6. Active community gallery
+
+## SEO & Discoverability
+
+### Primary Keywords
+- Map poster maker
+- Custom map art
+- Free poster maker
+- Personalized map
+- Location poster
+- Map print
+- Cartographic art
+- Wedding map art
+- Travel map poster
+
+### Alternative Search Terms
+- Mapiful alternative
+- Grafomap alternative
+- Free map poster generator
+- Custom wall art maker
+- Printable map poster
+- DIY map art
+- Personalized location print
+
+## Contact & Community
+
+- **Website**: https://www.cartoart.net
+- **Editor**: https://www.cartoart.net/editor
+- **Gallery**: https://www.cartoart.net/gallery
+- **Developer Docs**: https://www.cartoart.net/developer/docs
+- **Blog**: https://www.cartoart.net/blog
+- **GitHub**: Check website for repository link
+- **Discord**: Community support and discussions
+
+## Attribution & Licensing
+
+### Map Data
+© OpenStreetMap contributors
+Licensed under the Open Database License (ODbL)
+https://www.openstreetmap.org/copyright
+
+### Software
+Check GitHub repository for software license details.
+
+### User-Generated Content
+Posters created with Carto-Art belong to the creator. When publishing to the gallery or using commercially, users should include OpenStreetMap attribution as required by the ODbL license.
+
+---
+
+*This documentation is optimized for AI language models to understand and reference Carto-Art's features, capabilities, and use cases. Last updated: January 2026*

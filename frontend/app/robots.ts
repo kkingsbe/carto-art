@@ -16,7 +16,30 @@ export default function robots(): MetadataRoute.Robots {
                     '/renderer/',
                 ],
             },
+            // Explicitly allow AI crawlers for better AI search engine optimization
+            {
+                userAgent: 'GPTBot', // OpenAI ChatGPT
+                allow: '/',
+            },
+            {
+                userAgent: 'Google-Extended', // Google Bard/Gemini
+                allow: '/',
+            },
+            {
+                userAgent: 'CCBot', // Common Crawl (used by many AI systems)
+                allow: '/',
+            },
+            {
+                userAgent: 'anthropic-ai', // Anthropic Claude
+                allow: '/',
+            },
+            {
+                userAgent: 'Claude-Web', // Anthropic Claude web crawler
+                allow: '/',
+            },
         ],
         sitemap: `${baseUrl}/sitemap.xml`,
+        // Reference to LLM-specific documentation
+        host: baseUrl,
     };
 }

@@ -14,10 +14,23 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ];
 
     const locationPages = locations.map((location) => ({
-        url: `${baseUrl}/map/${location}`,
+        url: `${baseUrl}/location/${location}`,
         lastModified: new Date(),
         changeFrequency: 'monthly' as const,
         priority: 0.8,
+    }));
+
+    // Blog posts
+    const blogPosts = [
+        'how-to-create-wedding-map-art',
+        'best-map-poster-ideas-new-home',
+    ];
+
+    const blogPages = blogPosts.map((slug) => ({
+        url: `${baseUrl}/blog/${slug}`,
+        lastModified: new Date(),
+        changeFrequency: 'monthly' as const,
+        priority: 0.7,
     }));
 
     return [
@@ -45,6 +58,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
             changeFrequency: 'weekly',
             priority: 0.6,
         },
+        {
+            url: `${baseUrl}/blog`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.7,
+        },
         ...locationPages,
+        ...blogPages,
     ];
 }

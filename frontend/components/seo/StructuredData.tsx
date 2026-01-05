@@ -1,7 +1,7 @@
 import Script from 'next/script';
 
 interface StructuredDataProps {
-    type?: 'website' | 'software' | 'faq';
+    type?: 'website' | 'software' | 'faq' | 'howto' | 'organization';
     data?: Record<string, any>;
 }
 
@@ -45,6 +45,37 @@ export function StructuredData({ type = 'website', data }: StructuredDataProps) 
                     '@context': 'https://schema.org',
                     '@type': 'FAQPage',
                     mainEntity: data?.questions || [],
+                };
+
+            case 'howto':
+                return {
+                    '@context': 'https://schema.org',
+                    '@type': 'HowTo',
+                    name: data?.name || 'How to Create a Map Poster',
+                    description: data?.description || 'Step-by-step guide to creating custom map posters with Carto-Art',
+                    image: data?.image || `${baseUrl}/hero.jpg`,
+                    totalTime: data?.totalTime || 'PT10M',
+                    estimatedCost: {
+                        '@type': 'MonetaryAmount',
+                        currency: 'USD',
+                        value: '0',
+                    },
+                    tool: {
+                        '@type': 'HowToTool',
+                        name: 'Carto-Art Map Poster Maker',
+                    },
+                    step: data?.steps || [],
+                };
+
+            case 'organization':
+                return {
+                    '@context': 'https://schema.org',
+                    '@type': 'Organization',
+                    name: 'Carto-Art',
+                    url: baseUrl,
+                    logo: `${baseUrl}/icon.svg`,
+                    description: 'Free map poster maker with no watermarks. Create custom wall art from any location.',
+                    sameAs: data?.sameAs || [],
                 };
 
             case 'website':
