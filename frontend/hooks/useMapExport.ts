@@ -8,6 +8,7 @@ import type { ExportResolution } from '@/lib/export/resolution';
 import { logger } from '@/lib/logger';
 import { trackEventAction } from '@/lib/actions/events';
 import { uploadExportThumbnail } from '@/lib/actions/export-storage';
+import { getSessionId } from '@/lib/utils';
 
 
 /**
@@ -90,6 +91,7 @@ export function useMapExport(config: PosterConfig) {
       await trackEventAction({
         eventType: 'poster_export',
         eventName: 'Poster Exported (In-App)',
+        sessionId: getSessionId(),
         metadata: {
           location_name: config.location.name,
           location_coords: config.location.center,

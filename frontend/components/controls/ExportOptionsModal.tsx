@@ -1,8 +1,11 @@
 'use client';
 
+
+import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { X, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getSessionId } from '@/lib/utils';
 import { ControlSlider, ControlLabel } from '@/components/ui/control-components';
 import { EXPORT_RESOLUTIONS, DEFAULT_EXPORT_RESOLUTION, type ExportResolutionKey } from '@/lib/export/constants';
 import { calculateTargetResolution, getPhysicalDimensions, type ExportResolution, type BaseExportResolution } from '@/lib/export/resolution';
@@ -33,6 +36,7 @@ interface ExportOptionsModalProps {
     onFormatChange: (format: Partial<PosterConfig['format']>) => void;
     subscriptionTier?: 'free' | 'carto_plus';
     exportUsage?: ExportUsageResult | null;
+    isAuthenticated?: boolean;
 }
 
 export function ExportOptionsModal({
@@ -46,8 +50,10 @@ export function ExportOptionsModal({
     format,
     onFormatChange,
     subscriptionTier = 'free',
-    exportUsage
+    exportUsage,
+    isAuthenticated = false
 }: ExportOptionsModalProps) {
+    const router = useRouter();
     const [selectedKey, setSelectedKey] = useState<string>('SMALL');
     const [gifDuration, setGifDuration] = useState(7);
     const [gifRotation, setGifRotation] = useState(90);
@@ -69,6 +75,7 @@ export function ExportOptionsModal({
     const isExportLimitReached = exportUsage && !exportUsage.allowed && subscriptionTier === 'free';
 
     // Track paywall shown event
+    // Track paywall/login wall shown event
     useEffect(() => {
         if (!isOpen) {
             hasTrackedPaywallRef.current = false;
@@ -76,10 +83,13 @@ export function ExportOptionsModal({
         }
 
         if (isOpen && isExportLimitReached && !hasTrackedPaywallRef.current) {
-            console.log('Tracking paywall_shown event');
+            const eventType = isAuthenticated ? 'paywall_shown' : 'login_wall_shown';
+            console.log(`Tracking ${eventType} event`);
+
             trackEventAction({
-                eventType: 'paywall_shown',
+                eventType,
                 eventName: 'export_limit_reached',
+                sessionId: getSessionId(),
                 metadata: {
                     limit: exportUsage?.limit,
                     used: exportUsage?.used
@@ -87,7 +97,7 @@ export function ExportOptionsModal({
             });
             hasTrackedPaywallRef.current = true;
         }
-    }, [isOpen, isExportLimitReached, exportUsage]);
+    }, [isOpen, isExportLimitReached, exportUsage, isAuthenticated]);
 
     // Calculate countdown timer when limit is reached
     useEffect(() => {
@@ -133,6 +143,11 @@ export function ExportOptionsModal({
         // Pass current search params to preserve state on redirect
         const searchParams = typeof window !== 'undefined' ? window.location.search.substring(1) : '';
         await createCheckoutSession(searchParams);
+    };
+
+    const handleSignUp = () => {
+        const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+        router.push(`/register?next=${returnUrl}`);
     };
 
     // Determine current progress
@@ -219,54 +234,113 @@ export function ExportOptionsModal({
                         </div>
                     ) : isExportLimitReached ? (
                         /* Limit Reached State */
-                        <div className="py-8 space-y-6">
-                            <div className="flex flex-col items-center justify-center text-center space-y-4">
-                                <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                                    <Clock className="w-8 h-8 text-amber-500" />
-                                </div>
-                                <div className="space-y-2">
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                                        Daily Export Limit Reached
+                        <div className="py-6 space-y-6">
+                            {/* Header Section */}
+                            <div className="flex flex-col items-center justify-center text-center space-y-2">
+                                <div className="space-y-1">
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center justify-center gap-2">
+                                        <Clock className="w-6 h-6 text-amber-500" />
+                                        Daily Limit Reached
                                     </h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
-                                        You&apos;ve used all {exportUsage?.limit} free exports for today.
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        You&apos;ve used your {exportUsage?.limit} free exports for today.
                                     </p>
                                 </div>
+
+                                {countdown && (
+                                    <div className="mt-2 text-sm font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-1 rounded-full border border-amber-100 dark:border-amber-900/30">
+                                        Next free export in {countdown}
+                                    </div>
+                                )}
                             </div>
 
-                            {countdown && (
-                                <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl text-center">
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                                        Next free export available in
-                                    </p>
-                                    <p className="text-2xl font-mono font-bold text-gray-900 dark:text-white">
-                                        {countdown}
-                                    </p>
-                                </div>
-                            )}
+                            {/* CTA Section - Different for Anon vs Authenticated */}
+                            {!isAuthenticated ? (
+                                <div className="relative overflow-hidden rounded-2xl border border-blue-100 dark:border-blue-900 bg-white dark:bg-gray-800 shadow-sm">
+                                    {/* Gradient Background Effect */}
+                                    <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 opacity-50" />
 
-                            {/* Upgrade CTA */}
-                            <div className="bg-gradient-to-r from-indigo-500 from-10% via-sky-500 via-30% to-emerald-500 to-90% p-[1px] rounded-xl">
-                                <div className="bg-white dark:bg-gray-900 rounded-[11px] p-5">
-                                    <div className="text-center space-y-3">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <Sparkles className="w-5 h-5 text-amber-500 fill-amber-500" />
-                                            <h4 className="font-bold text-gray-900 dark:text-white">
-                                                Upgrade to Carto Plus
-                                            </h4>
+                                    <div className="relative p-6 space-y-6">
+                                        <div className="space-y-4">
+                                            <div className="flex items-start gap-4">
+                                                <div className="p-3 bg-blue-100 dark:bg-blue-900/50 rounded-xl">
+                                                    <Sparkles className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <h4 className="font-bold text-gray-900 dark:text-white text-lg">
+                                                        Unlock More with a Free Account
+                                                    </h4>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                                                        Join thousands of map creators and get immediate access to more features.
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* Benefits List */}
+                                            <div className="space-y-3 pl-1">
+                                                <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-200">
+                                                    <div className="w-5 h-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                                                        <Check className="w-3 h-3 text-green-600 dark:text-green-400" />
+                                                    </div>
+                                                    <span className="font-medium">5 free exports every day</span>
+                                                </div>
+                                                <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-200">
+                                                    <div className="w-5 h-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                                                        <Check className="w-3 h-3 text-green-600 dark:text-green-400" />
+                                                    </div>
+                                                    <span className="font-medium">Save your maps to cloud</span>
+                                                </div>
+                                                <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-200">
+                                                    <div className="w-5 h-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                                                        <Check className="w-3 h-3 text-green-600 dark:text-green-400" />
+                                                    </div>
+                                                    <span className="font-medium">Access export history</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                                            Get unlimited exports, GIF/Video animations, and more.
-                                        </p>
-                                        <button
-                                            onClick={handleUpgrade}
-                                            className="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-semibold hover:scale-[1.02] active:scale-[0.98] transition-transform"
-                                        >
-                                            Upgrade Now
-                                        </button>
+
+                                        <div className="space-y-3 pt-2">
+                                            <button
+                                                onClick={handleSignUp}
+                                                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+                                            >
+                                                Create Free Account
+                                            </button>
+                                            <div className="text-center">
+                                                <button
+                                                    onClick={() => router.push('/login')}
+                                                    className="text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors font-medium"
+                                                >
+                                                    Already have an account? Sign in
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            ) : (
+                                /* Upgrade CTA for Logged In Users */
+                                <div className="bg-gradient-to-r from-indigo-500 from-10% via-sky-500 via-30% to-emerald-500 to-90% p-[1px] rounded-xl">
+                                    <div className="bg-white dark:bg-gray-900 rounded-[11px] p-5">
+                                        <div className="text-center space-y-3">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <Sparkles className="w-5 h-5 text-amber-500 fill-amber-500" />
+                                                <h4 className="font-bold text-gray-900 dark:text-white">
+                                                    Upgrade to Carto Plus
+                                                </h4>
+                                            </div>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                Get unlimited exports, GIF/Video animations, and more.
+                                            </p>
+                                            <button
+                                                onClick={handleUpgrade}
+                                                className="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-semibold hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                                            >
+                                                Upgrade Now
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <>

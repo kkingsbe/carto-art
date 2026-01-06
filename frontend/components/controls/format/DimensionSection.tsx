@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { Crop } from 'lucide-react';
 import type { PosterConfig } from '@/types/poster';
 import { trackEventAction } from '@/lib/actions/events';
+import { getSessionId } from '@/lib/utils';
 
 interface DimensionSectionProps {
     format: PosterConfig['format'];
@@ -33,6 +34,7 @@ export function DimensionSection({ format, onFormatChange }: DimensionSectionPro
         trackEventAction({
             eventType: 'format_change',
             eventName: 'aspect_ratio',
+            sessionId: getSessionId(),
             metadata: { value: newAspectRatio }
         });
 
@@ -112,6 +114,7 @@ export function DimensionSection({ format, onFormatChange }: DimensionSectionPro
                                 trackEventAction({
                                     eventType: 'format_change',
                                     eventName: 'orientation',
+                                    sessionId: getSessionId(),
                                     metadata: { value: 'portrait' }
                                 });
                             }}
@@ -132,6 +135,7 @@ export function DimensionSection({ format, onFormatChange }: DimensionSectionPro
                                 trackEventAction({
                                     eventType: 'format_change',
                                     eventName: 'orientation',
+                                    sessionId: getSessionId(),
                                     metadata: { value: 'landscape' }
                                 });
                             }}

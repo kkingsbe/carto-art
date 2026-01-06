@@ -6,6 +6,7 @@ import { Frame } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { PosterConfig } from '@/types/poster';
 import { trackEventAction } from '@/lib/actions/events';
+import { getSessionId } from '@/lib/utils';
 
 interface LayoutSectionProps {
     format: PosterConfig['format'];
@@ -34,6 +35,7 @@ export function LayoutSection({ format, onFormatChange }: LayoutSectionProps) {
                             trackEventAction({
                                 eventType: 'format_change',
                                 eventName: 'margin',
+                                sessionId: getSessionId(),
                                 metadata: { value: margin }
                             });
                         }}
@@ -50,6 +52,7 @@ export function LayoutSection({ format, onFormatChange }: LayoutSectionProps) {
                                 trackEventAction({
                                     eventType: 'format_change',
                                     eventName: 'mask_shape',
+                                    sessionId: getSessionId(),
                                     metadata: { value: 'rectangular' }
                                 });
                             }}
@@ -75,6 +78,7 @@ export function LayoutSection({ format, onFormatChange }: LayoutSectionProps) {
                                     trackEventAction({
                                         eventType: 'format_change',
                                         eventName: 'mask_shape',
+                                        sessionId: getSessionId(),
                                         metadata: { value: 'circular' }
                                     });
                                 }}
@@ -125,6 +129,7 @@ export function LayoutSection({ format, onFormatChange }: LayoutSectionProps) {
                                     trackEventAction({
                                         eventType: 'format_change',
                                         eventName: 'border_style',
+                                        sessionId: getSessionId(),
                                         metadata: { value: style }
                                     });
                                 }}

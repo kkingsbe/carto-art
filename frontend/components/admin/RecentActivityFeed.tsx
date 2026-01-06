@@ -14,7 +14,10 @@ import {
     Zap,
     Globe,
     Search,
-    Sparkles
+    Search,
+    Sparkles,
+    Lock,
+    KeyRound
 } from 'lucide-react';
 import Link from 'next/link';
 import { TimeDisplay } from '@/components/ui/time-display';
@@ -43,6 +46,9 @@ export function RecentActivityFeed({ initialEvents }: RecentActivityFeedProps) {
             case 'subscription_upgrade': return <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />;
             case 'api_request': return <Zap className="w-3.5 h-3.5 text-yellow-500" />;
             case 'map_search': return <Search className="w-3.5 h-3.5 text-slate-500" />;
+            case 'paywall_shown': return <Lock className="w-3.5 h-3.5 text-red-500" />;
+            case 'login_wall_shown': return <KeyRound className="w-3.5 h-3.5 text-orange-500" />;
+            case 'changelog_close': return <Activity className="w-3.5 h-3.5 text-gray-500" />;
             default: return <Activity className="w-3.5 h-3.5 text-gray-500" />;
         }
     };
@@ -88,6 +94,15 @@ export function RecentActivityFeed({ initialEvents }: RecentActivityFeedProps) {
 
             case 'search_location':
                 return `Searched for "${meta.query || 'location'}"`;
+
+            case 'paywall_shown':
+                return 'Hit the Paywall (Export Limit)';
+
+            case 'login_wall_shown':
+                return 'Hit the Login Wall (Anonymous Limit)';
+
+            case 'changelog_close':
+                return `Closed Changelog after ${meta.duration_seconds || '?'}s`;
 
             default:
                 return event.event_name || type.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');

@@ -11,6 +11,7 @@ import { useGifExport, type GifExportOptions } from '@/hooks/useGifExport';
 import { useVideoExport, type VideoExportOptions } from '@/hooks/useVideoExport';
 import { useProjectManager } from '@/hooks/useProjectManager';
 import { useEditorKeyboardShortcuts } from '@/hooks/useEditorKeyboardShortcuts';
+import { useAnonExportUsage } from '@/hooks/useAnonExportUsage';
 import { Maximize, Plus, Minus, X, Map as MapIcon, Type, Layout, Sparkles, Palette, User, Layers, MousePointer2, RotateCw } from 'lucide-react';
 import { styles } from '@/lib/styles';
 import { MapPreview } from '@/components/map/MapPreview';
@@ -20,6 +21,7 @@ import { applyPaletteToStyle } from '@/lib/styles/applyPalette';
 import { throttle } from '@/lib/utils';
 import { THROTTLE } from '@/lib/constants';
 import { trackEventAction } from '@/lib/actions/events';
+import { getSessionId } from '@/lib/utils';
 import { getNumericRatio } from '@/lib/styles/dimensions';
 import { TabNavigation, type Tab } from './TabNavigation';
 import { ControlDrawer } from './ControlDrawer';
@@ -42,7 +44,11 @@ import { CreationCelebrationModal } from '@/components/controls/CreationCelebrat
 import { SubscriptionSuccessModal } from '@/components/controls/SubscriptionSuccessModal';
 import type { Step } from 'react-joyride';
 
-export function PosterEditor() {
+interface PosterEditorProps {
+  anonExportLimit: number;
+}
+
+export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
   const [activeTab, setActiveTab] = useState<Tab>('location');
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
@@ -56,7 +62,33 @@ export function PosterEditor() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Handle responsive drawer state
+  // Anonymous export usage tracking
+  const anonUsage = useAnonExportUsage();
+
+  // Combine server-side usage (for logged in) with client-side usage (for anon)
+  // If authenticated, trust server. If anon, trust client hook.
+  const {
+    projects,
+    saveProject: saveProjectApi, // Renamed to avoid collision with hook result
+    deleteProject,
+    renameProject,
+    isAuthenticated
+  } = useSavedProjects();
+
+  const effectiveExportUsage = useMemo(() => {
+    if (isAuthenticated) {
+      return exportUsage;
+    }
+
+    // Construct synthetic export usage for anonymous user
+    return {
+      allowed: anonUsage.count < anonExportLimit,
+      used: anonUsage.count,
+      limit: anonExportLimit,
+      remaining: Math.max(0, anonExportLimit - anonUsage.count),
+      nextAvailableAt: anonUsage.nextAvailableAt
+    };
+  }, [isAuthenticated, exportUsage, anonUsage, anonExportLimit]);
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 768) {
@@ -92,13 +124,7 @@ export function PosterEditor() {
     canRedo,
   } = usePosterConfig();
 
-  const {
-    projects,
-    saveProject: saveProjectApi, // Renamed to avoid collision with hook result
-    deleteProject,
-    renameProject,
-    isAuthenticated
-  } = useSavedProjects();
+
 
   const { errors, handleError, clearError } = useErrorHandler();
 
@@ -361,7 +387,7 @@ export function PosterEditor() {
     };
 
     setConfig(newConfig);
-    trackEventAction({ eventType: 'interaction', eventName: 'randomize_pure' });
+    trackEventAction({ eventType: 'interaction', eventName: 'randomize_pure', sessionId: getSessionId() });
 
     // Attempt to reverse geocode and update title/subtitle
     try {
@@ -470,7 +496,13 @@ export function PosterEditor() {
         setExportedImage(url);
       }
       // Increment export count on successful export
+      // Increment export count on successful export
       setExportCount(prev => prev + 1);
+
+      // If anonymous, track usage locally
+      if (!isAuthenticated) {
+        anonUsage.increment();
+      }
     } catch (error) {
       handleError(error);
     }
@@ -495,6 +527,7 @@ export function PosterEditor() {
     trackEventAction({
       eventType: 'map_publish',
       eventName: 'save_project',
+      sessionId: getSessionId(),
       metadata: { name, mapId: currentMapId }
     });
   }, [saveProject, config, currentMapId]);
@@ -502,7 +535,7 @@ export function PosterEditor() {
   const handleCopyState = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(JSON.stringify(config, null, 2));
-      trackEventAction({ eventType: 'interaction', eventName: 'copy_state_json' });
+      trackEventAction({ eventType: 'interaction', eventName: 'copy_state_json', sessionId: getSessionId() });
       // You might want to show a toast here, but relying on button feedback for now or we can add a toast if requested.
       // Ideally we would use the toast system like:
       // toast.success('Editor state copied to clipboard'); 
@@ -573,23 +606,23 @@ export function PosterEditor() {
       <EditorToolbar
         onUndo={() => {
           undo();
-          trackEventAction({ eventType: 'interaction', eventName: 'undo' });
+          trackEventAction({ eventType: 'interaction', eventName: 'undo', sessionId: getSessionId() });
         }}
         onRedo={() => {
           redo();
-          trackEventAction({ eventType: 'interaction', eventName: 'redo' });
+          trackEventAction({ eventType: 'interaction', eventName: 'redo', sessionId: getSessionId() });
         }}
         canUndo={canUndo}
         canRedo={canRedo}
         onRandomize={handleRandomize}
         onReset={() => {
           resetProject();
-          trackEventAction({ eventType: 'interaction', eventName: 'reset_project' });
+          trackEventAction({ eventType: 'interaction', eventName: 'reset_project', sessionId: getSessionId() });
         }}
         onSave={handleSaveClick}
         onSaveCopy={async (name) => {
           await saveCopy(name);
-          trackEventAction({ eventType: 'map_publish', eventName: 'save_copy', metadata: { name } });
+          trackEventAction({ eventType: 'map_publish', eventName: 'save_copy', sessionId: getSessionId(), metadata: { name } });
         }}
         onExport={handleExport}
         isExporting={isExporting || isGeneratingGif || isExportingVideo || isExportingStl}
@@ -613,7 +646,8 @@ export function PosterEditor() {
         showCopyStateButton={isCopyStateEnabled}
         exportCount={exportCount}
         subscriptionTier={subscriptionTier}
-        exportUsage={exportUsage}
+        exportUsage={effectiveExportUsage}
+        isAuthenticated={isAuthenticated}
         onExportComplete={refreshExportUsage}
       />
 

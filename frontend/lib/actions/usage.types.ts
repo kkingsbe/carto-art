@@ -4,6 +4,7 @@
 export const CONFIG_KEYS = {
     FREE_TIER_DAILY_EXPORT_LIMIT: 'free_tier_daily_export_limit',
     FREE_TIER_PROJECT_LIMIT: 'free_tier_project_limit',
+    ANON_DAILY_EXPORT_LIMIT: 'anon_daily_export_limit',
 } as const;
 
 /**

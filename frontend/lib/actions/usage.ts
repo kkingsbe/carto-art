@@ -11,6 +11,7 @@ export { type ExportUsageResult, type ProjectUsageResult };
 const DEFAULT_CONFIG: Record<string, number> = {
     [CONFIG_KEYS.FREE_TIER_DAILY_EXPORT_LIMIT]: 5,
     [CONFIG_KEYS.FREE_TIER_PROJECT_LIMIT]: 3,
+    [CONFIG_KEYS.ANON_DAILY_EXPORT_LIMIT]: 2,
 };
 
 /**
@@ -105,11 +106,12 @@ export async function checkExportLimit(
 
     // Anonymous users - allow limited exports (tracked client-side)
     if (!userId) {
+        const limit = await getSiteConfig(CONFIG_KEYS.ANON_DAILY_EXPORT_LIMIT);
         return {
-            allowed: true,
+            allowed: true, // This is just initial state, effective check happens in UI with local storage
             used: 0,
-            limit: 5,
-            remaining: 5,
+            limit,
+            remaining: limit,
             nextAvailableAt: null,
         };
     }
