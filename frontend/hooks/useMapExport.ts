@@ -7,6 +7,8 @@ import { exportMapToPNG, downloadBlob } from '@/lib/export/exportCanvas';
 import type { ExportResolution } from '@/lib/export/resolution';
 import { logger } from '@/lib/logger';
 import { trackEventAction } from '@/lib/actions/events';
+import { uploadExportThumbnail } from '@/lib/actions/export-storage';
+
 
 /**
  * Hook for exporting the map as a high-resolution PNG image.
@@ -72,6 +74,18 @@ export function useMapExport(config: PosterConfig) {
 
       setExportProgress({ stage: 'Download started!', percent: 100 });
 
+      // Generate and upload thumbnail for admin feed
+      let thumbnailUrl: string | undefined;
+      try {
+        const thumbnailBlob = await createThumbnailFromBlob(blob, 400);
+        const formData = new FormData();
+        formData.append('file', thumbnailBlob, 'thumbnail.png');
+        thumbnailUrl = await uploadExportThumbnail(formData);
+      } catch (thumbError) {
+        logger.error('Failed to create/upload thumbnail for admin feed:', thumbError);
+        // Don't fail the whole export just because thumbnail failed
+      }
+
       // Track export event
       await trackEventAction({
         eventType: 'poster_export',
@@ -83,9 +97,11 @@ export function useMapExport(config: PosterConfig) {
           style_name: config.style.name,
           resolution: resolution || { name: 'DEFAULT', width: 2400, height: 3600, dpi: 300 }, // Default if not provided
           source: 'in-app',
-          render_time_ms: duration
+          render_time_ms: duration,
+          thumbnail_url: thumbnailUrl // Added thumbnail URL to metadata
         }
       });
+
 
       // Keep modal open for a few seconds to ensure download starts
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -131,3 +147,44 @@ export function useMapExport(config: PosterConfig) {
   };
 }
 
+/**
+ * Helper to create a small thumbnail from a high-res blob
+ */
+async function createThumbnailFromBlob(blob: Blob, maxDimension: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) {
+        if (width > maxDimension) {
+          height *= maxDimension / width;
+          width = maxDimension;
+        }
+      } else {
+        if (height > maxDimension) {
+          width *= maxDimension / height;
+          height = maxDimension;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Canvas context not available'));
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob((result) => {
+        if (result) resolve(result);
+        else reject(new Error('Thumbnail generation failed'));
+      }, 'image/png');
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(blob);
+  });
+}

@@ -20,12 +20,15 @@ import { Card } from '@/components/ui/card';
 
 interface ExportEvent {
     id: string;
+    event_type: string;
+    event_name: string;
     created_at: string;
     metadata: {
         location_name?: string;
         location_coords?: [number, number];
         style_name?: string;
         resolution?: {
+            name?: string;
             width: number;
             height: number;
             pixelRatio: number;
@@ -33,7 +36,9 @@ interface ExportEvent {
         render_time_ms?: number;
         source?: 'api' | 'in-app';
         download_url?: string;
+        thumbnail_url?: string;
         poster_id?: string;
+
     };
     profiles: {
         username: string;
@@ -112,13 +117,14 @@ export default function ExportsPage() {
                             <div className="p-5 flex flex-col md:flex-row gap-6">
                                 {/* Thumbnail Placeholder/Preview */}
                                 <div className="w-full md:w-32 h-44 bg-gray-100 dark:bg-gray-800 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden border border-gray-200 dark:border-gray-800 relative group">
-                                    {exp.metadata.download_url ? (
+                                    {(exp.metadata.thumbnail_url || exp.metadata.download_url) ? (
                                         <img
-                                            src={exp.metadata.download_url}
+                                            src={exp.metadata.thumbnail_url || exp.metadata.download_url}
                                             alt=""
                                             className="w-full h-full object-cover"
                                         />
                                     ) : (
+
                                         <MapIcon className="w-8 h-8 text-gray-300" />
                                     )}
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -160,7 +166,7 @@ export default function ExportsPage() {
                                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Resolution</p>
                                             <p className="text-sm font-medium">
                                                 {exp.metadata.resolution ?
-                                                    `${exp.metadata.resolution.width}x${exp.metadata.resolution.height} @${exp.metadata.resolution.pixelRatio}x` :
+                                                    `${exp.metadata.resolution.width}x${exp.metadata.resolution.height}${exp.metadata.resolution.pixelRatio ? ` @${exp.metadata.resolution.pixelRatio}x` : ''}` :
                                                     'Standard'}
                                             </p>
                                         </div>
@@ -171,10 +177,18 @@ export default function ExportsPage() {
                                                 {formatMs(exp.metadata.render_time_ms)}
                                             </div>
                                         </div>
-                                        <div className="space-y-1 text-right md:text-left">
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Filesize</p>
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Type</p>
                                             <p className="text-sm font-medium">
-                                                {exp.metadata.poster_id ? 'Generated' : 'Local Only'}
+                                                {exp.metadata.resolution?.name === 'ORBIT_GIF' ? 'GIF' :
+                                                    exp.metadata.resolution?.name === 'ORBIT_VIDEO' ? 'Video' :
+                                                        'Image'}
+                                            </p>
+                                        </div>
+                                        <div className="space-y-1 text-right md:text-left">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Status</p>
+                                            <p className="text-sm font-medium">
+                                                {exp.metadata.poster_id ? 'Stored' : 'Local Only'}
                                             </p>
                                         </div>
                                     </div>
