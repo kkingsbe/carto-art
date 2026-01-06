@@ -8,7 +8,7 @@ import { logger } from '@/lib/logger';
 const STRIPE_PRICE_ID = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-export async function createCheckoutSession(returnUrl?: string) {
+export async function createCheckoutSession(input?: string) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -43,6 +43,24 @@ export async function createCheckoutSession(returnUrl?: string) {
 
         let customerId = (profile as any)?.stripe_customer_id;
 
+        // Determine redirect URLs
+        let successUrl = `${APP_URL}/editor?success=true&session_id={CHECKOUT_SESSION_ID}`;
+        let cancelUrl = `${APP_URL}/editor?canceled=true`;
+
+        if (input) {
+            if (input.startsWith('http') || input.startsWith('/')) {
+                // Input is a full URL (e.g. from Profile page)
+                const separator = input.includes('?') ? '&' : '?';
+                successUrl = `${input}${separator}success=true&session_id={CHECKOUT_SESSION_ID}`;
+                cancelUrl = `${input}${separator}canceled=true`;
+            } else {
+                // Input is query params for Editor state
+                const extraParams = `&${input}`;
+                successUrl += extraParams;
+                cancelUrl += extraParams;
+            }
+        }
+
         // Create Checkout Session
         const session = await stripe.checkout.sessions.create({
             customer: customerId || undefined,
@@ -56,8 +74,8 @@ export async function createCheckoutSession(returnUrl?: string) {
                 },
             ],
             mode: 'subscription',
-            success_url: `${APP_URL}/editor?success=true&session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: returnUrl || `${APP_URL}/editor?canceled=true`,
+            success_url: successUrl,
+            cancel_url: cancelUrl,
             metadata: {
                 userId: user.id,
             },

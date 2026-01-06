@@ -58,7 +58,9 @@ export function ExportOptionsModal({
     };
 
     const handleUpgrade = async () => {
-        await createCheckoutSession();
+        // Pass current search params to preserve state on redirect
+        const searchParams = typeof window !== 'undefined' ? window.location.search.substring(1) : '';
+        await createCheckoutSession(searchParams);
     };
 
     // Determine current progress
