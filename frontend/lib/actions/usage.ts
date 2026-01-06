@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
 import { CONFIG_KEYS, type ExportUsageResult, type ProjectUsageResult } from './usage.types';
-export { type ExportUsageResult, type ProjectUsageResult };
+export { CONFIG_KEYS, type ExportUsageResult, type ProjectUsageResult };
 
 /**
  * Default values if config is not in database
