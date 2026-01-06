@@ -603,6 +603,52 @@ export interface Database {
           description?: string | null;
           updated_at?: string;
         };
+        map_views: {
+          Row: {
+            id: string;
+            map_id: string;
+            viewer_id: string | null;
+            ip_hash: string | null;
+            created_at: string;
+          };
+          Insert: {
+            id?: string;
+            map_id: string;
+            viewer_id?: string | null;
+            ip_hash?: string | null;
+            created_at?: string;
+          };
+          Update: {
+            id?: string;
+            map_id?: string;
+            viewer_id?: string | null;
+            ip_hash?: string | null;
+            created_at?: string;
+          };
+        };
+        profile_views: {
+          Row: {
+            id: string;
+            profile_id: string;
+            viewer_id: string | null;
+            ip_hash: string | null;
+            created_at: string;
+          };
+          Insert: {
+            id?: string;
+            profile_id: string;
+            viewer_id?: string | null;
+            ip_hash?: string | null;
+            created_at?: string;
+          };
+          Update: {
+            id?: string;
+            profile_id?: string;
+            viewer_id?: string | null;
+            ip_hash?: string | null;
+            created_at?: string;
+          };
+        };
       };
     };
     Views: {
@@ -639,6 +685,18 @@ export interface Database {
       get_stickiness_metrics: {
         Args: Record<PropertyKey, never>;
         Returns: Json;
+      };
+      increment_map_view: {
+        Args: {
+          map_id: string;
+        };
+        Returns: void;
+      };
+      increment_profile_view: {
+        Args: {
+          profile_id: string;
+        };
+        Returns: void;
       };
     },
     Enums: {
