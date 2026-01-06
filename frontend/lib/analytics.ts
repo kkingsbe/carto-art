@@ -22,7 +22,7 @@ export async function getCoreTrafficStats(): Promise<AnalyticsReport> {
 
         const { data, error } = await supabase.rpc('get_analytics_summary', {
             interval_days: 30
-        });
+        } as any);
 
         if (error) {
             logger.error('Failed to fetch analytics summary:', error);
@@ -57,7 +57,7 @@ export async function getRealtimeActiveUsers(): Promise<RealtimeAnalyticsReport>
 
         const { data, error } = await supabase.rpc('get_realtime_analytics', {
             minutes: 5
-        });
+        } as any);
 
         if (error) {
             logger.error('Failed to fetch realtime analytics:', error);

@@ -5,6 +5,7 @@ import { logger } from '@/lib/logger';
 import { headers } from 'next/headers';
 import crypto from 'crypto';
 
+
 function getVisitorHash(ip: string, userAgent: string): string {
     return crypto.createHash('sha256').update(`${ip}-${userAgent}`).digest('hex');
 }
@@ -18,7 +19,7 @@ function getVisitorHash(ip: string, userAgent: string): string {
  */
 export async function incrementMapView(mapId: string) {
     try {
-        const supabase = await createClient();
+        const supabase = (await createClient()) as any;
         const { data: { user } } = await supabase.auth.getUser();
 
         // 1. Get Visitor Identity
@@ -60,7 +61,7 @@ export async function incrementMapView(mapId: string) {
             query = query.eq('ip_hash', visitorHash);
         }
 
-        const { data: existingView } = await query.single();
+        const { data: existingView } = await query.maybeSingle();
 
         if (existingView) {
             // Already viewed recently
@@ -72,7 +73,7 @@ export async function incrementMapView(mapId: string) {
             map_id: mapId,
             viewer_id: user?.id || null,
             ip_hash: user ? null : visitorHash
-        });
+        } as any);
 
         if (insertError) {
             logger.error('Failed to log map view:', insertError);
@@ -101,7 +102,7 @@ export async function incrementMapView(mapId: string) {
  */
 export async function incrementProfileView(profileId: string) {
     try {
-        const supabase = await createClient();
+        const supabase = (await createClient()) as any;
         const { data: { user } } = await supabase.auth.getUser();
 
         // 1. Get Visitor Identity
@@ -130,7 +131,7 @@ export async function incrementProfileView(profileId: string) {
             query = query.eq('ip_hash', visitorHash);
         }
 
-        const { data: existingView } = await query.single();
+        const { data: existingView } = await query.maybeSingle();
 
         if (existingView) {
             return;
@@ -141,7 +142,7 @@ export async function incrementProfileView(profileId: string) {
             profile_id: profileId,
             viewer_id: user?.id || null,
             ip_hash: user ? null : visitorHash
-        });
+        } as any);
 
         if (insertError) {
             logger.error('Failed to log profile view:', insertError);
@@ -173,7 +174,7 @@ interface TrackProfileViewResult {
 }
 
 export async function trackProfileView(targetUserId: string): Promise<TrackProfileViewResult> {
-    const supabase = await createClient();
+    const supabase = (await createClient()) as any;
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -206,7 +207,7 @@ export async function trackProfileView(targetUserId: string): Promise<TrackProfi
             recipient_id: targetUserId,
             actor_id: user.id,
             type: 'PROFILE_VIEW'
-        });
+        } as any);
 
         if (error) {
             logger.error('Failed to create profile view notification:', error);
