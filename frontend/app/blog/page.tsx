@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { BLOG_POSTS } from './[slug]/page';
 import { isFeatureEnabled } from '@/lib/feature-flags';
 import { createClient } from '@/lib/supabase/server';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 
 export const metadata: Metadata = {
     title: 'Map Art Blog | Tips, Guides & Inspiration - Carto-Art',
@@ -34,11 +35,13 @@ export default async function BlogIndexPage() {
             {/* Hero */}
             <section className="py-20 px-6 bg-gradient-to-b from-[#c9a962]/10 to-transparent">
                 <div className="max-w-6xl mx-auto">
-                    <nav className="text-sm mb-8 text-[#f5f0e8]/60">
-                        <Link href="/" className="hover:text-[#c9a962] transition-colors">Home</Link>
-                        <span className="mx-2">/</span>
-                        <span className="text-[#f5f0e8]">Blog</span>
-                    </nav>
+                    <Breadcrumbs
+                        items={[
+                            { label: 'Home', href: '/' },
+                            { label: 'Blog' }
+                        ]}
+                        className="mb-8"
+                    />
 
                     <h1 className="text-5xl md:text-6xl font-bold mb-6">
                         Map Art <span className="text-[#c9a962]">Blog</span>

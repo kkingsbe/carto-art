@@ -6,6 +6,7 @@ import { MyMapsList } from '@/components/profile/MyMapsList';
 import { ProfileHeader } from '@/components/profile/ProfileHeader';
 import { FeaturedMapsEditor } from '@/components/profile/FeaturedMapsEditor';
 import { OrderSuccessToast } from '@/components/ecommerce/OrderSuccessToast';
+import { SubscriptionStatusCard } from '@/components/profile/SubscriptionStatusCard';
 import { SITE_URL } from '@/lib/utils/env';
 import type { Database } from '@/types/database';
 
@@ -108,6 +109,12 @@ export default async function ProfilePage() {
                   {`${SITE_URL || 'https://cartoart.com'}/user/${typedProfile.username}`}
                 </div>
               </div>
+
+              {/* Subscription Management */}
+              <SubscriptionStatusCard
+                tier={typedProfile.subscription_tier}
+                status={typedProfile.subscription_status}
+              />
             </div>
           </div>
         </div>

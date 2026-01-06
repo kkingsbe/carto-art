@@ -31,6 +31,7 @@ interface ExportButtonProps {
   hasUnsavedChanges?: boolean;
   onFormatChange: (format: Partial<PosterConfig['format']>) => void;
   exportCount?: number;
+  subscriptionTier?: 'free' | 'carto_plus';
 }
 
 export function ExportButton({
@@ -49,7 +50,8 @@ export function ExportButton({
   currentMapName,
   hasUnsavedChanges,
   onFormatChange,
-  exportCount
+  exportCount,
+  subscriptionTier
 }: ExportButtonProps) {
   const [showOptionsModal, setShowOptionsModal] = useState(false);
 

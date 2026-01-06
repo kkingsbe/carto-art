@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Check } from 'lucide-react';
+import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ControlSlider, ControlLabel } from '@/components/ui/control-components';
 import { EXPORT_RESOLUTIONS, DEFAULT_EXPORT_RESOLUTION, type ExportResolutionKey } from '@/lib/export/constants';
@@ -10,6 +10,9 @@ import type { PosterConfig } from '@/types/poster';
 import type { GifExportOptions } from '@/hooks/useGifExport';
 import type { VideoExportOptions } from '@/hooks/useVideoExport';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
+import { Sparkles, Lock, Check } from 'lucide-react';
+import { createCheckoutSession } from '@/lib/actions/subscription';
+import { Film, RotateCw } from 'lucide-react';
 
 interface ExportOptionsModalProps {
     isOpen: boolean;
@@ -21,6 +24,7 @@ interface ExportOptionsModalProps {
     videoProgress?: number;
     format: PosterConfig['format'];
     onFormatChange: (format: Partial<PosterConfig['format']>) => void;
+    subscriptionTier?: 'free' | 'carto_plus';
 }
 
 export function ExportOptionsModal({
@@ -32,7 +36,8 @@ export function ExportOptionsModal({
     gifProgress,
     videoProgress,
     format,
-    onFormatChange
+    onFormatChange,
+    subscriptionTier = 'free'
 }: ExportOptionsModalProps) {
     const [selectedKey, setSelectedKey] = useState<string>('SMALL');
     const [gifDuration, setGifDuration] = useState(7);
@@ -41,8 +46,20 @@ export function ExportOptionsModal({
     const [videoDuration, setVideoDuration] = useState(5);
     const [videoRotation, setVideoRotation] = useState(360);
     const [videoFps, setVideoFps] = useState(60);
+    const [gifAnimationMode, setGifAnimationMode] = useState<'orbit' | 'cinematic'>('orbit');
+    const [videoAnimationMode, setVideoAnimationMode] = useState<'orbit' | 'cinematic'>('orbit');
     const isGifExportEnabled = useFeatureFlag('gif_export');
     const isVideoExportEnabled = useFeatureFlag('video_export');
+    const isPaywallEnabled = useFeatureFlag('carto_plus');
+
+    const isLocked = (key: string) => {
+        if (!isPaywallEnabled || subscriptionTier === 'carto_plus') return false;
+        return key === 'ORBIT_GIF' || key === 'ORBIT_VIDEO';
+    };
+
+    const handleUpgrade = async () => {
+        await createCheckoutSession();
+    };
 
     // Determine current progress
     const activeProgress = exportProgress?.percent ?? gifProgress ?? videoProgress ?? 0;
@@ -249,12 +266,17 @@ export function ExportOptionsModal({
                                                     "w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-left",
                                                     selectedKey === 'ORBIT_GIF'
                                                         ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
-                                                        : "border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800"
+                                                        : "border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800",
+                                                    isLocked('ORBIT_GIF') && "opacity-60 cursor-not-allowed"
                                                 )}
+                                                disabled={isLocked('ORBIT_GIF')}
                                             >
                                                 <div className="flex-1">
                                                     <div className="flex items-center justify-between mb-1">
-                                                        <div className="font-semibold text-gray-900 dark:text-white">Orbit GIF</div>
+                                                        <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                                            Orbit GIF
+                                                            {isLocked('ORBIT_GIF') && <Lock className="w-3.5 h-3.5 text-amber-500" />}
+                                                        </div>
                                                         {selectedKey === 'ORBIT_GIF' && <Check className="w-5 h-5 text-blue-500" />}
                                                     </div>
                                                     <div className="text-xs text-gray-400 dark:text-gray-500 mb-2">
@@ -266,6 +288,8 @@ export function ExportOptionsModal({
                                                         <span>{gifFps} FPS</span>
                                                         <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
                                                         <span>{gifRotation}° rotation</span>
+                                                        <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+                                                        <span className="capitalize">{gifAnimationMode}</span>
                                                     </div>
                                                 </div>
                                             </button>
@@ -336,6 +360,42 @@ export function ExportOptionsModal({
                                                             <span>50 fps</span>
                                                         </div>
                                                     </div>
+
+                                                    {/* Animation Mode */}
+                                                    <div>
+                                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Animation Type</label>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <button
+                                                                onClick={() => setGifAnimationMode('orbit')}
+                                                                className={cn(
+                                                                    "flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-sm font-medium transition-all",
+                                                                    gifAnimationMode === 'orbit'
+                                                                        ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300"
+                                                                        : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400"
+                                                                )}
+                                                            >
+                                                                <RotateCw className="w-4 h-4" />
+                                                                Orbit
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setGifAnimationMode('cinematic')}
+                                                                className={cn(
+                                                                    "flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-sm font-medium transition-all",
+                                                                    gifAnimationMode === 'cinematic'
+                                                                        ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300"
+                                                                        : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400"
+                                                                )}
+                                                            >
+                                                                <Film className="w-4 h-4" />
+                                                                Cinematic
+                                                            </button>
+                                                        </div>
+                                                        <p className="text-[10px] text-gray-400 mt-1.5 leading-tight">
+                                                            {gifAnimationMode === 'orbit'
+                                                                ? "Simple rotation around the center point."
+                                                                : "Pro camerawork: Top-down to 3D tilt + pull back + orbit."}
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
@@ -347,17 +407,22 @@ export function ExportOptionsModal({
                                         <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Video</div>
                                         <div className="space-y-3">
                                             <button
-                                                onClick={() => setSelectedKey('ORBIT_VIDEO')}
+                                                onClick={() => !isLocked('ORBIT_VIDEO') && setSelectedKey('ORBIT_VIDEO')}
                                                 className={cn(
                                                     "w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-left",
                                                     selectedKey === 'ORBIT_VIDEO'
                                                         ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
-                                                        : "border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800"
+                                                        : "border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800",
+                                                    isLocked('ORBIT_VIDEO') && "opacity-60 cursor-not-allowed"
                                                 )}
+                                                disabled={isLocked('ORBIT_VIDEO')}
                                             >
                                                 <div className="flex-1">
                                                     <div className="flex items-center justify-between mb-1">
-                                                        <div className="font-semibold text-gray-900 dark:text-white">Orbit Video</div>
+                                                        <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                                            Orbit Video
+                                                            {isLocked('ORBIT_VIDEO') && <Lock className="w-3.5 h-3.5 text-amber-500" />}
+                                                        </div>
                                                         {selectedKey === 'ORBIT_VIDEO' && <Check className="w-5 h-5 text-blue-500" />}
                                                     </div>
                                                     <div className="text-xs text-gray-400 dark:text-gray-500 mb-2">
@@ -369,6 +434,8 @@ export function ExportOptionsModal({
                                                         <span>{videoFps} FPS</span>
                                                         <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
                                                         <span>{videoRotation}° rotation</span>
+                                                        <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+                                                        <span className="capitalize">{videoAnimationMode}</span>
                                                     </div>
                                                 </div>
                                             </button>
@@ -438,6 +505,42 @@ export function ExportOptionsModal({
                                                                 <span>120 fps</span>
                                                             </div>
                                                         </div>
+
+                                                        {/* Animation Mode */}
+                                                        <div>
+                                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Animation Type</label>
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                                <button
+                                                                    onClick={() => setVideoAnimationMode('orbit')}
+                                                                    className={cn(
+                                                                        "flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-sm font-medium transition-all",
+                                                                        videoAnimationMode === 'orbit'
+                                                                            ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300"
+                                                                            : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400"
+                                                                    )}
+                                                                >
+                                                                    <RotateCw className="w-4 h-4" />
+                                                                    Orbit
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setVideoAnimationMode('cinematic')}
+                                                                    className={cn(
+                                                                        "flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-sm font-medium transition-all",
+                                                                        videoAnimationMode === 'cinematic'
+                                                                            ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300"
+                                                                            : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400"
+                                                                    )}
+                                                                >
+                                                                    <Film className="w-4 h-4" />
+                                                                    Cinematic
+                                                                </button>
+                                                            </div>
+                                                            <p className="text-[10px] text-gray-400 mt-1.5 leading-tight">
+                                                                {videoAnimationMode === 'orbit'
+                                                                    ? "Simple rotation around the center point."
+                                                                    : "Pro camerawork: Top-down to 3D tilt + pull back + orbit."}
+                                                            </p>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
@@ -445,6 +548,31 @@ export function ExportOptionsModal({
                                     </div>
                                 )}
                             </div>
+
+                            {/* Upgrade Callout */}
+                            {isPaywallEnabled && subscriptionTier === 'free' && (
+                                <div className="mt-6 bg-gradient-to-r from-indigo-500 from-10% via-sky-500 via-30% to-emerald-500 to-90% p-[1px] rounded-xl">
+                                    <div className="bg-white dark:bg-gray-900 rounded-[11px] p-4">
+                                        <div className="flex items-start justify-between">
+                                            <div>
+                                                <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                                    <Sparkles className="w-4 h-4 text-amber-500 fill-amber-500" />
+                                                    Unlock Premium Exports
+                                                </h3>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                                    Get unlimited GIF & Video exports.
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={handleUpgrade}
+                                                className="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium whitespace-nowrap hover:scale-105 transition-transform"
+                                            >
+                                                Upgrade
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </>
                     )}
                 </div>
@@ -456,13 +584,13 @@ export function ExportOptionsModal({
                             if (selectedKey === 'ORBIT_GIF') {
                                 onExport(
                                     { width: 0, height: 0, dpi: 72, name: 'ORBIT_GIF' },
-                                    { duration: gifDuration, totalRotation: gifRotation, fps: gifFps }
+                                    { duration: gifDuration, totalRotation: gifRotation, fps: gifFps, animationMode: gifAnimationMode }
                                 );
                             } else if (selectedKey === 'ORBIT_VIDEO') {
                                 onExport(
                                     { width: 0, height: 0, dpi: 72, name: 'ORBIT_VIDEO' },
                                     undefined,
-                                    { duration: videoDuration, totalRotation: videoRotation, fps: videoFps }
+                                    { duration: videoDuration, totalRotation: videoRotation, fps: videoFps, animationMode: videoAnimationMode }
                                 );
                             } else {
                                 const base = EXPORT_RESOLUTIONS[selectedKey as ExportResolutionKey];

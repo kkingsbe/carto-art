@@ -43,6 +43,7 @@ interface EditorToolbarProps {
     onCopyState?: () => void;
     showCopyStateButton?: boolean;
     exportCount?: number;
+    subscriptionTier?: 'free' | 'carto_plus';
 }
 
 export function EditorToolbar({
@@ -71,7 +72,8 @@ export function EditorToolbar({
     onFormatChange,
     onCopyState,
     showCopyStateButton,
-    exportCount
+    exportCount,
+    subscriptionTier
 }: EditorToolbarProps) {
     return (
         <div className="absolute top-2 right-2 md:top-6 md:right-8 z-45 pointer-events-auto flex items-center gap-2 md:gap-3 flex-wrap justify-end max-w-[calc(100vw-4rem)]">

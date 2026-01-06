@@ -1,8 +1,10 @@
 'use client';
 
 import { useMemo, useCallback, useState, useRef, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { usePosterConfig } from '@/hooks/usePosterConfig';
 import { useSavedProjects } from '@/hooks/useSavedProjects';
+import { useUserSubscription } from '@/hooks/useUserSubscription';
 import { useMapExport } from '@/hooks/useMapExport';
 import { useGifExport, type GifExportOptions } from '@/hooks/useGifExport';
 import { useVideoExport, type VideoExportOptions } from '@/hooks/useVideoExport';
@@ -35,6 +37,7 @@ import { CommandMenu } from '@/components/ui/CommandMenu';
 import { AdvancedControls } from '@/components/controls/AdvancedControls';
 import { Walkthrough } from '@/components/ui/Walkthrough';
 import { CreationCelebrationModal } from '@/components/controls/CreationCelebrationModal';
+import { SubscriptionSuccessModal } from '@/components/controls/SubscriptionSuccessModal';
 import type { Step } from 'react-joyride';
 
 export function PosterEditor() {
@@ -45,6 +48,10 @@ export function PosterEditor() {
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
   const isEcommerceEnabled = useFeatureFlag('ecommerce');
   const isCopyStateEnabled = useFeatureFlag('copy_editor_state_to_json');
+  const { subscriptionTier } = useUserSubscription();
+  const isPlusEnabled = useFeatureFlag('carto_plus');
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   // Handle responsive drawer state
   useEffect(() => {
@@ -95,6 +102,7 @@ export function PosterEditor() {
   // Modal coordination
   const [showDonationModal, setShowDonationModal] = useState(false);
   const [showCreationCelebration, setShowCreationCelebration] = useState(false);
+  const [showSubscriptionSuccess, setShowSubscriptionSuccess] = useState(false);
   const [showProductModal, setShowProductModal] = useState(false);
   const [exportedImage, setExportedImage] = useState<string | null>(null);
 
@@ -249,6 +257,15 @@ export function PosterEditor() {
       placement: 'left',
     },
   ];
+
+  // Check for subscription success param
+  useEffect(() => {
+    if (searchParams?.get('success') === 'true' && searchParams?.get('session_id')) {
+      setShowSubscriptionSuccess(true);
+      // Clean up URL
+      router.replace('/editor');
+    }
+  }, [searchParams, router]);
 
   // Randomization Logic
   const handleRandomize = useCallback(async () => {
@@ -683,6 +700,13 @@ export function PosterEditor() {
         onClose={() => setShowCreationCelebration(false)}
       />
 
+      {isPlusEnabled && (
+        <SubscriptionSuccessModal
+          isOpen={showSubscriptionSuccess}
+          onClose={() => setShowSubscriptionSuccess(false)}
+        />
+      )}
+
       {/* Product Modal */}
       {
         exportedImage && isEcommerceEnabled && (
@@ -799,6 +823,7 @@ export function PosterEditor() {
               setShowDonationModal(false);
               setShowProductModal(true);
             } : undefined}
+            subscriptionTier={subscriptionTier}
             onSave={handleSaveClick}
             isAuthenticated={isAuthenticated}
             currentMapName={currentMapName}

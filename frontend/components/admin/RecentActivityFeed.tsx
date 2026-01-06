@@ -13,7 +13,8 @@ import {
     LogIn,
     Zap,
     Globe,
-    Search
+    Search,
+    Sparkles
 } from 'lucide-react';
 import Link from 'next/link';
 import { TimeDisplay } from '@/components/ui/time-display';
@@ -39,6 +40,7 @@ export function RecentActivityFeed({ initialEvents }: RecentActivityFeedProps) {
             case 'user_signup': return <UserPlus className="w-3.5 h-3.5 text-indigo-500" />;
             case 'user_login': return <LogIn className="w-3.5 h-3.5 text-cyan-500" />;
             case 'feedback_submit': return <MessageSquare className="w-3.5 h-3.5 text-pink-500" />;
+            case 'subscription_upgrade': return <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />;
             case 'api_request': return <Zap className="w-3.5 h-3.5 text-yellow-500" />;
             case 'map_search': return <Search className="w-3.5 h-3.5 text-slate-500" />;
             default: return <Activity className="w-3.5 h-3.5 text-gray-500" />;
@@ -80,6 +82,9 @@ export function RecentActivityFeed({ initialEvents }: RecentActivityFeedProps) {
 
             case 'api_request':
                 return `API Request: ${event.event_name || 'Unknown'}`;
+
+            case 'subscription_upgrade':
+                return 'Upgraded to Carto Plus Subscription';
 
             case 'search_location':
                 return `Searched for "${meta.query || 'location'}"`;

@@ -10,6 +10,7 @@ export interface VideoExportOptions {
     duration: number; // seconds
     totalRotation: number; // degrees
     fps?: number;
+    animationMode: 'orbit' | 'cinematic';
 }
 
 interface UseVideoExportReturn {
@@ -23,6 +24,7 @@ const DEFAULT_VIDEO_OPTIONS: VideoExportOptions = {
     duration: 5,
     totalRotation: 360,
     fps: 60,
+    animationMode: 'orbit',
 };
 
 export function useVideoExport(
@@ -34,8 +36,12 @@ export function useVideoExport(
     const [progress, setProgress] = useState(0);
     const abortControllerRef = useRef<AbortController | null>(null);
 
+    const easeInOutCubic = (x: number): number => {
+        return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+    };
+
     const exportVideo = useCallback(async (options?: VideoExportOptions) => {
-        const { duration, totalRotation, fps = 60 } = { ...DEFAULT_VIDEO_OPTIONS, ...options };
+        const { duration, totalRotation, fps = 60, animationMode } = { ...DEFAULT_VIDEO_OPTIONS, ...options };
 
         if (!mapRef.current) {
             logger.error('exportVideo: Map reference is null');
@@ -69,7 +75,11 @@ export function useVideoExport(
             const frames: Blob[] = [];
             const canvas = map.getCanvas();
             const totalFrames = Math.round(duration * fps);
-            const anglePerFrame = totalRotation / totalFrames;
+
+            const startPitch = animationMode === 'cinematic' ? 0 : originalPitch;
+            const targetPitch = animationMode === 'cinematic' ? Math.max(60, originalPitch) : originalPitch;
+            const startZoom = originalZoom;
+            const zoomPullback = animationMode === 'cinematic' ? 0.5 : 0;
 
             // Phase 1: Capture Frames
             logger.info(`Starting capture of ${totalFrames} frames`);
@@ -100,11 +110,33 @@ export function useVideoExport(
             for (let i = 0; i < totalFrames; i++) {
                 if (abortControllerRef.current?.signal.aborted) throw new Error('Aborted');
 
-                const targetBearing = originalBearing + (i * anglePerFrame);
+                const p = i / (totalFrames - 1 || 1);
+                const targetBearing = originalBearing + (p * totalRotation);
+                let currentTargetPitch = startPitch;
+                let currentTargetZoom = startZoom;
 
-                // Set bearing and wait for idle
+                if (animationMode === 'cinematic') {
+                    if (p < 0.2) {
+                        const t = easeInOutCubic(p / 0.2);
+                        currentTargetPitch = startPitch + (targetPitch - startPitch) * t;
+                        currentTargetZoom = startZoom - (zoomPullback * t);
+                    } else if (p < 0.8) {
+                        currentTargetPitch = targetPitch;
+                        currentTargetZoom = startZoom - zoomPullback;
+                    } else {
+                        const t = easeInOutCubic((p - 0.8) / 0.2);
+                        currentTargetPitch = targetPitch - (targetPitch - startPitch) * t;
+                        currentTargetZoom = (startZoom - zoomPullback) + (zoomPullback * t);
+                    }
+                }
+
+                // Set up and wait for idle
                 const idlePromise = waitForMapIdle();
-                map.setBearing(targetBearing);
+                map.jumpTo({
+                    bearing: targetBearing,
+                    pitch: currentTargetPitch,
+                    zoom: currentTargetZoom,
+                });
                 await idlePromise;
 
                 // Extra safety wait for simple rendering

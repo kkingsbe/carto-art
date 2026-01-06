@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 
 interface LocationData {
     name: string;
@@ -152,13 +153,14 @@ export default function LocationPage({ params }: { params: { city: string } }) {
                 <div className="absolute inset-0 bg-gradient-to-b from-[#c9a962]/10 to-transparent" />
 
                 <div className="max-w-6xl mx-auto relative z-10">
-                    <nav className="text-sm mb-8 text-[#f5f0e8]/60">
-                        <Link href="/" className="hover:text-[#c9a962] transition-colors">Home</Link>
-                        <span className="mx-2">/</span>
-                        <Link href="/location" className="hover:text-[#c9a962] transition-colors">Locations</Link>
-                        <span className="mx-2">/</span>
-                        <span className="text-[#f5f0e8]">{location.name}</span>
-                    </nav>
+                    <Breadcrumbs
+                        items={[
+                            { label: 'Home', href: '/' },
+                            { label: 'Locations' },
+                            { label: location.name }
+                        ]}
+                        className="mb-8"
+                    />
 
                     <div className="grid md:grid-cols-2 gap-12 items-center">
                         <div>

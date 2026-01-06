@@ -30,6 +30,10 @@ export interface Database {
           first_publish_at: string | null;
           first_view_editor_at: string | null;
           acquisition_source: string | null;
+          stripe_customer_id: string | null;
+          stripe_subscription_id: string | null;
+          subscription_status: 'active' | 'canceled' | 'past_due' | 'trialing' | 'unpaid' | 'paused' | null;
+          subscription_tier: 'free' | 'carto_plus';
         };
         Insert: {
           id: string;
@@ -46,6 +50,10 @@ export interface Database {
           first_publish_at?: string | null;
           first_view_editor_at?: string | null;
           acquisition_source?: string | null;
+          stripe_customer_id?: string | null;
+          stripe_subscription_id?: string | null;
+          subscription_status?: 'active' | 'canceled' | 'past_due' | 'trialing' | 'unpaid' | 'paused' | null;
+          subscription_tier?: 'free' | 'carto_plus';
         };
         Update: {
           id?: string;
@@ -62,6 +70,10 @@ export interface Database {
           first_publish_at?: string | null;
           first_view_editor_at?: string | null;
           acquisition_source?: string | null;
+          stripe_customer_id?: string | null;
+          stripe_subscription_id?: string | null;
+          subscription_status?: 'active' | 'canceled' | 'past_due' | 'trialing' | 'unpaid' | 'paused' | null;
+          subscription_tier?: 'free' | 'carto_plus';
         };
       };
       maps: {

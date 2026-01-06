@@ -11,6 +11,7 @@ export interface GifExportOptions {
     duration: number; // seconds
     totalRotation: number; // degrees
     fps: number; // frames per second
+    animationMode: 'orbit' | 'cinematic';
 }
 
 interface UseGifExportReturn {
@@ -24,6 +25,7 @@ const DEFAULT_GIF_OPTIONS: GifExportOptions = {
     duration: 7,
     totalRotation: 90,
     fps: 20,
+    animationMode: 'orbit',
 };
 
 export function useGifExport(
@@ -35,8 +37,12 @@ export function useGifExport(
     const [progress, setProgress] = useState(0);
     const abortControllerRef = useRef<AbortController | null>(null);
 
+    const easeInOutCubic = (x: number): number => {
+        return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+    };
+
     const generateOrbitGif = useCallback(async (options?: GifExportOptions) => {
-        const { duration, totalRotation, fps } = { ...DEFAULT_GIF_OPTIONS, ...options };
+        const { duration, totalRotation, fps, animationMode } = { ...DEFAULT_GIF_OPTIONS, ...options };
         if (!mapRef.current) {
             logger.error('generateOrbitGif: Map reference is null');
             return;
@@ -63,7 +69,12 @@ export function useGifExport(
             const originalCenter = map.getCenter();
             const originalZoom = map.getZoom();
 
-            logger.info('Initial map state', { originalBearing, originalPitch, originalCenter, originalZoom });
+            const startPitch = animationMode === 'cinematic' ? 0 : originalPitch;
+            const targetPitch = animationMode === 'cinematic' ? Math.max(60, originalPitch) : originalPitch;
+            const startZoom = originalZoom;
+            const zoomPullback = animationMode === 'cinematic' ? 0.5 : 0;
+
+            logger.info('Initial map state', { originalBearing, originalPitch, originalCenter, originalZoom, animationMode });
 
             const gif = new GIF({
                 workers: 2,
@@ -154,12 +165,11 @@ export function useGifExport(
                 });
             };
 
-            // animation loop
+            // capture loop configuration
             const totalFrames = Math.round(duration * fps);
-            const anglePerFrame = totalRotation / totalFrames;
             const frameDelay = Math.round(1000 / fps); // ms per frame
 
-            logger.info('Starting capture loop', { totalFrames, anglePerFrame });
+            logger.info('Starting capture loop', { totalFrames, animationMode });
 
             for (let i = 0; i < totalFrames; i++) {
                 if (abortControllerRef.current?.signal.aborted) {
@@ -167,14 +177,35 @@ export function useGifExport(
                     throw new Error('Aborted');
                 }
 
-                const targetBearing = originalBearing + (i * anglePerFrame);
+                const p = i / (totalFrames - 1 || 1);
+                const targetBearing = originalBearing + (p * totalRotation);
+                let currentTargetPitch = startPitch;
+                let currentTargetZoom = startZoom;
+
+                if (animationMode === 'cinematic') {
+                    if (p < 0.2) {
+                        const t = easeInOutCubic(p / 0.2);
+                        currentTargetPitch = startPitch + (targetPitch - startPitch) * t;
+                        currentTargetZoom = startZoom - (zoomPullback * t);
+                    } else if (p < 0.8) {
+                        currentTargetPitch = targetPitch;
+                        currentTargetZoom = startZoom - zoomPullback;
+                    } else {
+                        const t = easeInOutCubic((p - 0.8) / 0.2);
+                        currentTargetPitch = targetPitch - (targetPitch - startPitch) * t;
+                        currentTargetZoom = (startZoom - zoomPullback) + (zoomPullback * t);
+                    }
+                }
 
                 // Set up listener before triggering the change
                 const idlePromise = waitForMapIdle();
 
-                // Update bearing
-                logger.info(`Setting bearing to ${targetBearing}`);
-                map.setBearing(targetBearing);
+                // Update map state
+                map.jumpTo({
+                    bearing: targetBearing,
+                    pitch: currentTargetPitch,
+                    zoom: currentTargetZoom,
+                });
 
                 // Wait for the map to fully settle
                 await idlePromise;

@@ -4,6 +4,7 @@ import { useReducer, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import type { PosterConfig, PosterLocation, PosterStyle, ColorPalette } from '@/types/poster';
 import { DEFAULT_CONFIG } from '@/lib/config/defaults';
+import { getRandomVista } from '@/lib/config/vistas';
 import { useUserLocation } from './useUserLocation';
 import { encodeConfig, decodeConfig } from '@/lib/config/url-state';
 import { cloneConfig, isConfigEqual } from '@/lib/utils/configComparison';
@@ -131,6 +132,10 @@ export function usePosterConfig() {
         setShouldAutoLocate(false);
         dispatch({ type: 'SET_CONFIG', payload: { ...DEFAULT_CONFIG, ...decoded } });
       }
+    } else {
+      // Initialize with a random vista if no state is provided
+      const randomVista = getRandomVista();
+      dispatch({ type: 'UPDATE_LOCATION', payload: randomVista.location });
     }
     isInitialized.current = true;
   }, [searchParams]);
@@ -138,6 +143,12 @@ export function usePosterConfig() {
   // Debounced history update function
   const pendingHistoryUpdateRef = useRef<NodeJS.Timeout | null>(null);
   const lastConfigRef = useRef<PosterConfig | null>(null);
+
+  // Add to history when config changes (but not during undo/redo)
+  // Debounced to avoid adding history on every rapid change
+  // Track history state for UI (undo/redo buttons)
+  // We use this instead of deriving from config in useEffect to avoid infinite loops
+  const [historyState, setHistoryState] = useState({ index: -1, length: 0 });
 
   // Add to history when config changes (but not during undo/redo)
   // Debounced to avoid adding history on every rapid change
@@ -179,6 +190,12 @@ export function usePosterConfig() {
         historyRef.current.shift();
         historyIndexRef.current = HISTORY.MAX_SIZE - 1;
       }
+
+      // Update UI state
+      setHistoryState({
+        index: historyIndexRef.current,
+        length: historyRef.current.length
+      });
     }, TIMEOUTS.HISTORY_UPDATE_DEBOUNCE);
 
     // Cleanup timeout on unmount or config change
@@ -277,6 +294,11 @@ export function usePosterConfig() {
       isUndoRedoRef.current = true;
       dispatch({ type: 'SET_CONFIG', payload: cloneConfig(historyRef.current[historyIndexRef.current]) });
       setShouldAutoLocate(false);
+
+      setHistoryState({
+        index: historyIndexRef.current,
+        length: historyRef.current.length
+      });
     }
   }, []);
 
@@ -286,16 +308,13 @@ export function usePosterConfig() {
       isUndoRedoRef.current = true;
       dispatch({ type: 'SET_CONFIG', payload: cloneConfig(historyRef.current[historyIndexRef.current]) });
       setShouldAutoLocate(false);
+
+      setHistoryState({
+        index: historyIndexRef.current,
+        length: historyRef.current.length
+      });
     }
   }, []);
-
-  const [canUndo, setCanUndo] = useState(false);
-  const [canRedo, setCanRedo] = useState(false);
-
-  useEffect(() => {
-    setCanUndo(historyIndexRef.current > 0);
-    setCanRedo(historyIndexRef.current < historyRef.current.length - 1);
-  }, [config]);
 
   return {
     config,
@@ -309,7 +328,7 @@ export function usePosterConfig() {
     setConfig,
     undo,
     redo,
-    canUndo,
-    canRedo,
+    canUndo: historyState.index > 0,
+    canRedo: historyState.index < historyState.length - 1,
   };
 }

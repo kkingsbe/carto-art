@@ -22,7 +22,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Free Map Poster Maker | Create Custom Wall Art - Carto-Art",
-  description: "Turn any location into beautiful wall art. Free map poster creator with no watermarks. Export at 24×36\" print size. No signup required. Better than Mapiful & Grafomap.",
+  description: "Turn any location into beautiful wall art. Free map poster creator with no watermarks. Export at 24×36\" print size. Trusted by 10k+ users. No signup required.",
   keywords: "map poster, custom map art, free poster maker, wall art, personalized map, location poster, map print, cartographic art, Mapiful alternative, Grafomap alternative",
   icons: {
     icon: "/icon.svg",

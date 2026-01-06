@@ -92,6 +92,42 @@ This guide will help you set up Supabase for the CartoArt social features.
 - Ensure storage policies allow uploads
 
 ### Type errors
-- Run `npx supabase gen types typescript --project-id YOUR_PROJECT_ID > types/database.ts` to generate types
-- Or manually update `types/database.ts` with your schema
+
+## 8. Carto Plus Subscription Migration
+
+Run this SQL to add subscription support to the `profiles` table:
+
+```sql
+-- Add subscription fields to profiles
+ALTER TABLE public.profiles
+ADD COLUMN IF NOT EXISTS stripe_customer_id text,
+ADD COLUMN IF NOT EXISTS stripe_subscription_id text,
+ADD COLUMN IF NOT EXISTS subscription_status text CHECK (subscription_status IN ('active', 'canceled', 'past_due', 'trialing', 'unpaid', 'paused')),
+ADD COLUMN IF NOT EXISTS subscription_tier text DEFAULT 'free' CHECK (subscription_tier IN ('free', 'carto_plus'));
+
+-- Create index for faster lookups
+CREATE INDEX IF NOT EXISTS idx_profiles_stripe_customer_id ON public.profiles(stripe_customer_id);
+```
+
+## 9. Add Feature Flag for Paywall
+
+Run this to add the gate feature flag (defaults to OFF in production):
+
+```sql
+INSERT INTO public.feature_flags (
+    key, 
+    name, 
+    description, 
+    enabled_production, 
+    enabled_development, 
+    enabled_percentage
+) VALUES (
+    'paywall_gif_video_export',
+    'Paywall GIF/Video Exports',
+    'Gates high-value export options behind Carto Plus subscription',
+    false, -- Off by default in prod
+    true,  -- On by default in dev for testing
+    100
+) ON CONFLICT (key) DO NOTHING;
+```
 

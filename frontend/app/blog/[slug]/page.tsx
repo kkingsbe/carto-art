@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { isFeatureEnabled } from '@/lib/feature-flags';
 import { createClient } from '@/lib/supabase/server';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 
 interface BlogPost {
     slug: string;
@@ -227,13 +228,15 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         <main className="min-h-screen bg-[#0a0f1a] text-[#f5f0e8]">
             <article className="max-w-4xl mx-auto px-6 py-16">
                 {/* Breadcrumbs */}
-                <nav className="text-sm mb-8 text-[#f5f0e8]/60">
-                    <Link href="/" className="hover:text-[#c9a962] transition-colors">Home</Link>
-                    <span className="mx-2">/</span>
-                    <Link href="/blog" className="hover:text-[#c9a962] transition-colors">Blog</Link>
-                    <span className="mx-2">/</span>
-                    <span className="text-[#f5f0e8]">{post.title}</span>
-                </nav>
+                {/* Breadcrumbs */}
+                <Breadcrumbs
+                    items={[
+                        { label: 'Home', href: '/' },
+                        { label: 'Blog', href: '/blog' },
+                        { label: post.title }
+                    ]}
+                    className="mb-8"
+                />
 
                 {/* Hero Image */}
                 {post.heroImage && (

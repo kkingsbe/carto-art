@@ -14,6 +14,8 @@ export interface UserProfile {
     featured_map_ids: string[] | null;
     created_at: string;
     view_count: number;
+    subscription_status: 'active' | 'canceled' | 'past_due' | 'trialing' | 'unpaid' | 'paused' | null;
+    subscription_tier: 'free' | 'carto_plus';
 }
 
 export interface ProfileStats {
@@ -35,6 +37,27 @@ export async function getProfileByUsername(username: string): Promise<UserProfil
         .from('profiles')
         .select('*')
         .eq('username', username)
+        .single();
+
+    if (error) {
+        if (error.code === 'PGRST116') return null;
+        logger.error('Failed to fetch profile:', error);
+        throw createError.databaseError('Failed to fetch profile');
+    }
+
+    return data as UserProfile;
+}
+
+/**
+ * Get private profile by ID (for current user)
+ */
+export async function getUserProfile(userId: string): Promise<UserProfile | null> {
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
         .single();
 
     if (error) {

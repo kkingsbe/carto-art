@@ -9,7 +9,8 @@ import {
     Search,
     Loader2,
     Calendar,
-    Mail
+    Mail,
+    Sparkles
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +27,8 @@ interface Profile {
     last_active_at?: string;
     first_map_at?: string;
     first_export_at?: string;
+    subscription_tier?: 'free' | 'carto_plus';
+    subscription_status?: string;
 }
 
 export default function UsersPage() {
@@ -119,6 +122,7 @@ export default function UsersPage() {
                             <tr>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">User</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Role</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Subscription</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Status</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Joined</th>
                                 <th className="px-6 py-4 text-right"></th>
@@ -159,6 +163,16 @@ export default function UsersPage() {
                                                 </Badge>
                                             ) : (
                                                 <Badge variant="secondary">User</Badge>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {user.subscription_tier === 'carto_plus' ? (
+                                                <Badge className="bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800 gap-1">
+                                                    <Sparkles className="w-3 h-3" />
+                                                    Plus
+                                                </Badge>
+                                            ) : (
+                                                <span className="text-sm text-gray-500">Free</span>
                                             )}
                                         </td>
                                         <td className="px-6 py-4">
