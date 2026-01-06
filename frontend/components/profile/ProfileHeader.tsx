@@ -53,21 +53,23 @@ export function ProfileHeader({ profile, stats, isOwnProfile }: ProfileHeaderPro
             <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse pointer-events-none" />
             <div className="absolute top-20 right-1/4 w-96 h-96 bg-[#c9a962]/10 rounded-full blur-3xl animate-pulse delay-1000 pointer-events-none" />
 
-            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-24">
+            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-12">
                 <div className={cn(
-                    "glass-card rounded-2xl p-8 backdrop-blur-xl border transition-all duration-500",
+                    "glass-card rounded-3xl p-8 backdrop-blur-2xl border transition-all duration-500 relative z-10 overflow-hidden group",
                     isPlusMember
-                        ? "border-[#c9a962]/20 bg-gradient-to-br from-[#c9a962]/5 to-transparent shadow-[0_0_30px_-10px_rgba(201,169,98,0.1)]"
-                        : "border-white/5 bg-white/5"
+                        ? "border-[#c9a962]/20 bg-gradient-to-br from-[#c9a962]/10 via-[#0a0f1a]/80 to-[#0a0f1a]/90 shadow-[0_0_50px_-10px_rgba(201,169,98,0.15)]"
+                        : "border-white/10 bg-gradient-to-br from-white/10 via-[#0a0f1a]/80 to-[#0a0f1a]/90"
                 )}>
+                    {/* Subtle grain/noise texture overlay could go here if we had the asset */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-50 pointer-events-none" />
                     <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-center md:items-start text-center md:text-left">
                         {/* Avatar */}
                         <div className="relative shrink-0">
                             <div className={cn(
-                                "w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 shadow-xl transition-all duration-500 bg-[#0a0f1a] mx-auto md:mx-0",
+                                "w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 shadow-2xl transition-all duration-500 bg-[#0a0f1a] mx-auto md:mx-0 relative z-20",
                                 isPlusMember
-                                    ? "border-[#c9a962] shadow-[0_0_30px_rgba(201,169,98,0.3)] ring-2 ring-[#c9a962]/20 ring-offset-4 ring-offset-[#0a0f1a]"
-                                    : "border-[#c9a962]/20 shadow-[0_0_20px_rgba(201,169,98,0.2)]"
+                                    ? "border-[#c9a962] shadow-[0_0_40px_rgba(201,169,98,0.3)] ring-4 ring-[#c9a962]/20 ring-offset-4 ring-offset-[#0a0f1a]"
+                                    : "border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.05)]"
                             )}>
                                 {profile.avatar_url ? (
                                     <Image
@@ -112,7 +114,7 @@ export function ProfileHeader({ profile, stats, isOwnProfile }: ProfileHeaderPro
                                         <div className="w-1 h-1 rounded-full bg-white/20" />
                                         <div className="flex items-center gap-1.5 text-white/40">
                                             <Calendar className="w-3.5 h-3.5" />
-                                            <span>Joined {joinDate}</span>
+                                            <span className="uppercase tracking-wide text-xs font-bold">Member Since {joinDate}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -139,7 +141,7 @@ export function ProfileHeader({ profile, stats, isOwnProfile }: ProfileHeaderPro
                                             )}
                                             <a
                                                 href="/profile/edit"
-                                                className="inline-flex flex-1 md:flex-none items-center justify-center px-6 py-2.5 bg-[#c9a962] text-[#0a0f1a] rounded-xl text-sm font-bold hover:bg-[#d4b975] hover:shadow-[0_0_20px_rgba(201,169,98,0.3)] hover:scale-105 active:scale-95 transition-all duration-300"
+                                                className="inline-flex flex-1 md:flex-none items-center justify-center px-6 py-2.5 bg-gradient-to-r from-[#c9a962] to-[#e0c47c] text-[#0a0f1a] rounded-xl text-sm font-bold hover:shadow-[0_0_25px_rgba(201,169,98,0.4)] hover:scale-105 active:scale-95 transition-all duration-300"
                                             >
                                                 Edit Profile
                                             </a>
@@ -148,57 +150,57 @@ export function ProfileHeader({ profile, stats, isOwnProfile }: ProfileHeaderPro
                                 </div>
                             </div>
 
-                            {/* Stats Grid */}
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-0 border-t border-white/5 pt-6 mt-6 w-full">
+                            {/* Stats Row - Grid for stability */}
+                            <div className="mt-10 pt-8 border-t border-white/5 grid grid-cols-2 md:grid-cols-5 gap-y-8 gap-x-4">
                                 {/* Map Views */}
-                                <div className="flex flex-col items-center md:items-start md:pr-6 md:border-r border-white/5 relative group">
-                                    <div className="flex items-center gap-2 mb-1 text-white/40 group-hover:text-[#c9a962] transition-colors">
+                                <div className="flex flex-col items-center md:items-start group">
+                                    <div className="flex items-center gap-2 mb-2 text-white/40 group-hover:text-[#c9a962] transition-colors">
                                         <Map className="w-4 h-4" />
-                                        <span className="text-xs font-bold uppercase tracking-wider">Map Views</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-widest">Map Views</span>
                                     </div>
-                                    <span className="text-2xl font-bold text-[#f5f0e8]">{stats.total_views.toLocaleString()}</span>
+                                    <span className="text-3xl font-bold text-[#f5f0e8] tracking-tight">{stats.total_views.toLocaleString()}</span>
                                 </div>
 
                                 {/* Likes */}
-                                <div className="flex flex-col items-center md:items-start md:px-6 md:border-r border-white/5 relative group">
-                                    <div className="flex items-center gap-2 mb-1 text-white/40 group-hover:text-[#c9a962] transition-colors">
+                                <div className="flex flex-col items-center md:items-start group">
+                                    <div className="flex items-center gap-2 mb-2 text-white/40 group-hover:text-[#c9a962] transition-colors">
                                         <Heart className="w-4 h-4" />
-                                        <span className="text-xs font-bold uppercase tracking-wider">Likes</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-widest">Likes</span>
                                     </div>
-                                    <span className="text-2xl font-bold text-[#f5f0e8]">{stats.total_likes.toLocaleString()}</span>
+                                    <span className="text-3xl font-bold text-[#f5f0e8] tracking-tight">{stats.total_likes.toLocaleString()}</span>
                                 </div>
 
                                 {/* Profile Views */}
-                                <div className="flex flex-col items-center md:items-start md:px-6 md:border-r border-white/5 relative group">
-                                    <div className="flex items-center gap-2 mb-1 text-white/40 group-hover:text-[#c9a962] transition-colors">
+                                <div className="flex flex-col items-center md:items-start group">
+                                    <div className="flex items-center gap-2 mb-2 text-white/40 group-hover:text-[#c9a962] transition-colors">
                                         <Eye className="w-4 h-4" />
-                                        <span className="text-xs font-bold uppercase tracking-wider">Profile Views</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-widest">Profile Views</span>
                                     </div>
-                                    <span className="text-2xl font-bold text-[#f5f0e8]">{stats.profile_views.toLocaleString()}</span>
+                                    <span className="text-3xl font-bold text-[#f5f0e8] tracking-tight">{stats.profile_views.toLocaleString()}</span>
                                 </div>
 
                                 {/* Followers */}
                                 <button
                                     onClick={() => openFollowList('followers')}
-                                    className="flex flex-col items-center md:items-start md:px-6 md:border-r border-white/5 relative group hover:bg-white/5 -m-2 p-2 md:mx-0 md:my-0 md:p-0 md:hover:bg-transparent rounded-lg transition-colors"
+                                    className="flex flex-col items-center md:items-start group hover:opacity-80 transition-opacity"
                                 >
-                                    <div className="flex items-center gap-2 mb-1 text-white/40 group-hover:text-[#c9a962] transition-colors">
+                                    <div className="flex items-center gap-2 mb-2 text-white/40 group-hover:text-[#c9a962] transition-colors">
                                         <Users className="w-4 h-4" />
-                                        <span className="text-xs font-bold uppercase tracking-wider">Followers</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-widest">Followers</span>
                                     </div>
-                                    <span className="text-2xl font-bold text-[#f5f0e8] group-hover:text-white transition-colors">{stats.followers.toLocaleString()}</span>
+                                    <span className="text-3xl font-bold text-[#f5f0e8] tracking-tight">{stats.followers.toLocaleString()}</span>
                                 </button>
 
                                 {/* Following */}
                                 <button
                                     onClick={() => openFollowList('following')}
-                                    className="col-span-2 md:col-span-1 flex flex-col items-center md:items-start md:pl-6 relative group hover:bg-white/5 -m-2 p-2 md:ml-0 md:my-0 md:p-0 md:hover:bg-transparent rounded-lg transition-colors"
+                                    className="flex flex-col items-center md:items-start group hover:opacity-80 transition-opacity"
                                 >
-                                    <div className="flex items-center gap-2 mb-1 text-white/40 group-hover:text-[#c9a962] transition-colors">
+                                    <div className="flex items-center gap-2 mb-2 text-white/40 group-hover:text-[#c9a962] transition-colors">
                                         <Users className="w-4 h-4" />
-                                        <span className="text-xs font-bold uppercase tracking-wider">Following</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-widest">Following</span>
                                     </div>
-                                    <span className="text-2xl font-bold text-[#f5f0e8] group-hover:text-white transition-colors">{stats.following.toLocaleString()}</span>
+                                    <span className="text-3xl font-bold text-[#f5f0e8] tracking-tight">{stats.following.toLocaleString()}</span>
                                 </button>
                             </div>
                         </div>

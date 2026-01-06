@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     }
 
     // Fetch Profile
-    const { data: profile } = await supabase
+    const { data: profile } = await (supabase as any)
         .from('profiles')
         .select('*')
         .eq('id', user.id)
@@ -40,7 +40,7 @@ export async function GET(request: Request) {
             subscription_tier: profile?.subscription_tier,
             subscription_status: profile?.subscription_status,
             stripe_customer_id: profile?.stripe_customer_id,
-            credits: profile?.credits
+            credits: 0 // Placeholder: credits field does not exist in profiles table
         },
         latest_orders: orders,
         recent_events: events

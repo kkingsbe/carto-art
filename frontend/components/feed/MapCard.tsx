@@ -131,13 +131,13 @@ export function MapCard({ map, actionSlot }: MapCardProps) {
         {/* Stats Row */}
         <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/5">
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/5">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#141d2e] border border-white/5 group-hover:border-[#c9a962]/30 transition-colors">
               <TrendingUp className="w-3.5 h-3.5 text-[#c9a962]" />
               <span className="text-xs font-bold text-[#f5f0e8]">{map.vote_score}</span>
             </div>
 
             {map.view_count !== undefined && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/5">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#141d2e] border border-white/5 group-hover:border-blue-500/30 transition-colors">
                 <Eye className="w-3.5 h-3.5 text-blue-400" />
                 <span className="text-xs font-bold text-[#f5f0e8]">{map.view_count}</span>
               </div>

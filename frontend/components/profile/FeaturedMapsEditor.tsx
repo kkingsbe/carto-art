@@ -67,14 +67,14 @@ export function FeaturedMapsEditor({ allMaps, initialFeaturedIds }: FeaturedMaps
                 <button
                     onClick={handleSave}
                     disabled={isPending}
-                    className="px-4 py-2 bg-[#c9a962] text-[#0a0f1a] rounded-lg text-sm font-bold hover:bg-[#d4b472] disabled:opacity-50 transition-colors"
+                    className="px-6 py-2 bg-transparent border border-[#c9a962]/50 text-[#c9a962] rounded-xl text-sm font-bold hover:bg-[#c9a962] hover:text-[#0a0f1a] disabled:opacity-50 transition-all duration-300 shadow-[0_0_15px_-5px_rgba(201,169,98,0.3)] hover:shadow-[0_0_20px_rgba(201,169,98,0.5)]"
                 >
-                    {isPending ? 'Saving...' : 'Save'}
+                    {isPending ? 'Saving...' : 'Save Changes'}
                 </button>
             </div>
 
             {publishedMaps.length === 0 ? (
-                <div className="text-center py-8 text-[#d4cfc4]/40 bg-white/5 rounded-lg border border-dashed border-white/10 text-sm">
+                <div className="text-center py-8 text-[#d4cfc4]/40 bg-white/5 rounded-xl border border-dashed border-white/10 text-sm">
                     Publish some maps to feature them!
                 </div>
             ) : (
@@ -92,12 +92,12 @@ export function FeaturedMapsEditor({ allMaps, initialFeaturedIds }: FeaturedMaps
                                 key={map.id}
                                 onClick={() => toggleFeatured(map.id)}
                                 className={`
-                                    relative cursor-pointer group overflow-hidden transition-all duration-500
+                                    relative cursor-pointer group overflow-hidden transition-all duration-300
                                     bg-[#141d2e] rounded-xl border
-                                    shadow-lg
+                                    shadow-lg select-none
                                     hover:scale-[1.02] 
                                     ${isFeatured
-                                        ? 'border-[#c9a962] ring-1 ring-[#c9a962]/50'
+                                        ? 'border-[#c9a962] ring-2 ring-[#c9a962]/20 shadow-[0_0_20px_-5px_rgba(201,169,98,0.3)]'
                                         : 'border-white/5 hover:border-white/20'
                                     }
                                 `}
@@ -109,10 +109,10 @@ export function FeaturedMapsEditor({ allMaps, initialFeaturedIds }: FeaturedMaps
                                                 src={map.thumbnail_url}
                                                 alt={map.title}
                                                 fill
-                                                className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                                                className={`object-cover transition-transform duration-700 ease-out ${isFeatured ? 'scale-105' : 'group-hover:scale-110'}`}
                                             />
                                             {/* Gradient overlay */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1a] via-transparent to-transparent opacity-80 group-hover:opacity-60 transition-opacity duration-500" />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1a] via-transparent to-transparent opacity-80" />
                                         </>
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-[#d4cfc4]/20 text-xs font-medium tracking-wide">
@@ -120,21 +120,20 @@ export function FeaturedMapsEditor({ allMaps, initialFeaturedIds }: FeaturedMaps
                                         </div>
                                     )}
 
-                                    {/* Selection Overlay */}
+                                    {/* Selection Checkmark */}
                                     <div className={`
-                                        absolute inset-0 bg-[#0a0f1a]/60 transition-opacity flex items-center justify-center
-                                        ${isFeatured ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
+                                        absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300
+                                        ${isFeatured
+                                            ? 'bg-[#c9a962] text-[#0a0f1a] scale-100 shadow-lg'
+                                            : 'bg-black/40 border border-white/20 text-transparent scale-90 group-hover:scale-100 group-hover:border-white/40'
+                                        }
                                     `}>
-                                        {isFeatured && (
-                                            <div className="w-10 h-10 rounded-full bg-[#c9a962] text-[#0a0f1a] flex items-center justify-center font-bold shadow-[0_0_15px_rgba(201,169,98,0.4)] text-lg animate-bounce-in">
-                                                {selectionOrder}
-                                            </div>
-                                        )}
+                                        {isFeatured && selectionOrder}
                                     </div>
                                 </div>
 
-                                <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-[#0a0f1a] to-transparent">
-                                    <div className="text-sm font-semibold truncate text-[#f5f0e8]">
+                                <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-[#0a0f1a] via-[#0a0f1a]/80 to-transparent">
+                                    <div className={`text-sm font-semibold truncate transition-colors duration-300 ${isFeatured ? 'text-[#c9a962]' : 'text-[#f5f0e8]'}`}>
                                         {map.title}
                                     </div>
                                 </div>

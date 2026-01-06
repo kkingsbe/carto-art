@@ -35,14 +35,17 @@ export function PublicLinkCard({ username, siteUrl }: PublicLinkCardProps) {
             </p>
             <div
                 onClick={handleCopy}
-                className="group relative flex items-center gap-2 p-3 bg-[#0a0f1a]/50 rounded-lg border border-white/10 hover:border-[#c9a962]/50 hover:bg-[#0a0f1a]/80 transition-all cursor-pointer"
+                className="group relative flex items-center gap-2 p-3 bg-[#0a0f1a]/80 rounded-lg border border-white/10 hover:border-[#c9a962]/50 hover:bg-[#0a0f1a] shadow-inner transition-all cursor-pointer"
             >
                 <div className="text-sm font-mono text-[#d4cfc4] truncate flex-1 selection:bg-[#c9a962]/20">
                     {profileUrl}
                 </div>
-                <div className="flex-shrink-0 text-[#c9a962] opacity-50 group-hover:opacity-100 transition-opacity">
+                <div className="flex-shrink-0 text-[#c9a962] opacity-70 group-hover:opacity-100 group-hover:scale-110 transition-all">
                     {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 </div>
+                {copied && (
+                    <div className="absolute inset-0 rounded-lg border border-green-500/50 pointer-events-none animate-pulse" />
+                )}
             </div>
         </div>
     );
