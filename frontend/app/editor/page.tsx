@@ -2,7 +2,8 @@ import { Suspense } from 'react';
 import { PosterEditor } from '@/components/layout/PosterEditor';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Metadata } from 'next';
-import { getSiteConfig, CONFIG_KEYS } from '@/lib/actions/usage';
+import { getSiteConfig } from '@/lib/actions/usage';
+import { CONFIG_KEYS } from '@/lib/actions/usage.types';
 
 export const metadata: Metadata = {
   title: 'Map Poster Editor | Create Custom Wall Art - Carto-Art',
