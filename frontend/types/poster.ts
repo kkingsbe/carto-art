@@ -117,6 +117,11 @@ export interface PosterConfig {
     texture?: 'none' | 'paper' | 'canvas' | 'grain'; // Added texture support
     textureIntensity?: number; // 0-100
   };
+  stl?: {
+    modelHeight: number; // Base height in mm
+    optimization: 'low' | 'medium' | 'high';
+  };
+  is3DMode?: boolean; // Toggle for 3D preview mode
   layers: {
     streets: boolean;
     buildings: boolean;

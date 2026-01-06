@@ -14,9 +14,11 @@ interface LayerControlsProps {
   onRenderingChange?: (rendering: Partial<NonNullable<PosterConfig['rendering']>>) => void;
   availableToggles: LayerToggle[];
   palette: ColorPalette;
+  is3DMode?: boolean;
+  onToggle3DMode?: (enabled: boolean) => void;
 }
 
-export function LayerControls({ layers, rendering, onLayersChange, onRenderingChange, availableToggles, palette }: LayerControlsProps) {
+export function LayerControls({ layers, rendering, onLayersChange, onRenderingChange, availableToggles, palette, is3DMode, onToggle3DMode }: LayerControlsProps) {
 
   const toggleLayer = (key: keyof PosterConfig['layers']) => {
     const newValue = !layers[key];
@@ -133,6 +135,25 @@ export function LayerControls({ layers, rendering, onLayersChange, onRenderingCh
               )}
             </div>
           </CollapsibleSection>
+        )}
+
+        {/* 3D Print Mode (STL) */}
+        {onToggle3DMode && (
+          <ControlSection title="3D Export Mode">
+            <div className="space-y-4">
+              <ControlCheckbox
+                label="3D Print Preview"
+                description="Optimize view for STL export (Terrain only)"
+                checked={Boolean(is3DMode)}
+                onChange={() => onToggle3DMode!(!is3DMode)}
+              />
+              {is3DMode && (
+                <div className="text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                  Entering 3D mode hides all non-terrain layers to show exactly what will be exported.
+                </div>
+              )}
+            </div>
+          </ControlSection>
         )}
 
         {/* Graticules Section */}

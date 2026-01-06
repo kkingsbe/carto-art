@@ -56,7 +56,7 @@ export async function POST(request: Request) {
             metadata: {
                 user_id: user.id,
                 variant_id: variant_id.toString(),
-                design_file_id: design_file_id.toString(),
+                design_id: design_file_id.toString(),
                 quantity: quantity.toString(),
             },
             shipping: {

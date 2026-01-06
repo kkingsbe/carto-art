@@ -215,6 +215,8 @@ export function ControlDrawer({
                   onRenderingChange={updateRendering}
                   availableToggles={config.style.layerToggles}
                   palette={config.palette}
+                  is3DMode={config.is3DMode}
+                  onToggle3DMode={(val) => setConfig({ ...config, is3DMode: val })}
                 />
               </div>
             </div>

@@ -37,6 +37,7 @@ interface MapPreviewProps {
   onInteraction?: () => void;
   locked?: boolean;
   thumbnailUrl?: string | null;
+  is3DMode?: boolean;
 }
 
 export function MapPreview({
@@ -54,7 +55,8 @@ export function MapPreview({
   layerToggles,
   onInteraction,
   locked = false,
-  thumbnailUrl
+  thumbnailUrl,
+  is3DMode = false
 }: MapPreviewProps) {
   const mapRef = useRef<MapRef>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -109,12 +111,22 @@ export function MapPreview({
   // Sync pitch/bearing
   useEffect(() => {
     if (isMoving || locked) return;
-    setViewState(prev => ({
-      ...prev,
-      pitch: layers?.buildings3DPitch ?? 0,
-      bearing: layers?.buildings3DBearing ?? 0,
-    }));
-  }, [layers?.buildings3DPitch, layers?.buildings3DBearing, isMoving, locked]);
+
+    // In 3D mode, force isometric-like view
+    if (is3DMode) {
+      setViewState(prev => ({
+        ...prev,
+        pitch: 60,
+        bearing: 45,
+      }));
+    } else {
+      setViewState(prev => ({
+        ...prev,
+        pitch: layers?.buildings3DPitch ?? 0,
+        bearing: layers?.buildings3DBearing ?? 0,
+      }));
+    }
+  }, [layers?.buildings3DPitch, layers?.buildings3DBearing, isMoving, locked, is3DMode]);
 
   // Ensure graticule layers render on top to prevent z-fighting
   useEffect(() => {
@@ -404,6 +416,16 @@ export function MapPreview({
           />
         )}
         */}
+
+        {/* 3D Preview Mode - STL Terrain Layer */}
+        {is3DMode && (
+          <DeckTerrainLayer
+            exaggeration={layers?.volumetricTerrainExaggeration ?? 1.5}
+            meshMaxError={TERRAIN_QUALITY_PRESETS[(layers?.terrainMeshQuality ?? 'balanced') as keyof typeof TERRAIN_QUALITY_PRESETS]}
+            elevationData={getAwsTerrariumTileUrl()}
+            visible={true}
+          />
+        )}
       </Map>
 
       {/* Tile Loading Indicator */}
@@ -419,14 +441,28 @@ export function MapPreview({
         </div>
       </div>
 
-      {/* Zoom Level Indicator */}
-      <div className="absolute top-4 right-4 z-20 pointer-events-none hidden md:block">
-        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm">
-          <span className="text-[11px] font-medium text-gray-600 dark:text-gray-300 tracking-wide">
-            {getZoomLabel(viewState.zoom)} View
-          </span>
+      {/* 3D Mode Overlay Label */}
+      {is3DMode && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
+          <div className="bg-blue-600/90 backdrop-blur-md px-4 py-1.5 rounded-full shadow-lg border border-blue-400/50">
+            <span className="text-xs font-bold text-white tracking-wide uppercase flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+              STL Preview Mode
+            </span>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Zoom Level Indicator */}
+      {!is3DMode && (
+        <div className="absolute top-4 right-4 z-20 pointer-events-none hidden md:block">
+          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm">
+            <span className="text-[11px] font-medium text-gray-600 dark:text-gray-300 tracking-wide">
+              {getZoomLabel(viewState.zoom)} View
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Texture Overlay */}
       {format?.texture && format.texture !== 'none' && (

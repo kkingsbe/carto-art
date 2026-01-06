@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient, createAnonymousClient } from '@/lib/supabase/server';
-import { revalidatePath, unstable_cache } from 'next/cache';
+import { revalidatePath, unstable_cache, revalidateTag } from 'next/cache';
 
 export interface ChangelogEntry {
     id: string;
@@ -77,6 +77,7 @@ export async function createChangelogEntry(data: Partial<ChangelogEntry>) {
     }
 
     revalidatePath('/');
+    revalidateTag('changelog', { expire: 0 });
     return entry;
 }
 
@@ -85,6 +86,15 @@ export async function createChangelogEntry(data: Partial<ChangelogEntry>) {
  */
 export async function updateChangelogEntry(id: string, data: Partial<ChangelogEntry>) {
     const supabase = await createClient();
+    const userResponse = await supabase.auth.getUser();
+    const user = userResponse.data.user;
+    console.log('[DEBUG] updateChangelogEntry', { id, userId: user?.id });
+
+    if (user) {
+        const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
+        console.log('[DEBUG] Profile admin status:', profile);
+    }
+
     const { data: entry, error } = await (supabase.from('changelog_entries' as any) as any)
         .update(data)
         .eq('id', id)
@@ -97,6 +107,7 @@ export async function updateChangelogEntry(id: string, data: Partial<ChangelogEn
     }
 
     revalidatePath('/');
+    revalidateTag('changelog', { expire: 0 });
     return entry;
 }
 
@@ -115,5 +126,6 @@ export async function deleteChangelogEntry(id: string) {
     }
 
     revalidatePath('/');
+    revalidateTag('changelog', { expire: 0 });
     return true;
 }

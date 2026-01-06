@@ -12,14 +12,19 @@ import type { VideoExportOptions } from '@/hooks/useVideoExport';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { Sparkles, Lock, Check } from 'lucide-react';
 import { createCheckoutSession } from '@/lib/actions/subscription';
-import { Film, RotateCw } from 'lucide-react';
+import { Film, RotateCw, Box } from 'lucide-react';
 import { trackEventAction } from '@/lib/actions/events';
 import type { ExportUsageResult } from '@/lib/actions/usage.types';
+
+export interface StlExportOptions {
+    modelHeight: number;
+    resolution: 'low' | 'medium' | 'high';
+}
 
 interface ExportOptionsModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onExport: (resolution: ExportResolution, gifOptions?: GifExportOptions, videoOptions?: VideoExportOptions) => void;
+    onExport: (resolution: ExportResolution, gifOptions?: GifExportOptions, videoOptions?: VideoExportOptions, stlOptions?: StlExportOptions) => void;
     isExporting: boolean;
     exportProgress?: { stage: string; percent: number } | null;
     gifProgress?: number;
@@ -52,10 +57,13 @@ export function ExportOptionsModal({
     const [videoFps, setVideoFps] = useState(60);
     const [gifAnimationMode, setGifAnimationMode] = useState<'orbit' | 'cinematic'>('orbit');
     const [videoAnimationMode, setVideoAnimationMode] = useState<'orbit' | 'cinematic'>('orbit');
+    const [stlModelHeight, setStlModelHeight] = useState(5);
+    const [stlResolution, setStlResolution] = useState<'low' | 'medium' | 'high'>('medium');
     const [countdown, setCountdown] = useState<string | null>(null);
     const hasTrackedPaywallRef = useRef(false);
     const isGifExportEnabled = useFeatureFlag('gif_export');
     const isVideoExportEnabled = useFeatureFlag('video_export');
+    const isStlExportEnabled = useFeatureFlag('stl_export');
     const isPaywallEnabled = useFeatureFlag('carto_plus');
 
     const isExportLimitReached = exportUsage && !exportUsage.allowed && subscriptionTier === 'free';
@@ -118,7 +126,7 @@ export function ExportOptionsModal({
 
     const isLocked = (key: string) => {
         if (!isPaywallEnabled || subscriptionTier === 'carto_plus') return false;
-        return key === 'ORBIT_GIF' || key === 'ORBIT_VIDEO';
+        return key === 'ORBIT_GIF' || key === 'ORBIT_VIDEO' || key === 'STL_MODEL';
     };
 
     const handleUpgrade = async () => {
@@ -676,6 +684,95 @@ export function ExportOptionsModal({
                                         </div>
                                     </div>
                                 )}
+
+                                {/* STL Export */}
+                                {isStlExportEnabled && (
+                                    <div>
+                                        <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">3D Fabrication</div>
+                                        <div className="space-y-3">
+                                            <button
+                                                onClick={() => !isLocked('STL_MODEL') && setSelectedKey('STL_MODEL')}
+                                                className={cn(
+                                                    "w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-left",
+                                                    selectedKey === 'STL_MODEL'
+                                                        ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
+                                                        : "border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800",
+                                                    isLocked('STL_MODEL') && "opacity-60 cursor-not-allowed"
+                                                )}
+                                                disabled={isLocked('STL_MODEL')}
+                                            >
+                                                <div className="flex-1">
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                                            3D Model (STL)
+                                                            {isLocked('STL_MODEL') && <Lock className="w-3.5 h-3.5 text-amber-500" />}
+                                                        </div>
+                                                        {selectedKey === 'STL_MODEL' && <Check className="w-5 h-5 text-blue-500" />}
+                                                    </div>
+                                                    <div className="text-xs text-gray-400 dark:text-gray-500 mb-2">
+                                                        Binary STL for 3D printing.
+                                                    </div>
+                                                    <div className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                                                        <span>{stlModelHeight}mm Base</span>
+                                                        <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+                                                        <span className="capitalize">{stlResolution} Quality</span>
+                                                    </div>
+                                                </div>
+                                                <Box className="w-8 h-8 text-gray-300 dark:text-gray-600 ml-4 group-hover:text-gray-400" />
+                                            </button>
+
+                                            {/* STL Configuration */}
+                                            {selectedKey === 'STL_MODEL' && (
+                                                <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 space-y-4">
+                                                    {/* Base Height Slider */}
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Minimum Base Height</label>
+                                                            <span className="text-sm text-gray-500 dark:text-gray-400">{stlModelHeight}mm</span>
+                                                        </div>
+                                                        <input
+                                                            type="range"
+                                                            min="1"
+                                                            max="20"
+                                                            step="1"
+                                                            value={stlModelHeight}
+                                                            onChange={(e) => setStlModelHeight(Number(e.target.value))}
+                                                            className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                                                        />
+                                                        <div className="flex justify-between text-xs text-gray-400 mt-1">
+                                                            <span>1mm</span>
+                                                            <span>20mm</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Resolution Select */}
+                                                    <div>
+                                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Mesh Resolution</label>
+                                                        <div className="grid grid-cols-3 gap-2">
+                                                            {(['low', 'medium', 'high'] as const).map(res => (
+                                                                <button
+                                                                    key={res}
+                                                                    onClick={() => setStlResolution(res)}
+                                                                    className={cn(
+                                                                        "flex flex-col items-center justify-center py-2 px-1 rounded-lg border text-xs font-medium transition-all capitalize",
+                                                                        stlResolution === res
+                                                                            ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300"
+                                                                            : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400"
+                                                                    )}
+                                                                >
+                                                                    {res}
+                                                                    <span className="text-[9px] font-normal opacity-70 mt-0.5">
+                                                                        {res === 'low' ? '512px' : res === 'medium' ? '1024px' : '2048px'}
+                                                                    </span>
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Upgrade Callout */}
@@ -720,6 +817,13 @@ export function ExportOptionsModal({
                                     { width: 0, height: 0, dpi: 72, name: 'ORBIT_VIDEO' },
                                     undefined,
                                     { duration: videoDuration, totalRotation: videoRotation, fps: videoFps, animationMode: videoAnimationMode }
+                                );
+                            } else if (selectedKey === 'STL_MODEL') {
+                                onExport(
+                                    { width: 0, height: 0, dpi: 72, name: 'STL_MODEL' },
+                                    undefined,
+                                    undefined,
+                                    { modelHeight: stlModelHeight, resolution: stlResolution }
                                 );
                             } else {
                                 const base = EXPORT_RESOLUTIONS[selectedKey as ExportResolutionKey];

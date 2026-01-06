@@ -31,6 +31,7 @@ import { FeedbackModal, useFeedback, FeedbackWidget } from '@/components/feedbac
 import type { FeedbackFormData } from '@/components/feedback';
 import type { ExportResolution } from '@/lib/export/resolution';
 import { ProductModal } from '@/components/ecommerce/ProductModal';
+import { ExportOptionsModal, type StlExportOptions } from '@/components/controls/ExportOptionsModal';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { SaveButton } from '@/components/controls/SaveButton';
 import { ExportButton } from '@/components/controls/ExportButton';
@@ -107,6 +108,7 @@ export function PosterEditor() {
   const [showSubscriptionSuccess, setShowSubscriptionSuccess] = useState(false);
   const [showProductModal, setShowProductModal] = useState(false);
   const [exportedImage, setExportedImage] = useState<string | null>(null);
+  const [isExportingStl, setIsExportingStl] = useState(false);
 
   // Keep a reference to the map instance for thumbnail generation
   const mapInstanceRef = useRef<MapLibreGL.Map | null>(null);
@@ -407,7 +409,7 @@ export function PosterEditor() {
   }, [config, setConfig]);
 
   // Wrap exportToPNG to handle errors and track export count
-  const handleExport = useCallback(async (resolution?: ExportResolution, gifOptions?: GifExportOptions, videoOptions?: VideoExportOptions) => {
+  const handleExport = useCallback(async (resolution?: ExportResolution, gifOptions?: GifExportOptions, videoOptions?: VideoExportOptions, stlOptions?: StlExportOptions) => {
     try {
       if (resolution?.name === 'ORBIT_GIF') {
         await generateOrbitGif(gifOptions);
@@ -418,6 +420,47 @@ export function PosterEditor() {
       if (resolution?.name === 'ORBIT_VIDEO') {
         await exportVideo(videoOptions);
         setExportCount(prev => prev + 1);
+        return;
+      }
+
+      if (resolution?.name === 'STL_MODEL' && stlOptions) {
+        if (!mapInstanceRef.current) {
+          throw new Error('Map not ready');
+        }
+        setIsExportingStl(true);
+        try {
+          const bounds = mapInstanceRef.current.getBounds().toArray().flat();
+          const resolutionMap = { low: 512, medium: 1024, high: 2000 };
+          const resolution = resolutionMap[stlOptions.resolution];
+
+          const res = await fetch('/api/export/stl', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              bounds,
+              resolution,
+              minHeight: stlOptions.modelHeight
+            })
+          });
+
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || 'STL generation failed');
+          }
+
+          const blob = await res.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `terrain-${config.location.city || 'model'}.stl`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          setExportCount(prev => prev + 1);
+        } finally {
+          setIsExportingStl(false);
+        }
         return;
       }
 
@@ -548,8 +591,12 @@ export function PosterEditor() {
           await saveCopy(name);
           trackEventAction({ eventType: 'map_publish', eventName: 'save_copy', metadata: { name } });
         }}
+        onSaveCopy={async (name) => {
+          await saveCopy(name);
+          trackEventAction({ eventType: 'map_publish', eventName: 'save_copy', metadata: { name } });
+        }}
         onExport={handleExport}
-        isExporting={isExporting || isGeneratingGif || isExportingVideo}
+        isExporting={isExporting || isGeneratingGif || isExportingVideo || isExportingStl}
         exportProgress={exportProgress}
         gifProgress={progress}
         videoProgress={videoProgress}
@@ -639,6 +686,7 @@ export function PosterEditor() {
               layerToggles={config.style.layerToggles}
               onInteraction={handleMapInteraction}
               locked={isGeneratingGif || isExportingVideo}
+              is3DMode={config.is3DMode}
             />
 
             {/* Map Interaction Helpers Overlay */}
