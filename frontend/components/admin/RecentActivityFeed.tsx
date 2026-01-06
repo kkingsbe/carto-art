@@ -14,7 +14,6 @@ import {
     Zap,
     Globe,
     Search,
-    Search,
     Sparkles,
     Lock,
     KeyRound
