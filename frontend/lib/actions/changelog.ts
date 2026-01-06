@@ -116,7 +116,7 @@ export async function updateChangelogEntry(id: string, data: Partial<ChangelogEn
  */
 export async function deleteChangelogEntry(id: string) {
     const supabase = await createClient();
-    const { error } = await (supabase.from('changelog_entries' as any) as any)
+    const { error } = await supabase.from('changelog_entries')
         .delete()
         .eq('id', id);
 

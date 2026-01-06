@@ -41,7 +41,7 @@ export async function incrementMapView(mapId: string) {
         }
 
         // Don't count owner's views
-        if (user && (map as any)?.user_id === user.id) {
+        if (user && map.user_id === user.id) {
             return;
         }
 
@@ -82,7 +82,7 @@ export async function incrementMapView(mapId: string) {
         // 5. Increment counter
         const { error } = await supabase.rpc('increment_map_view', {
             map_id: mapId
-        } as any);
+        });
 
         if (error) {
             logger.error('Failed to increment map view counter:', error);
@@ -151,7 +151,7 @@ export async function incrementProfileView(profileId: string) {
         // 5. Increment counter
         const { error } = await supabase.rpc('increment_profile_view', {
             profile_id: profileId
-        } as any);
+        });
 
         if (error) {
             logger.error('Failed to increment profile view counter:', error);
@@ -206,7 +206,7 @@ export async function trackProfileView(targetUserId: string): Promise<TrackProfi
             recipient_id: targetUserId,
             actor_id: user.id,
             type: 'PROFILE_VIEW'
-        } as any);
+        });
 
         if (error) {
             logger.error('Failed to create profile view notification:', error);

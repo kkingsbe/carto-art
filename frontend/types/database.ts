@@ -390,7 +390,7 @@ export interface Database {
           id: string;
           recipient_id: string;
           actor_id: string;
-          type: 'FOLLOW' | 'MAP_POST' | 'COMMENT' | 'LIKE';
+          type: 'FOLLOW' | 'MAP_POST' | 'COMMENT' | 'LIKE' | 'PROFILE_VIEW';
           resource_id: string | null;
           read_at: string | null;
           created_at: string;
@@ -399,7 +399,7 @@ export interface Database {
           id?: string;
           recipient_id: string;
           actor_id: string;
-          type: 'FOLLOW' | 'MAP_POST' | 'COMMENT' | 'LIKE';
+          type: 'FOLLOW' | 'MAP_POST' | 'COMMENT' | 'LIKE' | 'PROFILE_VIEW';
           resource_id?: string | null;
           read_at?: string | null;
           created_at?: string;
@@ -408,7 +408,7 @@ export interface Database {
           id?: string;
           recipient_id?: string;
           actor_id?: string;
-          type?: 'FOLLOW' | 'MAP_POST' | 'COMMENT' | 'LIKE';
+          type?: 'FOLLOW' | 'MAP_POST' | 'COMMENT' | 'LIKE' | 'PROFILE_VIEW';
           resource_id?: string | null;
           read_at?: string | null;
           created_at?: string;
@@ -603,51 +603,80 @@ export interface Database {
           description?: string | null;
           updated_at?: string;
         };
-        map_views: {
-          Row: {
-            id: string;
-            map_id: string;
-            viewer_id: string | null;
-            ip_hash: string | null;
-            created_at: string;
-          };
-          Insert: {
-            id?: string;
-            map_id: string;
-            viewer_id?: string | null;
-            ip_hash?: string | null;
-            created_at?: string;
-          };
-          Update: {
-            id?: string;
-            map_id?: string;
-            viewer_id?: string | null;
-            ip_hash?: string | null;
-            created_at?: string;
-          };
+      };
+      map_views: {
+        Row: {
+          id: string;
+          map_id: string;
+          viewer_id: string | null;
+          ip_hash: string | null;
+          created_at: string;
         };
-        profile_views: {
-          Row: {
-            id: string;
-            profile_id: string;
-            viewer_id: string | null;
-            ip_hash: string | null;
-            created_at: string;
-          };
-          Insert: {
-            id?: string;
-            profile_id: string;
-            viewer_id?: string | null;
-            ip_hash?: string | null;
-            created_at?: string;
-          };
-          Update: {
-            id?: string;
-            profile_id?: string;
-            viewer_id?: string | null;
-            ip_hash?: string | null;
-            created_at?: string;
-          };
+        Insert: {
+          id?: string;
+          map_id: string;
+          viewer_id?: string | null;
+          ip_hash?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          map_id?: string;
+          viewer_id?: string | null;
+          ip_hash?: string | null;
+          created_at?: string;
+        };
+      };
+      profile_views: {
+        Row: {
+          id: string;
+          profile_id: string;
+          viewer_id: string | null;
+          ip_hash: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          profile_id: string;
+          viewer_id?: string | null;
+          ip_hash?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          profile_id?: string;
+          viewer_id?: string | null;
+          ip_hash?: string | null;
+          created_at?: string;
+        };
+      };
+      changelog_entries: {
+        Row: {
+          id: string;
+          title: string;
+          description: string;
+          published_at: string;
+          is_published: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          description: string;
+          published_at?: string;
+          is_published?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          description?: string;
+          published_at?: string;
+          is_published?: boolean;
+          created_at?: string;
+          updated_at?: string;
         };
       };
     };
@@ -700,7 +729,7 @@ export interface Database {
       };
     },
     Enums: {
-      notification_type: 'FOLLOW' | 'MAP_POST' | 'COMMENT' | 'LIKE';
+      notification_type: 'FOLLOW' | 'MAP_POST' | 'COMMENT' | 'LIKE' | 'PROFILE_VIEW';
     };
   };
 }
