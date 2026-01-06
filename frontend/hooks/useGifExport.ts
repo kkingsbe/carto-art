@@ -6,6 +6,7 @@ import { logger } from '@/lib/logger';
 import GIF from 'gif.js';
 import type { PosterConfig } from '@/types/poster';
 import { trackEventAction } from '@/lib/actions/events';
+import { getSessionId } from '@/lib/utils';
 
 export interface GifExportOptions {
     duration: number; // seconds
@@ -99,6 +100,7 @@ export function useGifExport(
                 await trackEventAction({
                     eventType: 'poster_export',
                     eventName: 'Orbit GIF Exported',
+                    sessionId: getSessionId(),
                     metadata: {
                         location_name: config.location.name,
                         location_coords: config.location.center,

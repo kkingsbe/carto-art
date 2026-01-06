@@ -25,6 +25,11 @@ const CONFIG_LABELS: Record<string, { label: string; icon: React.ReactNode; desc
         icon: <FolderOpen className="w-4 h-4" />,
         description: 'Maximum saved projects (maps) for free tier users',
     },
+    'anon_daily_export_limit': {
+        label: 'Anon Daily Export Limit',
+        icon: <Download className="w-4 h-4" />,
+        description: 'Maximum exports per 24-hour rolling window for anonymous users',
+    },
 };
 
 export default function SettingsPage() {
@@ -127,7 +132,7 @@ export default function SettingsPage() {
 
                 <div className="divide-y divide-gray-100 dark:divide-gray-800">
                     {configs
-                        .filter(config => config.key.startsWith('free_tier_'))
+                        .filter(config => config.key in CONFIG_LABELS)
                         .map(config => {
                             const meta = CONFIG_LABELS[config.key] || {
                                 label: config.key,
@@ -179,7 +184,7 @@ export default function SettingsPage() {
                             );
                         })}
 
-                    {configs.filter(c => c.key.startsWith('free_tier_')).length === 0 && (
+                    {configs.filter(c => c.key in CONFIG_LABELS).length === 0 && (
                         <div className="px-6 py-12 text-center text-gray-500">
                             <p>No settings configured yet.</p>
                             <p className="text-sm mt-1">Run the database migration to add default settings.</p>

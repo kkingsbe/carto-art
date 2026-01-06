@@ -146,6 +146,7 @@ export function ExportButton({
         onFormatChange={onFormatChange}
         subscriptionTier={subscriptionTier}
         exportUsage={exportUsage}
+        isAuthenticated={isAuthenticated}
       />
 
       <ExportSuccessModal

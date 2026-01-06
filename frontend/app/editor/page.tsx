@@ -2,6 +2,8 @@ import { Suspense } from 'react';
 import { PosterEditor } from '@/components/layout/PosterEditor';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Metadata } from 'next';
+import { getSiteConfig } from '@/lib/actions/usage';
+import { CONFIG_KEYS } from '@/lib/actions/usage.types';
 
 export const metadata: Metadata = {
   title: 'Map Poster Editor | Create Custom Wall Art - Carto-Art',
@@ -14,7 +16,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Home() {
+export default async function Home() {
+  const anonExportLimit = await getSiteConfig(CONFIG_KEYS.ANON_DAILY_EXPORT_LIMIT);
+
   return (
     <ErrorBoundary>
       <Suspense fallback={
@@ -22,7 +26,7 @@ export default function Home() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       }>
-        <PosterEditor />
+        <PosterEditor anonExportLimit={anonExportLimit} />
       </Suspense>
     </ErrorBoundary>
   );

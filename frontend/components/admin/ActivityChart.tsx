@@ -33,6 +33,9 @@ const METRICS = [
     { id: 'donations', label: 'Donations', color: '#facc15' },
     { id: 'generation_latency', label: 'Generation Latency', color: '#ef4444' },
     { id: 'search_latency', label: 'Search Latency', color: '#f97316' },
+    { id: 'popup_close_latency', label: 'Avg Popup Close Time', color: '#8b5cf6' },
+    { id: 'paywall_users', label: 'Users hit Paywall', color: '#facc15' },
+    { id: 'login_wall_users', label: 'Users hit Login Wall', color: '#ec4899' },
 ];
 
 const TIMEFRAMES = [
@@ -72,10 +75,10 @@ export function ActivityChart() {
 
                 // Fetch data for all selected metrics in parallel
                 const promises = selectedTypes.map(async (type) => {
-                    const isLatencyMetric = type === 'generation_latency' || type === 'search_latency';
+                    const isLatencyMetric = type === 'generation_latency' || type === 'search_latency' || type === 'popup_close_latency';
                     let url = '';
                     if (isLatencyMetric) {
-                        const latencyType = type === 'generation_latency' ? 'generation' : 'search';
+                        const latencyType = type === 'generation_latency' ? 'generation' : (type === 'search_latency' ? 'search' : 'popup_close_latency');
                         url = `/api/admin/stats/latency?type=${latencyType}&days=${selectedDays}`;
                     } else {
                         url = `/api/admin/stats/activity?type=${type}&days=${selectedDays}`;
@@ -274,7 +277,8 @@ export function ActivityChart() {
                                 formatter={(value: any, name: any) => {
                                     const metric = getMetric(name as string);
                                     const isLatency = name === 'generation_latency' || name === 'search_latency';
-                                    const suffix = isLatency ? ' ms' : '';
+                                    const isTime = name === 'popup_close_latency';
+                                    const suffix = isLatency ? ' ms' : (isTime ? ' s' : '');
                                     return [`${value}${suffix}`, metric?.label || name];
                                 }}
                             />

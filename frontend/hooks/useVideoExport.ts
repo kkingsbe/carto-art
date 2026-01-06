@@ -5,6 +5,7 @@ import type MapLibreGL from 'maplibre-gl';
 import { logger } from '@/lib/logger';
 import type { PosterConfig } from '@/types/poster';
 import { trackEventAction } from '@/lib/actions/events';
+import { getSessionId } from '@/lib/utils';
 
 export interface VideoExportOptions {
     duration: number; // seconds
@@ -239,6 +240,7 @@ export function useVideoExport(
             await trackEventAction({
                 eventType: 'poster_export',
                 eventName: 'Orbit Video Exported',
+                sessionId: getSessionId(),
                 metadata: {
                     location_name: config.location.name,
                     location_coords: config.location.center,
