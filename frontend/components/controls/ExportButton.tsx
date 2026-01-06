@@ -13,6 +13,7 @@ import type { ExportResolution } from '@/lib/export/resolution';
 import type { PosterConfig } from '@/types/poster';
 import type { GifExportOptions } from '@/hooks/useGifExport';
 import type { VideoExportOptions } from '@/hooks/useVideoExport';
+import type { ExportUsageResult } from '@/lib/actions/usage';
 
 interface ExportButtonProps {
   onExport: (resolution: ExportResolution, gifOptions?: GifExportOptions, videoOptions?: VideoExportOptions) => Promise<void> | void;
@@ -32,6 +33,8 @@ interface ExportButtonProps {
   onFormatChange: (format: Partial<PosterConfig['format']>) => void;
   exportCount?: number;
   subscriptionTier?: 'free' | 'carto_plus';
+  exportUsage?: ExportUsageResult | null;
+  onExportComplete?: () => void;
 }
 
 export function ExportButton({
@@ -51,7 +54,9 @@ export function ExportButton({
   hasUnsavedChanges,
   onFormatChange,
   exportCount,
-  subscriptionTier
+  subscriptionTier,
+  exportUsage,
+  onExportComplete
 }: ExportButtonProps) {
   const [showOptionsModal, setShowOptionsModal] = useState(false);
 
@@ -67,6 +72,8 @@ export function ExportButton({
       setTimeout(() => {
         setShowOptionsModal(false);
         onDonationModalChange(true);
+        // Refresh usage after successful export
+        onExportComplete?.();
       }, 500);
     } catch (error) {
       // Modal stays open or closes on error? Let's close it so user can retry
@@ -137,6 +144,8 @@ export function ExportButton({
         videoProgress={videoProgress}
         format={format}
         onFormatChange={onFormatChange}
+        subscriptionTier={subscriptionTier}
+        exportUsage={exportUsage}
       />
 
       <ExportSuccessModal

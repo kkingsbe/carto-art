@@ -231,7 +231,7 @@ export default function LocationPage({ params }: { params: { city: string } }) {
                         <div className="text-center">
                             <div className="text-5xl mb-4">✨</div>
                             <h3 className="font-semibold mb-2">No Watermarks</h3>
-                            <p className="text-[#f5f0e8]/70 text-sm">100% free, forever</p>
+                            <p className="text-[#f5f0e8]/70 text-sm">Free to start, premium options available</p>
                         </div>
                     </div>
                 </div>

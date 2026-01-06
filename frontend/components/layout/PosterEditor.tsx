@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { usePosterConfig } from '@/hooks/usePosterConfig';
 import { useSavedProjects } from '@/hooks/useSavedProjects';
 import { useUserSubscription } from '@/hooks/useUserSubscription';
+import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { useMapExport } from '@/hooks/useMapExport';
 import { useGifExport, type GifExportOptions } from '@/hooks/useGifExport';
 import { useVideoExport, type VideoExportOptions } from '@/hooks/useVideoExport';
@@ -49,6 +50,7 @@ export function PosterEditor() {
   const isEcommerceEnabled = useFeatureFlag('ecommerce');
   const isCopyStateEnabled = useFeatureFlag('copy_editor_state_to_json');
   const { subscriptionTier } = useUserSubscription();
+  const { exportUsage, refreshExportUsage } = useUsageLimits(subscriptionTier);
   const isPlusEnabled = useFeatureFlag('carto_plus');
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -555,6 +557,9 @@ export function PosterEditor() {
         onCopyState={handleCopyState}
         showCopyStateButton={isCopyStateEnabled}
         exportCount={exportCount}
+        subscriptionTier={subscriptionTier}
+        exportUsage={exportUsage}
+        onExportComplete={refreshExportUsage}
       />
 
       {/* Floating Sidebar Container - Hidden on mobile */}
@@ -830,6 +835,8 @@ export function PosterEditor() {
             hasUnsavedChanges={currentMapStatus?.hasUnsavedChanges}
             onFormatChange={updateFormat}
             exportCount={exportCount}
+            exportUsage={exportUsage}
+            onExportComplete={refreshExportUsage}
           />
         </div>
       </div>

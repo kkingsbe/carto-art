@@ -1,11 +1,11 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { ensureAdmin } from '@/lib/admin-auth';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
     try {
         await ensureAdmin();
-        const supabase = await createClient();
+        const supabase = createServiceRoleClient();
         const [
             { data: profilesData, error: profileError },
             { data: mapsData },

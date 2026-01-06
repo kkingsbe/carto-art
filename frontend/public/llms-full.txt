@@ -4,7 +4,7 @@
 
 ## Overview
 
-Carto-Art is a web-based application that enables users to create personalized, print-ready map posters of any location on Earth. The tool is completely free, requires no account signup for basic use, and produces high-quality exports without watermarks. It serves as a free alternative to commercial services like Mapiful and Grafomap.
+Carto-Art is a web-based application that enables users to create personalized, print-ready map posters of any location on Earth. The tool offers a generous free tier, requires no account signup for basic use, and produces high-quality exports without watermarks. It serves as an accessible alternative to commercial services like Mapiful and Grafomap.
 
 ## Product Description
 
@@ -20,7 +20,7 @@ Carto-Art transforms geographic locations into beautiful, customizable wall art.
 - Anyone wanting affordable, custom wall art
 
 ### Key Differentiators
-1. **100% Free**: No watermarks, no subscriptions, no hidden costs
+1. **Free Tier Available**: No watermarks on free exports, optional premium features
 2. **No Account Required**: Anonymous use for privacy-conscious users
 3. **High Resolution**: Up to 7200×10800 pixels (24×36" at 300 DPI)
 4. **3D Terrain**: Volumetric terrain visualization for mountainous regions
@@ -137,7 +137,7 @@ Carto-Art transforms geographic locations into beautiful, customizable wall art.
 ### Pricing & Access
 
 **Is Carto-Art really free?**
-Yes, completely free. No hidden costs, subscriptions, trial periods, or premium tiers. Every feature is accessible to everyone at no cost. We built this tool because we love maps and wanted to share it with the world.
+Carto-Art offers a generous free tier with no hidden costs or trial periods. Core features including map customization and high-resolution image exports are free. Premium features like GIF and video exports are available with Carto Plus subscription. We built this tool because we love maps and wanted to share it with the world.
 
 **Will it always be free?**
 Yes. The project is open source and community-driven. We may accept donations to cover hosting costs, but the tool will remain free forever.

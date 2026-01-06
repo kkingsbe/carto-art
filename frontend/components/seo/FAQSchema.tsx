@@ -8,7 +8,7 @@ export function FAQSchema() {
                 name: 'Is Carto-Art really free?',
                 acceptedAnswer: {
                     '@type': 'Answer',
-                    text: 'Yes! Carto-Art is completely free with no hidden costs, subscriptions, or trial periods. Every feature is free forever. We built this tool because we love maps and wanted to share it with the world.',
+                    text: 'Carto-Art offers a generous free tier with no hidden costs or trial periods. Core features including map customization and high-resolution image exports are free. Premium features like GIF and video exports are available with Carto Plus subscription. We built this tool because we love maps and wanted to share it with the world.',
                 },
             },
             {

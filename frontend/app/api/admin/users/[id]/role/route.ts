@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { ensureAdmin } from '@/lib/admin-auth';
 import { NextResponse } from 'next/server';
 
@@ -11,7 +11,7 @@ export async function PATCH(
         const { id } = await params;
         const { is_admin } = await req.json();
 
-        const supabase = await createClient();
+        const supabase = createServiceRoleClient();
         const { data: user, error } = await (supabase as any)
             .from('profiles')
             .update({ is_admin })

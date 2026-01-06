@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ControlSlider, ControlLabel } from '@/components/ui/control-components';
 import { EXPORT_RESOLUTIONS, DEFAULT_EXPORT_RESOLUTION, type ExportResolutionKey } from '@/lib/export/constants';
@@ -13,6 +13,7 @@ import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { Sparkles, Lock, Check } from 'lucide-react';
 import { createCheckoutSession } from '@/lib/actions/subscription';
 import { Film, RotateCw } from 'lucide-react';
+import type { ExportUsageResult } from '@/lib/actions/usage';
 
 interface ExportOptionsModalProps {
     isOpen: boolean;
@@ -25,6 +26,7 @@ interface ExportOptionsModalProps {
     format: PosterConfig['format'];
     onFormatChange: (format: Partial<PosterConfig['format']>) => void;
     subscriptionTier?: 'free' | 'carto_plus';
+    exportUsage?: ExportUsageResult | null;
 }
 
 export function ExportOptionsModal({
@@ -37,7 +39,8 @@ export function ExportOptionsModal({
     videoProgress,
     format,
     onFormatChange,
-    subscriptionTier = 'free'
+    subscriptionTier = 'free',
+    exportUsage
 }: ExportOptionsModalProps) {
     const [selectedKey, setSelectedKey] = useState<string>('SMALL');
     const [gifDuration, setGifDuration] = useState(7);
@@ -48,9 +51,47 @@ export function ExportOptionsModal({
     const [videoFps, setVideoFps] = useState(60);
     const [gifAnimationMode, setGifAnimationMode] = useState<'orbit' | 'cinematic'>('orbit');
     const [videoAnimationMode, setVideoAnimationMode] = useState<'orbit' | 'cinematic'>('orbit');
+    const [countdown, setCountdown] = useState<string | null>(null);
     const isGifExportEnabled = useFeatureFlag('gif_export');
     const isVideoExportEnabled = useFeatureFlag('video_export');
     const isPaywallEnabled = useFeatureFlag('carto_plus');
+
+    // Calculate countdown timer when limit is reached
+    useEffect(() => {
+        if (!exportUsage?.nextAvailableAt) {
+            setCountdown(null);
+            return;
+        }
+
+        const updateCountdown = () => {
+            const now = Date.now();
+            const target = new Date(exportUsage.nextAvailableAt!).getTime();
+            const diff = target - now;
+
+            if (diff <= 0) {
+                setCountdown(null);
+                return;
+            }
+
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            if (hours > 0) {
+                setCountdown(`${hours}h ${minutes}m ${seconds}s`);
+            } else if (minutes > 0) {
+                setCountdown(`${minutes}m ${seconds}s`);
+            } else {
+                setCountdown(`${seconds}s`);
+            }
+        };
+
+        updateCountdown();
+        const interval = setInterval(updateCountdown, 1000);
+        return () => clearInterval(interval);
+    }, [exportUsage?.nextAvailableAt]);
+
+    const isExportLimitReached = exportUsage && !exportUsage.allowed && subscriptionTier === 'free';
 
     const isLocked = (key: string) => {
         if (!isPaywallEnabled || subscriptionTier === 'carto_plus') return false;
@@ -145,8 +186,71 @@ export function ExportOptionsModal({
                                 </div>
                             </div>
                         </div>
+                    ) : isExportLimitReached ? (
+                        /* Limit Reached State */
+                        <div className="py-8 space-y-6">
+                            <div className="flex flex-col items-center justify-center text-center space-y-4">
+                                <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                                    <Clock className="w-8 h-8 text-amber-500" />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                                        Daily Export Limit Reached
+                                    </h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
+                                        You&apos;ve used all {exportUsage?.limit} free exports for today.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {countdown && (
+                                <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl text-center">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                        Next free export available in
+                                    </p>
+                                    <p className="text-2xl font-mono font-bold text-gray-900 dark:text-white">
+                                        {countdown}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Upgrade CTA */}
+                            <div className="bg-gradient-to-r from-indigo-500 from-10% via-sky-500 via-30% to-emerald-500 to-90% p-[1px] rounded-xl">
+                                <div className="bg-white dark:bg-gray-900 rounded-[11px] p-5">
+                                    <div className="text-center space-y-3">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <Sparkles className="w-5 h-5 text-amber-500 fill-amber-500" />
+                                            <h4 className="font-bold text-gray-900 dark:text-white">
+                                                Upgrade to Carto Plus
+                                            </h4>
+                                        </div>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                                            Get unlimited exports, GIF/Video animations, and more.
+                                        </p>
+                                        <button
+                                            onClick={handleUpgrade}
+                                            className="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-semibold hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                                        >
+                                            Upgrade Now
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     ) : (
                         <>
+                            {/* Remaining exports indicator for free tier */}
+                            {subscriptionTier === 'free' && exportUsage && exportUsage.limit !== Infinity && (
+                                <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900/20 px-4 py-2.5 rounded-xl border border-blue-100 dark:border-blue-800 mb-4">
+                                    <span className="text-sm text-blue-700 dark:text-blue-300">
+                                        Exports remaining today
+                                    </span>
+                                    <span className="font-semibold text-blue-700 dark:text-blue-300">
+                                        {exportUsage.remaining}/{exportUsage.limit}
+                                    </span>
+                                </div>
+                            )}
+
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Select the resolution for your export. Higher resolution results in better print quality but larger file size.
                             </p>

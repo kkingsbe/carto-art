@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { isAdmin } from '@/lib/admin-auth';
 import { NextResponse } from 'next/server';
 
@@ -11,7 +11,7 @@ export async function GET(req: Request) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    const supabase = await createClient();
+    const supabase = createServiceRoleClient();
 
     const { data: events, error, count } = await supabase
         .from('page_events')

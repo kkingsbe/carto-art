@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { ensureAdmin } from '@/lib/admin-auth';
 import { NextResponse } from 'next/server';
 
@@ -8,9 +8,10 @@ export async function GET(req: Request) {
         const { searchParams } = new URL(req.url);
         const limit = parseInt(searchParams.get('limit') || '50');
         const offset = parseInt(searchParams.get('offset') || '0');
+        const userId = searchParams.get('userId');
 
-        const supabase = await createClient();
-        const { data: events, error, count } = await supabase
+        const supabase = createServiceRoleClient();
+        let query = supabase
             .from('page_events')
             .select(`
                 *,
@@ -19,7 +20,13 @@ export async function GET(req: Request) {
                     display_name,
                     avatar_url
                 )
-            `, { count: 'exact' })
+            `, { count: 'exact' });
+
+        if (userId) {
+            query = query.eq('user_id', userId);
+        }
+
+        const { data: events, error, count } = await query
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1);
 

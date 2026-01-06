@@ -19,6 +19,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { UserActivityDialog } from '@/components/admin/UserActivityDialog';
+import { Activity } from 'lucide-react';
 
 interface Profile {
     id: string;
@@ -48,6 +50,8 @@ export default function UsersPage() {
         field: 'created_at',
         order: 'desc'
     });
+    const [selectedUser, setSelectedUser] = useState<{ id: string; username: string } | null>(null);
+    const [isActivityOpen, setIsActivityOpen] = useState(false);
 
     useEffect(() => {
         fetchUsers();
@@ -308,14 +312,28 @@ export default function UsersPage() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => toggleAdmin(user.id, user.is_admin)}
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                            >
-                                                {user.is_admin ? 'Demote' : 'Promote'}
-                                            </Button>
+                                            <div className="flex items-center justify-end gap-2">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setSelectedUser({ id: user.id, username: user.username });
+                                                        setIsActivityOpen(true);
+                                                    }}
+                                                    className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2"
+                                                >
+                                                    <Activity className="w-3.5 h-3.5" />
+                                                    Activity
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => toggleAdmin(user.id, user.is_admin)}
+                                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    {user.is_admin ? 'Demote' : 'Promote'}
+                                                </Button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -324,6 +342,13 @@ export default function UsersPage() {
                     </table>
                 </div>
             </div>
+
+            <UserActivityDialog
+                isOpen={isActivityOpen}
+                onClose={() => setIsActivityOpen(false)}
+                userId={selectedUser?.id || null}
+                username={selectedUser?.username || null}
+            />
         </div>
     );
 }

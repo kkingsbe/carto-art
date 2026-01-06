@@ -88,7 +88,7 @@ Carto-Art exports at 24×36" print-ready quality with no watermarks. Perfect for
 3. **Consider a set**: Create maps of multiple meaningful locations
 4. **Gift it**: Parents and wedding party love personalized map art
 
-Ready to create your wedding map? [Start designing now](/editor) - it's completely free!
+Ready to create your wedding map? [Start designing now](/editor) - free to start!
     `,
     },
     'best-map-poster-ideas-new-home': {
@@ -168,7 +168,7 @@ Giving a map poster as a housewarming gift? Include:
 - Coordinates of their new home
 - Frame it for extra thoughtfulness
 
-[Create your new home map poster now](/editor) - completely free, no signup required!
+[Create your new home map poster now](/editor) - free to start, no signup required!
     `,
     },
 };

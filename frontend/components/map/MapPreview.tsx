@@ -58,6 +58,7 @@ export function MapPreview({
   const [isLoading, setIsLoading] = useState(true);
   const [hasRenderedOnce, setHasRenderedOnce] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [isWebGLError, setIsWebGLError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isMoving, setIsMoving] = useState(false);
 
@@ -148,12 +149,27 @@ export function MapPreview({
     const safeError = {
       message: e.error?.message || e.message || 'Unknown map error',
       status: e.error?.status,
-      url: e.error?.url
+      url: e.error?.url,
+      type: e.error?.type || e.type
     };
 
     logger.error('MapLibre error details:', safeError);
     setHasError(true);
-    const msg = safeError.message || 'Unable to load map data';
+
+    // Check for WebGL context creation errors
+    const isWebGLError =
+      safeError.type === 'webglcontextcreationerror' ||
+      safeError.message?.toLowerCase().includes('webgl') ||
+      safeError.message?.toLowerCase().includes('gl_vendor');
+
+    let msg: string;
+    if (isWebGLError) {
+      setIsWebGLError(true);
+      msg = 'WebGL is not available on your device. This is required for map rendering.';
+    } else {
+      msg = safeError.message || 'Unable to load map data';
+    }
+
     setErrorMessage(msg);
     if (onError) {
       onError(safeError);
@@ -273,16 +289,30 @@ export function MapPreview({
       {(hasError || isEdgeCase) && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-900 z-25">
           <div className="text-center p-8 max-w-md">
-            <div className="text-4xl mb-4">🗺️</div>
+            <div className="text-4xl mb-4">{isWebGLError ? '⚠️' : '🗺️'}</div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              {hasError ? 'Map Loading Error' : 'Limited Map Data'}
+              {hasError ? (isWebGLError ? 'WebGL Not Available' : 'Map Loading Error') : 'Limited Map Data'}
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               {hasError ? errorMessage || 'Unable to load map data.' : 'Map data may be limited.'}
             </p>
+
+            {isWebGLError && (
+              <div className="text-left bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-4">
+                <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Try these steps:</p>
+                <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1.5">
+                  <li>• Enable hardware acceleration in your browser settings</li>
+                  <li>• Update your graphics drivers</li>
+                  <li>• Try a different browser (Chrome, Firefox, Edge)</li>
+                  <li>• Disable browser extensions that may block WebGL</li>
+                </ul>
+              </div>
+            )}
+
             <button
               onClick={() => {
                 setHasError(false);
+                setIsWebGLError(false);
                 setErrorMessage(null);
                 if (mapRef.current) mapRef.current.getMap().resize();
               }}

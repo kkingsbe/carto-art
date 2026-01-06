@@ -4,12 +4,12 @@
 
 ## What is Carto-Art?
 
-Carto-Art is a free, browser-based tool for creating personalized map posters and wall art. Users can search for any location worldwide, customize the map style, colors, typography, and export high-resolution images suitable for professional printing. The tool is 100% free with no watermarks, subscriptions, or hidden costs.
+Carto-Art is a browser-based tool for creating personalized map posters and wall art. Users can search for any location worldwide, customize the map style, colors, typography, and export high-resolution images suitable for professional printing. The tool offers a generous free tier with optional premium features for advanced exports.
 
 ## Key Features
 
 - **Custom Map Creation**: Search any location and create personalized map posters
-- **No Watermarks**: All exports are completely free with no branding
+- **No Watermarks**: Free tier exports include no branding or watermarks
 - **Print-Ready Quality**: Export up to 24×36 inches at 300 DPI (7200×10800 pixels)
 - **Multiple Map Styles**: Choose from various cartographic styles including standard, satellite, terrain, and artistic themes
 - **3D Terrain Visualization**: Enable volumetric 3D terrain for mountainous regions
@@ -36,7 +36,7 @@ Carto-Art is a free, browser-based tool for creating personalized map posters an
 ## Frequently Asked Questions
 
 **Is Carto-Art really free?**
-Yes, completely free. No hidden costs, subscriptions, or trial periods. Every feature is free forever.
+Carto-Art offers a generous free tier with no hidden costs or trial periods. Premium features like GIF and video exports are available with Carto Plus subscription.
 
 **Do I need to create an account?**
 No. You can design and export posters anonymously. Accounts are optional for saving work and publishing to the gallery.

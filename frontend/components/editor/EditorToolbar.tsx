@@ -15,6 +15,7 @@ import { SaveButton } from '@/components/controls/SaveButton';
 import { SaveCopyButton } from '@/components/controls/SaveCopyButton';
 import { ExportButton } from '@/components/controls/ExportButton';
 import type { PosterConfig } from '@/types/poster';
+import type { ExportUsageResult } from '@/lib/actions/usage';
 
 interface EditorToolbarProps {
     onUndo: () => void;
@@ -44,6 +45,8 @@ interface EditorToolbarProps {
     showCopyStateButton?: boolean;
     exportCount?: number;
     subscriptionTier?: 'free' | 'carto_plus';
+    exportUsage?: ExportUsageResult | null;
+    onExportComplete?: () => void;
 }
 
 export function EditorToolbar({
@@ -73,7 +76,9 @@ export function EditorToolbar({
     onCopyState,
     showCopyStateButton,
     exportCount,
-    subscriptionTier
+    subscriptionTier,
+    exportUsage,
+    onExportComplete
 }: EditorToolbarProps) {
     return (
         <div className="absolute top-2 right-2 md:top-6 md:right-8 z-45 pointer-events-auto flex items-center gap-2 md:gap-3 flex-wrap justify-end max-w-[calc(100vw-4rem)]">
@@ -187,6 +192,9 @@ export function EditorToolbar({
                         hasUnsavedChanges={hasUnsavedChanges}
                         onFormatChange={onFormatChange}
                         exportCount={exportCount}
+                        subscriptionTier={subscriptionTier}
+                        exportUsage={exportUsage}
+                        onExportComplete={onExportComplete}
                     />
                 </div>
             </div>
