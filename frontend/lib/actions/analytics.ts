@@ -29,19 +29,19 @@ export async function incrementMapView(mapId: string) {
         const visitorHash = getVisitorHash(ip, userAgent);
 
         // 2. Check Map Owner
-        const { data: map, error: mapError } = await supabase
+        const { data: mapData, error: mapError } = await supabase
             .from('maps')
             .select('user_id')
             .eq('id', mapId)
-            .single();
+            .maybeSingle();
 
-        if (mapError || !map) {
+        if (mapError || !mapData) {
             // Map not found, can't track
             return;
         }
 
         // Don't count owner's views
-        if (user && map.user_id === user.id) {
+        if (user && mapData.user_id === user.id) {
             return;
         }
 
