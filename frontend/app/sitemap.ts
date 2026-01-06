@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.cartoart.net';
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://cartoart.net';
 
     // Popular location pages
     const locations = [

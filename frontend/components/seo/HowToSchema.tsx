@@ -1,7 +1,7 @@
 import { StructuredData } from '@/components/seo/StructuredData';
 
 export function HowToSchema() {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.cartoart.net';
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://cartoart.net';
 
     const howToData = {
         name: 'How to Create a Custom Map Poster',

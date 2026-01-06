@@ -37,7 +37,7 @@ export async function renderMapToBuffer(config: PosterConfig, options: RenderOpt
             deviceScaleFactor: 1,
         });
 
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const appUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://cartoart.net';
         const rendererUrl = `${appUrl}/renderer`;
 
         // Navigate to renderer

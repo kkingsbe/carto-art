@@ -10,7 +10,10 @@ import {
     Loader2,
     Calendar,
     Mail,
-    Sparkles
+    Sparkles,
+    ArrowUpDown,
+    ChevronUp,
+    ChevronDown
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -29,12 +32,22 @@ interface Profile {
     first_export_at?: string;
     subscription_tier?: 'free' | 'carto_plus';
     subscription_status?: string;
+    saved_projects_count?: number;
+    total_exports?: number;
+    top_export_format?: string | null;
 }
+
+type SortField = keyof Profile | 'status';
+type SortOrder = 'asc' | 'desc';
 
 export default function UsersPage() {
     const [users, setUsers] = useState<Profile[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [sortConfig, setSortConfig] = useState<{ field: SortField; order: SortOrder }>({
+        field: 'created_at',
+        order: 'desc'
+    });
 
     useEffect(() => {
         fetchUsers();
@@ -81,10 +94,39 @@ export default function UsersPage() {
         }
     };
 
+    const handleSort = (field: SortField) => {
+        setSortConfig(prev => ({
+            field,
+            order: prev.field === field && prev.order === 'asc' ? 'desc' : 'asc'
+        }));
+    };
+
     const filteredUsers = users.filter(u =>
         u.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
         u.display_name?.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    const sortedUsers = [...filteredUsers].sort((a, b) => {
+        let aValue: any = a[sortConfig.field as keyof Profile];
+        let bValue: any = b[sortConfig.field as keyof Profile];
+
+        if (sortConfig.field === 'status') {
+            const statusOrder: any = { 'active': 3, 'at-risk': 2, 'churned': 1, 'unknown': 0 };
+            aValue = statusOrder[getChurnRisk(a.last_active_at)];
+            bValue = statusOrder[getChurnRisk(b.last_active_at)];
+        } else if (sortConfig.field === 'username') {
+            // Sort by display_name if available, else username
+            aValue = (a.display_name || a.username).toLowerCase();
+            bValue = (b.display_name || b.username).toLowerCase();
+        }
+
+        if (aValue === bValue) return 0;
+        if (aValue === null || aValue === undefined) return 1;
+        if (bValue === null || bValue === undefined) return -1;
+
+        const comparison = aValue > bValue ? 1 : -1;
+        return sortConfig.order === 'asc' ? comparison : -comparison;
+    });
 
     if (isLoading) {
         return (
@@ -93,6 +135,11 @@ export default function UsersPage() {
             </div>
         );
     }
+
+    const SortIcon = ({ field }: { field: SortField }) => {
+        if (sortConfig.field !== field) return <ArrowUpDown className="w-3.5 h-3.5 ml-1 opacity-0 group-hover/head:opacity-100 transition-opacity" />;
+        return sortConfig.order === 'asc' ? <ChevronUp className="w-3.5 h-3.5 ml-1 text-indigo-600" /> : <ChevronDown className="w-3.5 h-3.5 ml-1 text-indigo-600" />;
+    };
 
     return (
         <div className="space-y-8">
@@ -120,23 +167,74 @@ export default function UsersPage() {
                     <table className="w-full text-left">
                         <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
                             <tr>
-                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">User</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Role</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Subscription</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Status</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Joined</th>
+                                <th
+                                    className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-gray-900 group/head transition-colors"
+                                    onClick={() => handleSort('username')}
+                                >
+                                    <div className="flex items-center">
+                                        User <SortIcon field="username" />
+                                    </div>
+                                </th>
+                                <th
+                                    className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-gray-900 group/head transition-colors"
+                                    onClick={() => handleSort('is_admin')}
+                                >
+                                    <div className="flex items-center">
+                                        Role <SortIcon field="is_admin" />
+                                    </div>
+                                </th>
+                                <th
+                                    className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-gray-900 group/head transition-colors"
+                                    onClick={() => handleSort('subscription_tier')}
+                                >
+                                    <div className="flex items-center">
+                                        Subscription <SortIcon field="subscription_tier" />
+                                    </div>
+                                </th>
+                                <th
+                                    className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-gray-900 group/head transition-colors"
+                                    onClick={() => handleSort('status')}
+                                >
+                                    <div className="flex items-center">
+                                        Status <SortIcon field="status" />
+                                    </div>
+                                </th>
+                                <th
+                                    className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-gray-900 group/head transition-colors"
+                                    onClick={() => handleSort('total_exports')}
+                                >
+                                    <div className="flex items-center">
+                                        Exports <SortIcon field="total_exports" />
+                                    </div>
+                                </th>
+                                <th
+                                    className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-gray-900 group/head transition-colors"
+                                    onClick={() => handleSort('saved_projects_count')}
+                                >
+                                    <div className="flex items-center">
+                                        Projects <SortIcon field="saved_projects_count" />
+                                    </div>
+                                </th>
+                                <th
+                                    className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-gray-900 group/head transition-colors"
+                                    onClick={() => handleSort('created_at')}
+                                >
+                                    <div className="flex items-center">
+                                        Joined <SortIcon field="created_at" />
+                                    </div>
+                                </th>
                                 <th className="px-6 py-4 text-right"></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                            {filteredUsers.length === 0 ? (
+                            {sortedUsers.length === 0 ? (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
+                                    <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                                         No users found matching your search.
                                     </td>
                                 </tr>
                             ) : (
-                                filteredUsers.map((user) => (
+                                sortedUsers.map((user) => (
                                     <tr key={user.id} className="group hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-4">
@@ -191,6 +289,17 @@ export default function UsersPage() {
                                                     </Badge>
                                                 );
                                             })()}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm font-medium">{user.total_exports || 0}</div>
+                                            {user.top_export_format && (
+                                                <div className="text-xs text-gray-500 max-w-[120px] truncate" title={user.top_export_format}>
+                                                    Top: {user.top_export_format}
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm font-medium">{user.saved_projects_count || 0}</div>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-500">
                                             <div className="flex items-center gap-2">

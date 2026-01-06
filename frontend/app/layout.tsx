@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     description: "Turn any place into personalized wall art. Free forever, no watermarks, print-ready quality.",
     images: ["/hero.jpg"],
   },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://cartoart.net"),
 };
 
 export default function RootLayout({

@@ -6,7 +6,7 @@ interface StructuredDataProps {
 }
 
 export function StructuredData({ type = 'website', data }: StructuredDataProps) {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.cartoart.net';
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://cartoart.net';
 
     const getStructuredData = () => {
         switch (type) {
