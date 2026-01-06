@@ -647,7 +647,6 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
         exportCount={exportCount}
         subscriptionTier={subscriptionTier}
         exportUsage={effectiveExportUsage}
-        isAuthenticated={isAuthenticated}
         onExportComplete={refreshExportUsage}
       />
 
