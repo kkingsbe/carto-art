@@ -22,7 +22,7 @@ export async function incrementMapView(mapId: string) {
         const { data: { user } } = await supabase.auth.getUser();
 
         // 1. Get Visitor Identity
-        const headersList = headers();
+        const headersList = await headers();
         const forwardedFor = headersList.get('x-forwarded-for');
         const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : 'unknown';
         const userAgent = headersList.get('user-agent') || 'unknown';
@@ -105,7 +105,7 @@ export async function incrementProfileView(profileId: string) {
         const { data: { user } } = await supabase.auth.getUser();
 
         // 1. Get Visitor Identity
-        const headersList = headers();
+        const headersList = await headers();
         const forwardedFor = headersList.get('x-forwarded-for');
         const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : 'unknown';
         const userAgent = headersList.get('user-agent') || 'unknown';
