@@ -41,7 +41,7 @@ export async function incrementMapView(mapId: string) {
         }
 
         // Don't count owner's views
-        if (user && map.user_id === user.id) {
+        if (user && (map as any)?.user_id === user.id) {
             return;
         }
 
