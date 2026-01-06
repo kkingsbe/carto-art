@@ -30,6 +30,7 @@ interface MapDetailViewProps {
 
 export function MapDetailView({ map, comments: initialComments, userVote, isOwner }: MapDetailViewProps) {
   const [comments, setComments] = useState(initialComments);
+  const [hasWebGLError, setHasWebGLError] = useState(false);
 
   const handleCommentAdded = (newComment: Comment) => {
     setComments([...comments, newComment]);
@@ -73,15 +74,29 @@ export function MapDetailView({ map, comments: initialComments, userVote, isOwne
                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
                   }}
                 >
-                  <MapPreview
-                    mapStyle={mapStyle}
-                    location={map.config.location}
-                    format={map.config.format}
-                    showMarker={map.config.layers.marker}
-                    markerColor={map.config.layers.markerColor || map.config.palette.primary || map.config.palette.accent || map.config.palette.text}
-                    layers={map.config.layers}
-                    layerToggles={map.config.style.layerToggles}
-                  />
+                  {map.thumbnail_url ? (
+                    <img
+                      src={map.thumbnail_url}
+                      alt={map.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <MapPreview
+                      mapStyle={mapStyle}
+                      location={map.config.location}
+                      format={map.config.format}
+                      showMarker={map.config.layers.marker}
+                      markerColor={map.config.layers.markerColor || map.config.palette.primary || map.config.palette.accent || map.config.palette.text}
+                      layers={map.config.layers}
+                      layerToggles={map.config.style.layerToggles}
+                      thumbnailUrl={map.thumbnail_url}
+                      onError={(error) => {
+                        if (error.type === 'webglcontextcreationerror' || error.message?.toLowerCase().includes('webgl')) {
+                          setHasWebGLError(true);
+                        }
+                      }}
+                    />
+                  )}
                 </PosterCanvas>
               </div>
 

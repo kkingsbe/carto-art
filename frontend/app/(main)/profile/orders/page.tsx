@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { isFeatureEnabled } from '@/lib/feature-flags';
 import { getUserOrders } from '@/lib/actions/ecommerce';
 import { OrdersList } from '@/components/ecommerce/OrdersList';
 import { getProfileStats, type UserProfile } from '@/lib/actions/user';
@@ -18,6 +19,11 @@ export default async function OrdersPage() {
 
     if (!user) {
         redirect('/login?redirect=/profile/orders');
+    }
+
+    const ecommerceEnabled = await isFeatureEnabled('ecommerce', user.id);
+    if (!ecommerceEnabled) {
+        redirect('/profile');
     }
 
     // Fetch profile for the header

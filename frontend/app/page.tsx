@@ -5,6 +5,7 @@ import { FinalCTA } from '@/components/landing/FinalCTA';
 import { Footer } from '@/components/landing/Footer';
 import { FAQSchema } from '@/components/seo/FAQSchema';
 import { HowToSchema } from '@/components/seo/HowToSchema';
+import { ChangelogModal } from '@/components/changelog/ChangelogModal';
 
 export default async function LandingPage() {
   return (
@@ -16,6 +17,7 @@ export default async function LandingPage() {
       <StyleShowcase />
       <FinalCTA />
       <Footer />
+      <ChangelogModal showFloatingButton />
     </main>
   );
 }

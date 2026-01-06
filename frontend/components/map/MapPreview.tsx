@@ -36,6 +36,7 @@ interface MapPreviewProps {
   layerToggles?: LayerToggle[];
   onInteraction?: () => void;
   locked?: boolean;
+  thumbnailUrl?: string | null;
 }
 
 export function MapPreview({
@@ -52,7 +53,8 @@ export function MapPreview({
   layers,
   layerToggles,
   onInteraction,
-  locked = false
+  locked = false,
+  thumbnailUrl
 }: MapPreviewProps) {
   const mapRef = useRef<MapRef>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -288,39 +290,48 @@ export function MapPreview({
 
       {(hasError || isEdgeCase) && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-900 z-25">
-          <div className="text-center p-8 max-w-md">
-            <div className="text-4xl mb-4">{isWebGLError ? '⚠️' : '🗺️'}</div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              {hasError ? (isWebGLError ? 'WebGL Not Available' : 'Map Loading Error') : 'Limited Map Data'}
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              {hasError ? errorMessage || 'Unable to load map data.' : 'Map data may be limited.'}
-            </p>
+          {/* Show thumbnail fallback for WebGL errors when available */}
+          {isWebGLError && thumbnailUrl ? (
+            <img
+              src={thumbnailUrl}
+              alt="Map preview"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="text-center p-8 max-w-md">
+              <div className="text-4xl mb-4">{isWebGLError ? '⚠️' : '🗺️'}</div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                {hasError ? (isWebGLError ? 'WebGL Not Available' : 'Map Loading Error') : 'Limited Map Data'}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                {hasError ? errorMessage || 'Unable to load map data.' : 'Map data may be limited.'}
+              </p>
 
-            {isWebGLError && (
-              <div className="text-left bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-4">
-                <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Try these steps:</p>
-                <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1.5">
-                  <li>• Enable hardware acceleration in your browser settings</li>
-                  <li>• Update your graphics drivers</li>
-                  <li>• Try a different browser (Chrome, Firefox, Edge)</li>
-                  <li>• Disable browser extensions that may block WebGL</li>
-                </ul>
-              </div>
-            )}
+              {isWebGLError && (
+                <div className="text-left bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-4">
+                  <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Try these steps:</p>
+                  <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1.5">
+                    <li>• Enable hardware acceleration in your browser settings</li>
+                    <li>• Update your graphics drivers</li>
+                    <li>• Try a different browser (Chrome, Firefox, Edge)</li>
+                    <li>• Disable browser extensions that may block WebGL</li>
+                  </ul>
+                </div>
+              )}
 
-            <button
-              onClick={() => {
-                setHasError(false);
-                setIsWebGLError(false);
-                setErrorMessage(null);
-                if (mapRef.current) mapRef.current.getMap().resize();
-              }}
-              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              Try Again
-            </button>
-          </div>
+              <button
+                onClick={() => {
+                  setHasError(false);
+                  setIsWebGLError(false);
+                  setErrorMessage(null);
+                  if (mapRef.current) mapRef.current.getMap().resize();
+                }}
+                className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Try Again
+              </button>
+            </div>
+          )}
         </div>
       )}
 

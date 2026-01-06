@@ -156,7 +156,19 @@ export function PosterEditor() {
   // Map Interaction Helpers Logic
   const [showHelpers, setShowHelpers] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [isTouch, setIsTouch] = useState(false);
   const interactionTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    // Check for touch capability
+    const checkTouch = () => {
+      setIsTouch(window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 768);
+    };
+
+    checkTouch();
+    window.addEventListener('resize', checkTouch);
+    return () => window.removeEventListener('resize', checkTouch);
+  }, []);
 
   const clearInteractionTimer = useCallback(() => {
     if (interactionTimerRef.current) {
@@ -631,22 +643,22 @@ export function PosterEditor() {
 
             {/* Map Interaction Helpers Overlay */}
             <div
-              className={`absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md px-4 py-2.5 rounded-full border border-gray-200 dark:border-gray-700 shadow-lg pointer-events-none transition-all duration-500 z-20 ${showHelpers ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
-                }`}
+              className={`absolute left-1/2 -translate-x-1/2 flex items-center gap-3 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md px-3 py-2 md:px-4 md:py-2.5 rounded-full border border-gray-200 dark:border-gray-700 shadow-lg pointer-events-none transition-all duration-500 z-20 ${showHelpers ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
+                } ${isTouch ? 'top-4' : 'top-8'}`}
             >
-              <div className="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-300">
-                <MousePointer2 className="w-4 h-4 text-blue-500" />
-                <span>Left Click to Pan</span>
+              <div className="flex items-center gap-2 text-[10px] md:text-xs font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                <MousePointer2 className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-500" />
+                <span>{isTouch ? 'Drag to Pan' : 'Left Click to Pan'}</span>
               </div>
-              <div className="w-px h-4 bg-gray-300 dark:bg-gray-600" />
-              <div className="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-300">
-                <RotateCw className="w-4 h-4 text-blue-500" />
-                <span>Right Click to Rotate</span>
+              <div className="w-px h-3 md:h-4 bg-gray-300 dark:bg-gray-600" />
+              <div className="flex items-center gap-2 text-[10px] md:text-xs font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                <RotateCw className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-500" />
+                <span>{isTouch ? 'Two Fingers to Rotate' : 'Right Click to Rotate'}</span>
               </div>
             </div>
 
             {/* Floating Map Controls - Inside the paper */}
-            <div className="absolute bottom-4 right-4 flex flex-col items-center gap-1 z-10 md:bottom-4 md:right-4">
+            <div className="absolute bottom-4 right-4 flex flex-col items-center gap-1 z-20 md:bottom-4 md:right-4">
               <div className="flex flex-col bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                 <button
                   onClick={zoomIn}
@@ -804,42 +816,7 @@ export function PosterEditor() {
       }
 
       {/* Mobile Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-45 md:hidden bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200 dark:border-gray-700 px-4 py-3" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}>
-        <div className="flex items-center justify-center gap-3">
-          <SaveButton
-            onSave={handleSaveClick}
-            currentMapName={currentMapName}
-            hasUnsavedChanges={currentMapStatus?.hasUnsavedChanges}
-            isAuthenticated={isAuthenticated}
-            disabled={isExporting}
-            className="flex-1 justify-center py-2.5 shadow-none ring-0 h-auto"
-          />
-          <ExportButton
-            onExport={handleExport}
-            isExporting={isExporting || isGeneratingGif || isExportingVideo}
-            exportProgress={exportProgress}
-            gifProgress={progress}
-            videoProgress={videoProgress}
-            format={config.format}
-            className="flex-1 justify-center py-2.5 shadow-none h-auto"
-            showDonationModal={showDonationModal}
-            onDonationModalChange={setShowDonationModal}
-            onBuyPrint={isEcommerceEnabled ? () => {
-              setShowDonationModal(false);
-              setShowProductModal(true);
-            } : undefined}
-            subscriptionTier={subscriptionTier}
-            onSave={handleSaveClick}
-            isAuthenticated={isAuthenticated}
-            currentMapName={currentMapName}
-            hasUnsavedChanges={currentMapStatus?.hasUnsavedChanges}
-            onFormatChange={updateFormat}
-            exportCount={exportCount}
-            exportUsage={exportUsage}
-            onExportComplete={refreshExportUsage}
-          />
-        </div>
-      </div>
+
 
       <CommandMenu
         onRandomize={handleRandomize}

@@ -6,7 +6,8 @@ import { usePathname } from 'next/navigation';
 import { AuthButton } from '@/components/auth/AuthButton';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { cn } from '@/lib/utils';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Sparkles } from 'lucide-react';
+import { ChangelogModal } from '@/components/landing/ChangelogModal';
 
 import { useAdmin } from '@/hooks/useAdmin';
 
@@ -80,6 +81,17 @@ export function Navbar() {
                 </div>
 
                 <div className="flex items-center gap-4">
+                    <ChangelogModal
+                        trigger={
+                            <button className="p-2 text-foreground/60 hover:text-foreground transition-colors relative group">
+                                <Sparkles className="w-5 h-5" />
+                                <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                                </span>
+                            </button>
+                        }
+                    />
                     <NotificationBell />
                     <div className="flex items-center pl-2 border-l border-border/50">
                         <AuthButton />

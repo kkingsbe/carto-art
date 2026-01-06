@@ -43,16 +43,16 @@ export function SubscriptionStatusCard({ tier, status }: SubscriptionStatusCardP
     const isPlus = tier === 'carto_plus';
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-100 dark:border-gray-700 overflow-hidden relative">
+        <div className="glass-card rounded-xl p-6 border border-white/5 bg-white/5 relative overflow-hidden group">
             {isPlus ? (
                 <>
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none group-hover:bg-indigo-500/20 transition-colors duration-500" />
 
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                        <Sparkles className="w-5 h-5 text-indigo-500 fill-indigo-500" />
+                    <h3 className="text-lg font-semibold text-[#f5f0e8] mb-2 flex items-center gap-2">
+                        <Sparkles className="w-5 h-5 text-indigo-400 fill-indigo-400/20" />
                         Carto Plus Active
                     </h3>
-                    <p className="text-sm text-gray-500 mb-6">
+                    <p className="text-sm text-[#d4cfc4]/60 mb-6">
                         You have full access to premium exports and features.
                     </p>
 
@@ -60,26 +60,27 @@ export function SubscriptionStatusCard({ tier, status }: SubscriptionStatusCardP
                         onClick={handleManage}
                         disabled={isPending}
                         className={cn(
-                            "w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 dark:bg-gray-900",
-                            "border border-gray-200 dark:border-gray-700 rounded-lg",
-                            "text-sm font-medium text-gray-700 dark:text-gray-300",
-                            "hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors",
+                            "w-full flex items-center justify-between px-4 py-2.5 bg-[#0a0f1a]/50",
+                            "border border-white/10 rounded-lg",
+                            "text-sm font-medium text-[#d4cfc4] hover:text-[#f5f0e8]",
+                            "hover:bg-[#0a0f1a]/80 hover:border-white/20 transition-all duration-300",
                             isPending && "opacity-70 cursor-wait"
                         )}
                     >
                         <span className="flex items-center gap-2">
-                            <CreditCard className="w-4 h-4 text-gray-400" />
+                            <CreditCard className="w-4 h-4 text-[#c9a962]" />
                             Manage Subscription
                         </span>
-                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                        <ChevronRight className="w-4 h-4 text-[#d4cfc4]/40" />
                     </button>
                 </>
             ) : (
                 <>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    <h3 className="text-lg font-semibold text-[#f5f0e8] mb-2 flex items-center gap-2">
+                        <Sparkles className="w-5 h-5 text-[#c9a962]" />
                         Subscription
                     </h3>
-                    <p className="text-sm text-gray-500 mb-6">
+                    <p className="text-sm text-[#d4cfc4]/60 mb-6">
                         Unlock video exports, unlimited GIFs, and more.
                     </p>
 
@@ -88,13 +89,13 @@ export function SubscriptionStatusCard({ tier, status }: SubscriptionStatusCardP
                         disabled={isPending}
                         className={cn(
                             "w-full flex items-center justify-center gap-2 px-4 py-2.5",
-                            "bg-gradient-to-r from-indigo-600 to-purple-600 text-white",
-                            "rounded-lg text-sm font-medium",
-                            "hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-indigo-500/20",
+                            "bg-[#c9a962] text-[#0a0f1a]",
+                            "rounded-lg text-sm font-bold",
+                            "hover:bg-[#d4b472] transition-all shadow-[0_0_20px_rgba(201,169,98,0.15)] hover:shadow-[0_0_25px_rgba(201,169,98,0.3)]",
                             isPending && "opacity-70 cursor-wait"
                         )}
                     >
-                        <Sparkles className="w-4 h-4 fill-white/20" />
+                        <Sparkles className="w-4 h-4 text-[#0a0f1a]" />
                         Upgrade to Plus
                     </button>
                 </>

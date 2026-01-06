@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Map, Heart, Shield, Github, Twitter, Instagram } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { FeedbackTrigger } from '@/components/feedback';
+import { ChangelogModal } from '@/components/changelog/ChangelogModal';
 
 export function Footer() {
   return (
@@ -46,6 +47,15 @@ export function Footer() {
               <li><Link href="/editor" className="text-[#d4cfc4]/70 hover:text-[#c9a962] transition-colors">Editor</Link></li>
               <li><Link href="/gallery" className="text-[#d4cfc4]/70 hover:text-[#c9a962] transition-colors">Gallery</Link></li>
               <li><Link href="/showcase" className="text-[#d4cfc4]/70 hover:text-[#c9a962] transition-colors">Showcase</Link></li>
+              <li>
+                <ChangelogModal
+                  trigger={
+                    <button className="text-[#d4cfc4]/70 hover:text-[#c9a962] transition-colors text-left">
+                      Changelog
+                    </button>
+                  }
+                />
+              </li>
             </ul>
           </div>
 
@@ -54,6 +64,15 @@ export function Footer() {
             <ul className="space-y-4">
               <li><Link href="/developer" className="text-[#d4cfc4]/70 hover:text-[#c9a962] transition-colors">Developers</Link></li>
               <li><Link href="/docs" className="text-[#d4cfc4]/70 hover:text-[#c9a962] transition-colors">Documentation</Link></li>
+              <li>
+                <ChangelogModal
+                  trigger={
+                    <button className="text-[#d4cfc4]/70 hover:text-[#c9a962] transition-colors text-sm">
+                      Changelog
+                    </button>
+                  }
+                />
+              </li>
               <li><Link href="/blog" className="text-[#d4cfc4]/70 hover:text-[#c9a962] transition-colors">Blog</Link></li>
             </ul>
           </div>

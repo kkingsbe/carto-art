@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ControlSlider, ControlLabel } from '@/components/ui/control-components';
@@ -13,7 +13,8 @@ import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { Sparkles, Lock, Check } from 'lucide-react';
 import { createCheckoutSession } from '@/lib/actions/subscription';
 import { Film, RotateCw } from 'lucide-react';
-import type { ExportUsageResult } from '@/lib/actions/usage';
+import { trackEventAction } from '@/lib/actions/events';
+import type { ExportUsageResult } from '@/lib/actions/usage.types';
 
 interface ExportOptionsModalProps {
     isOpen: boolean;
@@ -52,9 +53,33 @@ export function ExportOptionsModal({
     const [gifAnimationMode, setGifAnimationMode] = useState<'orbit' | 'cinematic'>('orbit');
     const [videoAnimationMode, setVideoAnimationMode] = useState<'orbit' | 'cinematic'>('orbit');
     const [countdown, setCountdown] = useState<string | null>(null);
+    const hasTrackedPaywallRef = useRef(false);
     const isGifExportEnabled = useFeatureFlag('gif_export');
     const isVideoExportEnabled = useFeatureFlag('video_export');
     const isPaywallEnabled = useFeatureFlag('carto_plus');
+
+    const isExportLimitReached = exportUsage && !exportUsage.allowed && subscriptionTier === 'free';
+
+    // Track paywall shown event
+    useEffect(() => {
+        if (!isOpen) {
+            hasTrackedPaywallRef.current = false;
+            return;
+        }
+
+        if (isOpen && isExportLimitReached && !hasTrackedPaywallRef.current) {
+            console.log('Tracking paywall_shown event');
+            trackEventAction({
+                eventType: 'paywall_shown',
+                eventName: 'export_limit_reached',
+                metadata: {
+                    limit: exportUsage?.limit,
+                    used: exportUsage?.used
+                }
+            });
+            hasTrackedPaywallRef.current = true;
+        }
+    }, [isOpen, isExportLimitReached, exportUsage]);
 
     // Calculate countdown timer when limit is reached
     useEffect(() => {
@@ -90,8 +115,6 @@ export function ExportOptionsModal({
         const interval = setInterval(updateCountdown, 1000);
         return () => clearInterval(interval);
     }, [exportUsage?.nextAvailableAt]);
-
-    const isExportLimitReached = exportUsage && !exportUsage.allowed && subscriptionTier === 'free';
 
     const isLocked = (key: string) => {
         if (!isPaywallEnabled || subscriptionTier === 'carto_plus') return false;

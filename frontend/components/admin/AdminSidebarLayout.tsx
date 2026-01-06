@@ -16,7 +16,8 @@ import {
     Download,
     Menu,
     X,
-    MapPin
+    MapPin,
+    Megaphone
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,7 @@ export function AdminSidebarLayout({ children }: AdminSidebarLayoutProps) {
         { label: 'Retention', href: '/admin/analytics/retention', icon: LineChart },
         { label: 'Activity', href: '/admin/activity', icon: Activity },
         { label: 'Feedback', href: '/admin/feedback', icon: MessageSquare },
+        { label: 'Changelog', href: '/admin/changelog', icon: Megaphone },
     ];
 
     const isActive = (href: string) => {
