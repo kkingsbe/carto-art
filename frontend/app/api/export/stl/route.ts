@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
         let subscriptionTier: 'free' | 'carto_plus' = 'free';
         if (user) {
-            const { data: profile } = await supabase
+            const { data: profile } = await (supabase as any)
                 .from('profiles')
                 .select('subscription_tier')
                 .eq('id', user.id)
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
         }
 
         // 6. Return File
-        return new NextResponse(stlBuffer, {
+        return new NextResponse(new Uint8Array(stlBuffer), {
             headers: {
                 'Content-Type': 'model/stl',
                 'Content-Disposition': `attachment; filename="terrain-export.stl"`,
