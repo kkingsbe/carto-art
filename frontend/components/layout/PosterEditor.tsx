@@ -591,10 +591,6 @@ export function PosterEditor() {
           await saveCopy(name);
           trackEventAction({ eventType: 'map_publish', eventName: 'save_copy', metadata: { name } });
         }}
-        onSaveCopy={async (name) => {
-          await saveCopy(name);
-          trackEventAction({ eventType: 'map_publish', eventName: 'save_copy', metadata: { name } });
-        }}
         onExport={handleExport}
         isExporting={isExporting || isGeneratingGif || isExportingVideo || isExportingStl}
         exportProgress={exportProgress}

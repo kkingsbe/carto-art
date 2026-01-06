@@ -93,3 +93,18 @@ export function debounce<T extends (...args: any[]) => any>(
     }, wait);
   };
 }
+
+/**
+ * Gets or creates a unique session ID for analytics tracking.
+ * @returns The session ID string
+ */
+export function getSessionId(): string {
+  if (typeof window === 'undefined') return '';
+
+  let sessionId = localStorage.getItem('carto_session_id');
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    localStorage.setItem('carto_session_id', sessionId);
+  }
+  return sessionId;
+}

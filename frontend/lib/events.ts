@@ -25,7 +25,9 @@ export type EventType =
     | 'session_heartbeat'
     | 'scroll_depth'
     | 'return_visit'
-    | 'notification_click';
+    | 'notification_click'
+    | 'changelog_view'
+    | 'changelog_close';
 
 /**
  * Tracks a user event in the database for admin analytics.

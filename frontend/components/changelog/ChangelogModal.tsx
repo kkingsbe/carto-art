@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, ReactNode, useRef } from 'react';
 import { X, Sparkles, Bell } from 'lucide-react';
 import { getPublishedChangelog, type ChangelogEntry } from '@/lib/actions/changelog';
+import { trackEventAction } from '@/lib/actions/events';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { cn, getSessionId } from '@/lib/utils';
 
 const LAST_SEEN_KEY = 'changelog_last_seen';
 
@@ -18,6 +19,25 @@ export function ChangelogModal({ trigger, showFloatingButton = false }: Changelo
     const [isOpen, setIsOpen] = useState(false);
     const [entries, setEntries] = useState<ChangelogEntry[]>([]);
     const [hasNew, setHasNew] = useState(false);
+    const openTimeRef = useRef<number | null>(null);
+
+    useEffect(() => {
+        if (isOpen) {
+            openTimeRef.current = Date.now();
+            trackEventAction({
+                eventType: 'changelog_view',
+                sessionId: getSessionId(),
+            });
+        } else if (openTimeRef.current) {
+            const duration = Math.round((Date.now() - openTimeRef.current) / 1000);
+            trackEventAction({
+                eventType: 'changelog_close',
+                sessionId: getSessionId(),
+                metadata: { duration_seconds: duration }
+            });
+            openTimeRef.current = null;
+        }
+    }, [isOpen]);
 
     useEffect(() => {
         fetchAndCheck();
