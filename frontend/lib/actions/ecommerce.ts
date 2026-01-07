@@ -117,6 +117,8 @@ export async function upsertProductVariant(variant: {
     is_active?: boolean;
     display_order?: number;
     image_url?: string;
+    mockup_template_url?: string | null;
+    mockup_print_area?: any;
 }) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -157,6 +159,8 @@ export async function upsertProductVariants(variants: {
     is_active?: boolean;
     display_order?: number;
     image_url?: string;
+    mockup_template_url?: string | null;
+    mockup_print_area?: any;
 }[]) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();

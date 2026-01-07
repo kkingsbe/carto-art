@@ -4,12 +4,6 @@ import { printful } from '@/lib/printful/client';
 import { createClient } from '@/lib/supabase/server';
 import sharp from 'sharp';
 
-// Color matching tolerance for magenta placeholder
-const MAGENTA_R = 255;
-const MAGENTA_G = 0;
-const MAGENTA_B = 255;
-const TOLERANCE = 10;
-
 interface PrintArea {
     x: number;
     y: number;
@@ -18,7 +12,30 @@ interface PrintArea {
 }
 
 /**
+ * Convert RGB to HSL
+ */
+function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h = 0, s = 0;
+    const l = (max + min) / 2;
+
+    if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        h *= 60;
+    }
+    return [h, s, l];
+}
+
+/**
  * Downloads image and finds the bounding box of the magenta placeholder
+ * using HSL-based color matching for better handling of anti-aliased edges
  */
 export async function detectPrintArea(imageUrl: string): Promise<PrintArea> {
     const response = await fetch(imageUrl);
@@ -37,6 +54,14 @@ export async function detectPrintArea(imageUrl: string): Promise<PrintArea> {
     let minX = width, minY = height, maxX = 0, maxY = 0;
     let found = false;
 
+    // Magenta has a hue of ~300 degrees
+    // We use HSL matching to handle anti-aliased edges where
+    // the magenta blends with the black border (darker but same hue)
+    const MAGENTA_HUE = 300;
+    const HUE_TOLERANCE = 15; // degrees
+    const MIN_SATURATION = 0.4; // Must be somewhat saturated to be magenta
+    const MIN_LIGHTNESS = 0.15; // Must not be too dark (almost black)
+
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
             const offset = (y * width + x) * info.channels;
@@ -44,13 +69,14 @@ export async function detectPrintArea(imageUrl: string): Promise<PrintArea> {
             const g = data[offset + 1];
             const b = data[offset + 2];
 
-            // Check for magenta-ish color
-            // Standard magenta is 255, 0, 255
-            if (
-                Math.abs(r - MAGENTA_R) < TOLERANCE &&
-                Math.abs(g - MAGENTA_G) < TOLERANCE &&
-                Math.abs(b - MAGENTA_B) < TOLERANCE
-            ) {
+            const [h, s, l] = rgbToHsl(r, g, b);
+
+            // Check for magenta-ish color using HSL
+            // Magenta is at hue ~300, with high saturation
+            const hueDiff = Math.min(Math.abs(h - MAGENTA_HUE), 360 - Math.abs(h - MAGENTA_HUE));
+            const isMagenta = hueDiff < HUE_TOLERANCE && s > MIN_SATURATION && l > MIN_LIGHTNESS;
+
+            if (isMagenta) {
                 found = true;
                 minX = Math.min(minX, x);
                 minY = Math.min(minY, y);
@@ -63,11 +89,6 @@ export async function detectPrintArea(imageUrl: string): Promise<PrintArea> {
     if (!found) {
         throw new Error('Could not find magenta placeholder in template');
     }
-
-    // Add a small buffer/padding (optional, but good for safety)
-    // Actually for exact replacement we want exact coordinates.
-    // The "width/height" returned by bounds logic is inclusive indices,
-    // so width = maxX - minX + 1
 
     // Convert to percentages
     return {
@@ -200,11 +221,11 @@ export async function generateMockupTemplates(): Promise<{
 
     if (!(profile as any)?.is_admin) throw new Error('Admin only');
 
-    // Get all variants missing a mockup_template_url
+    // Get all variants missing a mockup_template_url OR having an incorrect "api-template" URL
     const { data: variants, error } = await supabase
         .from('product_variants')
         .select('id, product_id')
-        .is('mockup_template_url', null)
+        .or('mockup_template_url.is.null,mockup_template_url.ilike.%api-template%')
         .returns<{ id: number; product_id: number | null }[]>();
 
     if (error) throw error;
@@ -372,7 +393,7 @@ export async function getMissingTemplateCount(): Promise<number> {
     const { count, error } = await supabase
         .from('product_variants')
         .select('*', { count: 'exact', head: true })
-        .is('mockup_template_url', null);
+        .or('mockup_template_url.is.null,mockup_template_url.ilike.%api-template%');
 
     if (error) throw error;
     return count || 0;

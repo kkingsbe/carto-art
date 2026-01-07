@@ -24,6 +24,7 @@ export default function DebugMockupPage() {
     const [logs, setLogs] = useState<string[]>([]);
     const [variants, setVariants] = useState<any[]>([]);
     const [selectedVariantId, setSelectedVariantId] = useState<string>('');
+    const [debugStages, setDebugStages] = useState<{ name: string; url: string; description?: string }[]>([]);
 
     const handleLog = (message: string) => {
         setLogs(prev => [...prev, `${new Date().toISOString().split('T')[1]} - ${message}`]);
@@ -288,6 +289,7 @@ export default function DebugMockupPage() {
                                             printArea={printArea}
                                             // @ts-ignore - Debug prop
                                             onDebug={handleLog}
+                                            onDebugStages={setDebugStages}
                                         />
                                     ) : (
                                         <div className="flex items-center justify-center h-full text-gray-400">
@@ -313,6 +315,31 @@ export default function DebugMockupPage() {
                         </div>
                     </CardContent>
                 </Card>
+
+
+                {/* Debug Stages */}
+                {debugStages.length > 0 && (
+                    <Card className="lg:col-span-2">
+                        <CardHeader>
+                            <CardTitle>Processing Stages</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                {debugStages.map((stage, i) => (
+                                    <div key={i} className="space-y-2 border p-2 rounded-lg">
+                                        <div className="font-medium text-sm truncate" title={stage.name}>{stage.name}</div>
+                                        <div className="aspect-square relative bg-gray-100 rounded overflow-hidden">
+                                            <img src={stage.url} alt={stage.name} className="w-full h-full object-contain" />
+                                        </div>
+                                        {stage.description && (
+                                            <p className="text-xs text-muted-foreground">{stage.description}</p>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
 
             {/* Logs Console */}
@@ -330,6 +357,6 @@ export default function DebugMockupPage() {
                     </div>
                 </CardContent>
             </Card>
-        </div>
+        </div >
     );
 }

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { getProductVariants, upsertProductVariant, deleteProductVariant, deleteProductVariants } from "@/lib/actions/ecommerce";
-import { generateMockupTemplates, getMissingTemplateCount } from "@/lib/actions/printful";
+import { getProductVariants, upsertProductVariant, upsertProductVariants, deleteProductVariant, deleteProductVariants } from "@/lib/actions/ecommerce";
+import { generateMockupTemplates, getMissingTemplateCount, regenerateVariantMockup } from "@/lib/actions/printful";
 import { getSiteConfig } from "@/lib/actions/usage";
 import { CONFIG_KEYS } from "@/lib/actions/usage.types";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Trash2, Loader2, ImageIcon, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, ImageIcon, AlertTriangle, CheckCircle2, RefreshCcw, Eraser } from "lucide-react";
 
 export default function AdminProductsPage() {
     const [variants, setVariants] = useState<any[]>([]);
@@ -140,6 +140,59 @@ export default function AdminProductsPage() {
         }
     };
 
+    const handleBulkClearTemplates = async () => {
+        if (!confirm(`Are you sure you want to remove templates for ${selectedVariants.length} variants?`)) return;
+
+        try {
+            const variantsToUpdate = variants
+                .filter(v => selectedVariants.includes(v.id))
+                .map(v => ({
+                    id: v.id,
+                    name: v.name,
+                    price_cents: v.price_cents,
+                    product_id: v.product_id,
+                    mockup_template_url: null,
+                    mockup_print_area: null
+                }));
+
+            await upsertProductVariants(variantsToUpdate);
+            toast.success("Templates removed");
+            fetchVariants();
+            fetchMissingCount();
+        } catch (error: any) {
+            toast.error(error.message || "Failed to remove templates");
+        }
+    };
+
+    const handleRegenerate = async (variant: any) => {
+        const toastId = toast.loading("Regenerating template...");
+        try {
+            await regenerateVariantMockup(variant.id);
+            toast.success("Template regenerated", { id: toastId });
+            fetchVariants();
+            fetchMissingCount();
+        } catch (error: any) {
+            toast.error(error.message || "Failed to regenerate", { id: toastId });
+        }
+    };
+
+    const handleClearTemplate = async (variant: any) => {
+        if (!confirm("Are you sure you want to remove the template for this variant?")) return;
+
+        try {
+            await upsertProductVariant({
+                ...variant,
+                mockup_template_url: null,
+                mockup_print_area: null
+            });
+            toast.success("Template removed");
+            fetchVariants();
+            fetchMissingCount();
+        } catch (error: any) {
+            toast.error(error.message || "Failed to remove template");
+        }
+    };
+
     const toggleSelectAll = () => {
         if (selectedVariants.length === variants.length) {
             setSelectedVariants([]);
@@ -179,10 +232,16 @@ export default function AdminProductsPage() {
                         </Button>
                     )}
                     {selectedVariants.length > 0 && (
-                        <Button variant="destructive" onClick={handleBulkDelete}>
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete Selected ({selectedVariants.length})
-                        </Button>
+                        <>
+                            <Button variant="outline" onClick={handleBulkClearTemplates}>
+                                <Eraser className="w-4 h-4 mr-2" />
+                                Clear Templates
+                            </Button>
+                            <Button variant="destructive" onClick={handleBulkDelete}>
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete Selected ({selectedVariants.length})
+                            </Button>
+                        </>
                     )}
                     <Dialog open={isDialogOpen} onOpenChange={(open) => {
                         setIsDialogOpen(open);
@@ -313,6 +372,14 @@ export default function AdminProductsPage() {
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex justify-end gap-2">
+                                            <Button variant="ghost" size="icon" onClick={() => handleRegenerate(v)} title="Regenerate Template">
+                                                <RefreshCcw className="w-4 h-4 text-blue-500" />
+                                            </Button>
+                                            {v.mockup_template_url && (
+                                                <Button variant="ghost" size="icon" onClick={() => handleClearTemplate(v)} title="Clear Template">
+                                                    <Eraser className="w-4 h-4 text-orange-500" />
+                                                </Button>
+                                            )}
                                             <Button variant="ghost" size="icon" onClick={() => {
                                                 setEditingVariant(v);
                                                 setIsDialogOpen(true);
