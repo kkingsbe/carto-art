@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip } from '@/components/ui/tooltip';
-import { ExportOptionsModal } from '@/components/controls/ExportOptionsModal';
+import { ExportOptionsModal, type StlExportOptions } from '@/components/controls/ExportOptionsModal';
 import { ExportSuccessModal } from '@/components/controls/ExportSuccessModal';
 import type { PosterConfig } from '@/types/poster';
 import type { ExportUsageResult } from '@/lib/actions/usage.types';
@@ -34,11 +34,13 @@ interface EditorToolbarProps {
     onRandomize?: () => void;
     onSave: (name: string) => Promise<void>;
     onSaveCopy: (name: string) => Promise<void>;
-    onExport: (resolution?: any, gifOptions?: any, videoOptions?: any) => Promise<void>;
+    onExport: (resolution?: any, gifOptions?: any, videoOptions?: any, stlOptions?: any) => Promise<void>;
     isExporting: boolean;
     exportProgress: { stage: string; percent: number } | null;
     gifProgress?: number;
     videoProgress?: number;
+    gifLatestFrame?: string | null;
+    videoLatestFrame?: string | null;
     currentMapName: string | null;
     hasUnsavedChanges?: boolean;
     isAuthenticated: boolean;
@@ -71,6 +73,8 @@ export function EditorToolbar({
     exportProgress,
     gifProgress,
     videoProgress,
+    gifLatestFrame,
+    videoLatestFrame,
     currentMapName,
     hasUnsavedChanges,
     isAuthenticated,
@@ -170,9 +174,9 @@ export function EditorToolbar({
         setShowExportModal(true);
     };
 
-    const handleStartExport = async (resolution: ExportResolution, gifOptions?: GifExportOptions, videoOptions?: VideoExportOptions) => {
+    const handleStartExport = async (resolution: ExportResolution, gifOptions?: GifExportOptions, videoOptions?: VideoExportOptions, stlOptions?: StlExportOptions) => {
         try {
-            await onExport(resolution, gifOptions, videoOptions);
+            await onExport(resolution, gifOptions, videoOptions, stlOptions);
             setTimeout(() => {
                 setShowExportModal(false);
                 onDonationModalChange(true);
@@ -536,6 +540,7 @@ export function EditorToolbar({
                 exportProgress={exportProgress}
                 gifProgress={gifProgress}
                 videoProgress={videoProgress}
+                latestFrame={gifLatestFrame ?? videoLatestFrame ?? null}
                 format={format}
                 onFormatChange={onFormatChange}
                 subscriptionTier={subscriptionTier}

@@ -20,6 +20,7 @@ interface UseGifExportReturn {
     isGeneratingGifRef: React.MutableRefObject<boolean>;
     generateOrbitGif: (options?: GifExportOptions) => Promise<void>;
     progress: number;
+    latestFrame: string | null;
 }
 
 const DEFAULT_GIF_OPTIONS: GifExportOptions = {
@@ -36,6 +37,7 @@ export function useGifExport(
     const [isGeneratingGif, setIsGeneratingGif] = useState(false);
     const isGeneratingGifRef = useRef(false);
     const [progress, setProgress] = useState(0);
+    const [latestFrame, setLatestFrame] = useState<string | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
 
     const easeInOutCubic = (x: number): number => {
@@ -123,6 +125,7 @@ export function useGifExport(
                     setIsGeneratingGif(false);
                     isGeneratingGifRef.current = false;
                     setProgress(0);
+                    setLatestFrame(null);
                 }, 2000);
 
                 // Restore original state
@@ -231,6 +234,11 @@ export function useGifExport(
                 // Add frame
                 gif.addFrame(canvas, { delay: frameDelay, copy: true });
 
+                // Capture latest frame for preview (every 3rd frame to reduce overhead)
+                if (i % 3 === 0) {
+                    setLatestFrame(canvas.toDataURL('image/jpeg', 0.6));
+                }
+
                 // Update capture progress (0-50% of total)
                 setProgress(Math.round((i / totalFrames) * 50));
             }
@@ -249,6 +257,7 @@ export function useGifExport(
         isGeneratingGif,
         isGeneratingGifRef,
         generateOrbitGif,
-        progress
+        progress,
+        latestFrame
     };
 }

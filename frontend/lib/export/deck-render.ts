@@ -37,6 +37,8 @@ interface RenderDeckOptions {
     bearing: number;
     fov?: number;
     texture?: HTMLCanvasElement | HTMLImageElement | ImageBitmap | null;
+    /** Progress callback for tiled rendering */
+    onTileProgress?: (tileIndex: number, totalTiles: number) => void;
     /** Internal use for tiled rendering */
     _tileConfig?: {
         x: number;
@@ -49,11 +51,12 @@ interface RenderDeckOptions {
 /**
  * Renders deck.gl terrain to an offscreen canvas for export.
  * Automatically handles tiled rendering if dimensions exceed WebGL limits.
+ * Uses aggressive memory cleanup between tiles to enable large exports.
  */
 export async function renderDeckTerrain(options: RenderDeckOptions): Promise<HTMLCanvasElement> {
-    const { width, height, texture } = options;
+    const { width, height, texture, onTileProgress } = options;
     const maxTextureSize = getMaxTextureSize();
-    const maxSize = Math.min(maxTextureSize, 16384); // Increased from 8192 to support ultra-high res single-pass
+    const maxSize = Math.min(maxTextureSize, 4096); // Conservative limit for memory efficiency
 
     logger.info('Deck.gl render constraints', {
         width,
@@ -71,18 +74,20 @@ export async function renderDeckTerrain(options: RenderDeckOptions): Promise<HTM
     // Tiled rendering required
     const tilesX = Math.ceil(width / maxSize);
     const tilesY = Math.ceil(height / maxSize);
+    const totalTiles = tilesX * tilesY;
 
     // Validate tiling config
     if (tilesX <= 0 || tilesY <= 0) {
         throw new Error(`Invalid tiling configuration: ${tilesX}x${tilesY} tiles for ${width}x${height} area`);
     }
 
-    logger.info('Dimensions exceed WebGL limits, performing tiled deck.gl render', {
+    logger.info('Performing memory-efficient tiled deck.gl render', {
         width,
         height,
         maxSize,
         tilesX,
-        tilesY
+        tilesY,
+        totalTiles
     });
 
     const finalCanvas = document.createElement('canvas');
@@ -91,7 +96,9 @@ export async function renderDeckTerrain(options: RenderDeckOptions): Promise<HTM
     const finalCtx = finalCanvas.getContext('2d');
     if (!finalCtx) throw new Error('Could not create final composite canvas context');
 
-    // Render tiles sequentially
+    let tileIndex = 0;
+
+    // Render tiles sequentially with cleanup between each
     for (let ty = 0; ty < tilesY; ty++) {
         for (let tx = 0; tx < tilesX; tx++) {
             const tileX = tx * maxSize;
@@ -99,24 +106,52 @@ export async function renderDeckTerrain(options: RenderDeckOptions): Promise<HTM
             const tileWidth = Math.min(maxSize, width - tileX);
             const tileHeight = Math.min(maxSize, height - tileY);
 
-            logger.info(`Rendering terrain tile [${tx}, ${ty}]`, { tileX, tileY, tileWidth, tileHeight });
+            logger.info(`Rendering terrain tile [${tx}, ${ty}] (${tileIndex + 1}/${totalTiles})`, {
+                tileX, tileY, tileWidth, tileHeight
+            });
 
-            // Crop texture for this tile to stay within WebGL texture limits
-            let tileTexture = null;
-            if (texture) {
-                const cropCanvas = document.createElement('canvas');
-                cropCanvas.width = tileWidth;
-                cropCanvas.height = tileHeight;
-                const cropCtx = cropCanvas.getContext('2d');
-                if (cropCtx) {
-                    cropCtx.drawImage(texture, tileX, tileY, tileWidth, tileHeight, 0, 0, tileWidth, tileHeight);
-                    tileTexture = cropCanvas;
+            // Report progress
+            onTileProgress?.(tileIndex, totalTiles);
+
+            // Crop texture for this tile using ImageBitmap for memory efficiency
+            // ImageBitmap.close() allows explicit memory release
+            let tileTexture: ImageBitmap | null = null;
+            try {
+                if (texture) {
+                    // Use ImageBitmap cropping - more memory efficient than Canvas
+                    // This avoids creating an intermediate canvas for each tile
+                    tileTexture = await createImageBitmap(
+                        texture,
+                        tileX,
+                        tileY,
+                        tileWidth,
+                        tileHeight
+                    );
+                    logger.info('Created cropped ImageBitmap for tile', {
+                        width: tileTexture.width,
+                        height: tileTexture.height
+                    });
+                }
+            } catch (cropError) {
+                // Fallback to canvas-based cropping for older browsers
+                logger.warn('ImageBitmap cropping failed, falling back to canvas:', cropError);
+                if (texture) {
+                    const cropCanvas = document.createElement('canvas');
+                    cropCanvas.width = tileWidth;
+                    cropCanvas.height = tileHeight;
+                    const cropCtx = cropCanvas.getContext('2d');
+                    if (cropCtx) {
+                        cropCtx.drawImage(texture, tileX, tileY, tileWidth, tileHeight, 0, 0, tileWidth, tileHeight);
+                        tileTexture = await createImageBitmap(cropCanvas);
+                    }
                 }
             }
 
+            // Render the tile
             const tileCanvas = await renderSingleDeckTerrain({
                 ...options,
                 texture: tileTexture,
+                onTileProgress: undefined, // Don't pass through to avoid double-reporting
                 _tileConfig: {
                     x: tileX,
                     y: tileY,
@@ -125,14 +160,54 @@ export async function renderDeckTerrain(options: RenderDeckOptions): Promise<HTM
                 }
             });
 
+            // Composite tile onto final canvas
             finalCtx.drawImage(tileCanvas, tileX, tileY);
+
+            // === AGGRESSIVE MEMORY CLEANUP ===
+
+            // 1. Close the tile texture ImageBitmap to release GPU memory
+            if (tileTexture) {
+                tileTexture.close();
+                logger.info(`Disposed tile texture for tile [${tx}, ${ty}]`);
+            }
+
+            // 2. Clear the tile canvas to release pixel buffer
+            const tileCtx = tileCanvas.getContext('2d');
+            if (tileCtx) {
+                tileCtx.clearRect(0, 0, tileCanvas.width, tileCanvas.height);
+            }
+            // Zero out dimensions to help GC
+            tileCanvas.width = 0;
+            tileCanvas.height = 0;
+
+            // 3. Yield to event loop for GC opportunity
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            tileIndex++;
         }
     }
+
+    // Dispose original full texture if it's an ImageBitmap (caller should also do this)
+    if (texture && 'close' in texture && typeof texture.close === 'function') {
+        try {
+            (texture as ImageBitmap).close();
+            logger.info('Disposed original full texture ImageBitmap');
+        } catch {
+            // Already closed or not closeable
+        }
+    }
+
+    logger.info('Tiled terrain render complete', {
+        totalTiles,
+        finalWidth: finalCanvas.width,
+        finalHeight: finalCanvas.height
+    });
 
     return finalCanvas;
 }
 
 /**
+
  * Internal rendering function for a single tile/viewport.
  */
 async function renderSingleDeckTerrain({

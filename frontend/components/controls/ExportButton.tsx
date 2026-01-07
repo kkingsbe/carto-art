@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Download, Loader2, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ExportOptionsModal } from './ExportOptionsModal';
+import { ExportOptionsModal, type StlExportOptions } from './ExportOptionsModal';
 import { ExportSuccessModal } from './ExportSuccessModal';
 import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 import { useFeedback } from '@/components/feedback/useFeedback';
@@ -16,11 +16,13 @@ import type { VideoExportOptions } from '@/hooks/useVideoExport';
 import type { ExportUsageResult } from '@/lib/actions/usage';
 
 interface ExportButtonProps {
-  onExport: (resolution: ExportResolution, gifOptions?: GifExportOptions, videoOptions?: VideoExportOptions) => Promise<void> | void;
+  onExport: (resolution: ExportResolution, gifOptions?: GifExportOptions, videoOptions?: VideoExportOptions, stlOptions?: StlExportOptions) => Promise<void> | void;
   isExporting: boolean;
   exportProgress?: { stage: string; percent: number } | null;
   gifProgress?: number;
   videoProgress?: number;
+  gifLatestFrame?: string | null;
+  videoLatestFrame?: string | null;
   format: PosterConfig['format'];
   className?: string;
   showDonationModal: boolean;
@@ -43,6 +45,8 @@ export function ExportButton({
   exportProgress,
   gifProgress,
   videoProgress,
+  gifLatestFrame,
+  videoLatestFrame,
   format,
   className,
   showDonationModal,
@@ -64,10 +68,10 @@ export function ExportButton({
     setShowOptionsModal(true);
   };
 
-  const handleStartExport = async (resolution: ExportResolution, gifOptions?: GifExportOptions, videoOptions?: VideoExportOptions) => {
+  const handleStartExport = async (resolution: ExportResolution, gifOptions?: GifExportOptions, videoOptions?: VideoExportOptions, stlOptions?: StlExportOptions) => {
     // Keep modal open to show progress
     try {
-      await onExport(resolution, gifOptions, videoOptions);
+      await onExport(resolution, gifOptions, videoOptions, stlOptions);
       // Wait a moment for the "Done!" state to be visible
       setTimeout(() => {
         setShowOptionsModal(false);
@@ -142,6 +146,7 @@ export function ExportButton({
         exportProgress={exportProgress}
         gifProgress={gifProgress}
         videoProgress={videoProgress}
+        latestFrame={gifLatestFrame ?? videoLatestFrame ?? null}
         format={format}
         onFormatChange={onFormatChange}
         subscriptionTier={subscriptionTier}

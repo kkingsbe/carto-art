@@ -19,6 +19,7 @@ interface UseVideoExportReturn {
     isExportingVideoRef: React.MutableRefObject<boolean>;
     exportVideo: (options?: VideoExportOptions) => Promise<void>;
     progress: number;
+    latestFrame: string | null;
 }
 
 const DEFAULT_VIDEO_OPTIONS: VideoExportOptions = {
@@ -35,6 +36,7 @@ export function useVideoExport(
     const [isExportingVideo, setIsExportingVideo] = useState(false);
     const isExportingVideoRef = useRef(false);
     const [progress, setProgress] = useState(0);
+    const [latestFrame, setLatestFrame] = useState<string | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
 
     const easeInOutCubic = (x: number): number => {
@@ -150,6 +152,10 @@ export function useVideoExport(
 
                 if (blob) {
                     frames.push(blob);
+                    // Capture latest frame for preview (every 5th frame to reduce overhead)
+                    if (i % 5 === 0) {
+                        setLatestFrame(canvas.toDataURL('image/jpeg', 0.6));
+                    }
                 } else {
                     logger.error(`Failed to capture frame ${i}`);
                 }
@@ -265,6 +271,7 @@ export function useVideoExport(
                 setIsExportingVideo(false);
                 isExportingVideoRef.current = false;
                 setProgress(0);
+                setLatestFrame(null);
             }, 2000);
 
             // Restore state
@@ -296,7 +303,8 @@ export function useVideoExport(
         isExportingVideo,
         isExportingVideoRef,
         exportVideo,
-        progress
+        progress,
+        latestFrame
     };
 }
 

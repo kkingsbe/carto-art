@@ -312,62 +312,11 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
     // Draw the map. Since the map is sized to DRAW AREA (inner), we offset by marginPx
     exportCtx.drawImage(mapCanvas, marginPx, marginPx);
 
-    // Draw Volumetric Terrain (Deck.gl)
+    // Volumetric 3D Terrain is currently disabled during export
+    // The deck.gl terrain rendering causes memory issues on high-resolution exports.
+    // This is an experimental preview-only feature.
     if (config.layers.volumetricTerrain) {
-      onProgress?.('Rendering terrain...', 50);
-      logger.info('Starting 3D Terrain Render', {
-        originalPitch,
-        originalBearing,
-        adjustedZoom: originalZoom + Math.log2(mapExportScale),
-        mapExportScale
-      });
-      try {
-        // Capture map texture from the base map we just rendered
-        // We use createImageBitmap for efficient texture transfer
-        let mapTexture: ImageBitmap | null = null;
-        if (mapCanvas && mapCanvas.width > 0 && mapCanvas.height > 0) {
-          logger.info('Capturing map texture for deck.gl', { width: mapCanvas.width, height: mapCanvas.height });
-          mapTexture = await createImageBitmap(mapCanvas);
-          logger.info('Texture captured successfully', {
-            width: mapTexture.width,
-            height: mapTexture.height
-          });
-        }
-
-        // Deck.gl treats zoom as 1:1 pixel mapping. Since we scaled up the canvas,
-        // we need to increase zoom to match the larger viewport.
-        const adjustedZoom = originalZoom + Math.log2(mapExportScale);
-
-        const terrainCanvas = await renderDeckTerrain({
-          config,
-          width: drawWidth,
-          height: drawHeight,
-          center: { lng: originalCenter.lng, lat: originalCenter.lat },
-          zoom: adjustedZoom,
-          pitch: originalPitch,
-          bearing: originalBearing,
-          fov: 36.87, // Match MapLibre's default FOV
-          texture: mapTexture,
-        });
-
-        onProgress?.('Compositing terrain...', 70);
-
-        logger.info('Terrain canvas render result', {
-          width: terrainCanvas.width,
-          height: terrainCanvas.height,
-          isValid: terrainCanvas.width > 0 && terrainCanvas.height > 0
-        });
-
-        if (terrainCanvas.width > 0 && terrainCanvas.height > 0) {
-          exportCtx.drawImage(terrainCanvas, marginPx, marginPx);
-        } else {
-          throw new Error('3D Terrain rendered an empty canvas. This is likely due to a GPU resource limit or driver crash during the high-resolution render.');
-        }
-      } catch (error) {
-        // We throw the error here instead of just logging it, to fulfill the "Fail Loudly" requirement
-        const detail = error instanceof Error ? error.message : String(error);
-        throw new Error(`3D Terrain failure: ${detail}. Try lowering the "Mesh Resolution" or "Export Resolution" in the sidebar.`);
-      }
+      logger.warn('Volumetric 3D Terrain is experimental and disabled during export. The preview effect will not appear in exports.');
     }
     exportCtx.restore();
 

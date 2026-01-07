@@ -330,7 +330,7 @@ export const ControlToggle = React.forwardRef<HTMLInputElement, ToggleProps>(
 ControlToggle.displayName = "ControlToggle";
 
 interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label: string;
+  label: React.ReactNode;
   description?: string;
 }
 

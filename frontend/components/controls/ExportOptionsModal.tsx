@@ -32,6 +32,7 @@ interface ExportOptionsModalProps {
     exportProgress?: { stage: string; percent: number } | null;
     gifProgress?: number;
     videoProgress?: number;
+    latestFrame?: string | null;
     format: PosterConfig['format'];
     onFormatChange: (format: Partial<PosterConfig['format']>) => void;
     subscriptionTier?: 'free' | 'carto_plus';
@@ -47,6 +48,7 @@ export function ExportOptionsModal({
     exportProgress,
     gifProgress,
     videoProgress,
+    latestFrame,
     format,
     onFormatChange,
     subscriptionTier = 'free',
@@ -182,53 +184,150 @@ export function ExportOptionsModal({
 
                 <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
                     {isExporting ? (
-                        <div className="py-8 space-y-8 animate-in fade-in zoom-in-95 duration-300">
-                            <div className="flex flex-col items-center justify-center text-center space-y-4">
-                                <div className="relative w-24 h-24 flex items-center justify-center">
-                                    <svg className="w-full h-full -rotate-90">
-                                        <circle
-                                            cx="48"
-                                            cy="48"
-                                            r="40"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="8"
-                                            className="text-gray-100 dark:text-gray-700"
+                        <div className="animate-in fade-in zoom-in-95 duration-300">
+                            {/* Frame Preview Container */}
+                            <div className="relative rounded-2xl overflow-hidden">
+                                {/* Latest Frame Preview */}
+                                {latestFrame && (selectedKey === 'ORBIT_GIF' || selectedKey === 'ORBIT_VIDEO') ? (
+                                    <div className="relative aspect-video w-full bg-gray-900 rounded-2xl overflow-hidden">
+                                        {/* Frame Image */}
+                                        <img
+                                            src={latestFrame}
+                                            alt="Current render frame"
+                                            className="w-full h-full object-cover"
                                         />
-                                        <circle
-                                            cx="48"
-                                            cy="48"
-                                            r="40"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="8"
-                                            strokeDasharray={251.32}
-                                            strokeDashoffset={251.32 * (1 - activeProgress / 100)}
-                                            strokeLinecap="round"
-                                            className="text-blue-500 transition-all duration-500 ease-out"
-                                        />
-                                    </svg>
-                                    <span className="absolute text-xl font-bold text-gray-900 dark:text-white">
-                                        {activeProgress}%
-                                    </span>
-                                </div>
-                                <div className="space-y-2">
-                                    <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                                        {activeStage}
+
+                                        {/* Dark overlay for readability */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
+
+                                        {/* Overlay Content */}
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
+                                            {/* Export Type Badge */}
+                                            <div className={cn(
+                                                "inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm mb-4",
+                                                selectedKey === 'ORBIT_GIF'
+                                                    ? "bg-purple-500/20 text-purple-200 border border-purple-400/30"
+                                                    : "bg-rose-500/20 text-rose-200 border border-rose-400/30"
+                                            )}>
+                                                <Film className="w-3.5 h-3.5" />
+                                                <span>{selectedKey === 'ORBIT_GIF' ? 'GIF Animation' : 'Video Export'}</span>
+                                            </div>
+
+                                            {/* Circular Progress */}
+                                            <div className="relative w-24 h-24 flex items-center justify-center mb-4">
+                                                <svg className="w-full h-full -rotate-90 absolute">
+                                                    <defs>
+                                                        <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                            <stop offset="0%" stopColor="#3B82F6" />
+                                                            <stop offset="50%" stopColor="#8B5CF6" />
+                                                            <stop offset="100%" stopColor="#06B6D4" />
+                                                        </linearGradient>
+                                                    </defs>
+                                                    <circle
+                                                        cx="48"
+                                                        cy="48"
+                                                        r="40"
+                                                        fill="none"
+                                                        stroke="rgba(255,255,255,0.15)"
+                                                        strokeWidth="5"
+                                                    />
+                                                    <circle
+                                                        cx="48"
+                                                        cy="48"
+                                                        r="40"
+                                                        fill="none"
+                                                        stroke="url(#progressGradient)"
+                                                        strokeWidth="5"
+                                                        strokeDasharray={251.32}
+                                                        strokeDashoffset={251.32 * (1 - activeProgress / 100)}
+                                                        strokeLinecap="round"
+                                                        className="transition-all duration-500 ease-out drop-shadow-[0_0_12px_rgba(139,92,246,0.6)]"
+                                                    />
+                                                </svg>
+                                                <span className="text-2xl font-bold text-white drop-shadow-lg">
+                                                    {activeProgress}%
+                                                </span>
+                                            </div>
+
+                                            {/* Status */}
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+                                                <span className="text-sm font-medium text-white/90">{activeStage}</span>
+                                            </div>
+
+                                            <p className="text-xs text-white/60 text-center max-w-[200px]">
+                                                Rendering frames...
+                                            </p>
+                                        </div>
                                     </div>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                                        Please keep this window open while we prepare your high-resolution file.
-                                    </p>
-                                </div>
+                                ) : (
+                                    /* Fallback for non-animation exports (image/STL) */
+                                    <div className="py-10 space-y-8">
+                                        {/* Export Type Badge */}
+                                        <div className="flex justify-center">
+                                            <div className={cn(
+                                                "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium",
+                                                selectedKey === 'STL_MODEL'
+                                                    ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
+                                                    : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                                            )}>
+                                                {selectedKey === 'STL_MODEL' ? (
+                                                    <Box className="w-4 h-4" />
+                                                ) : (
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                    </svg>
+                                                )}
+                                                <span>{selectedKey === 'STL_MODEL' ? '3D Model' : 'High-Res Image'}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Circular Progress for static exports */}
+                                        <div className="flex flex-col items-center justify-center text-center space-y-6">
+                                            <div className="relative w-32 h-32 flex items-center justify-center">
+                                                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20 blur-xl animate-pulse" />
+                                                <svg className="w-full h-full -rotate-90 absolute">
+                                                    <defs>
+                                                        <linearGradient id="progressGradientStatic" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                            <stop offset="0%" stopColor="#3B82F6" />
+                                                            <stop offset="50%" stopColor="#8B5CF6" />
+                                                            <stop offset="100%" stopColor="#06B6D4" />
+                                                        </linearGradient>
+                                                    </defs>
+                                                    <circle cx="64" cy="64" r="56" fill="none" stroke="currentColor" strokeWidth="6" className="text-gray-100 dark:text-gray-700/50" />
+                                                    <circle cx="64" cy="64" r="56" fill="none" stroke="url(#progressGradientStatic)" strokeWidth="6" strokeDasharray={351.86} strokeDashoffset={351.86 * (1 - activeProgress / 100)} strokeLinecap="round" className="transition-all duration-700 ease-out drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
+                                                </svg>
+                                                <div className="relative z-10 flex flex-col items-center">
+                                                    <span className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-gray-700 to-gray-900 dark:from-white dark:via-gray-200 dark:to-white bg-clip-text text-transparent">
+                                                        {activeProgress}%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                                                    <span className="text-lg font-semibold text-gray-900 dark:text-white">{activeStage}</span>
+                                                </div>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs leading-relaxed">
+                                                    Preparing your high-resolution file. Please keep this window open.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
-                            {/* Progress bar (linear fallback/secondary) */}
-                            <div className="space-y-2">
-                                <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                            {/* Progress Bar - Always visible */}
+                            <div className="space-y-2 mt-6 px-2">
+                                <div className="relative w-full h-1.5 bg-gray-100 dark:bg-gray-700/50 rounded-full overflow-hidden">
                                     <div
-                                        className="h-full bg-blue-500 transition-all duration-500 ease-out"
+                                        className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-500 transition-all duration-700 ease-out rounded-full"
                                         style={{ width: `${activeProgress}%` }}
                                     />
+                                </div>
+                                <div className="flex justify-between items-center text-xs text-gray-400 dark:text-gray-500">
+                                    <span>Processing...</span>
+                                    <span className="font-mono">{activeProgress}% complete</span>
                                 </div>
                             </div>
                         </div>
@@ -878,49 +977,51 @@ export function ExportOptionsModal({
                 </div>
 
 
-                <div className="p-6 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700">
-                    <button
-                        onClick={() => {
-                            if (selectedKey === 'ORBIT_GIF') {
-                                onExport(
-                                    { width: 0, height: 0, dpi: 72, name: 'ORBIT_GIF' },
-                                    { duration: gifDuration, totalRotation: gifRotation, fps: gifFps, animationMode: gifAnimationMode }
-                                );
-                            } else if (selectedKey === 'ORBIT_VIDEO') {
-                                onExport(
-                                    { width: 0, height: 0, dpi: 72, name: 'ORBIT_VIDEO' },
-                                    undefined,
-                                    { duration: videoDuration, totalRotation: videoRotation, fps: videoFps, animationMode: videoAnimationMode }
-                                );
-                            } else if (selectedKey === 'STL_MODEL') {
-                                onExport(
-                                    { width: 0, height: 0, dpi: 72, name: 'STL_MODEL' },
-                                    undefined,
-                                    undefined,
-                                    { modelHeight: stlModelHeight, resolution: stlResolution }
-                                );
-                            } else {
-                                const base = EXPORT_RESOLUTIONS[selectedKey as ExportResolutionKey];
-                                const res = calculateTargetResolution(
-                                    base,
-                                    format.aspectRatio,
-                                    format.orientation
-                                );
-                                onExport(res);
-                            }
-                        }}
+                {!isExportLimitReached && (
+                    <div className="p-6 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700">
+                        <button
+                            onClick={() => {
+                                if (selectedKey === 'ORBIT_GIF') {
+                                    onExport(
+                                        { width: 0, height: 0, dpi: 72, name: 'ORBIT_GIF' },
+                                        { duration: gifDuration, totalRotation: gifRotation, fps: gifFps, animationMode: gifAnimationMode }
+                                    );
+                                } else if (selectedKey === 'ORBIT_VIDEO') {
+                                    onExport(
+                                        { width: 0, height: 0, dpi: 72, name: 'ORBIT_VIDEO' },
+                                        undefined,
+                                        { duration: videoDuration, totalRotation: videoRotation, fps: videoFps, animationMode: videoAnimationMode }
+                                    );
+                                } else if (selectedKey === 'STL_MODEL') {
+                                    onExport(
+                                        { width: 0, height: 0, dpi: 72, name: 'STL_MODEL' },
+                                        undefined,
+                                        undefined,
+                                        { modelHeight: stlModelHeight, resolution: stlResolution }
+                                    );
+                                } else {
+                                    const base = EXPORT_RESOLUTIONS[selectedKey as ExportResolutionKey];
+                                    const res = calculateTargetResolution(
+                                        base,
+                                        format.aspectRatio,
+                                        format.orientation
+                                    );
+                                    onExport(res);
+                                }
+                            }}
 
-                        disabled={isExporting}
-                        className={cn(
-                            "w-full py-3 rounded-xl font-semibold shadow-lg transition-all",
-                            "bg-gray-900 dark:bg-white text-white dark:text-gray-900",
-                            "hover:scale-[1.02] active:scale-[0.98]",
-                            "disabled:opacity-50 disabled:cursor-not-allowed"
-                        )}
-                    >
-                        {isExporting ? 'Export in progress...' : 'Export'}
-                    </button>
-                </div>
+                            disabled={isExporting}
+                            className={cn(
+                                "w-full py-3 rounded-xl font-semibold shadow-lg transition-all",
+                                "bg-gray-900 dark:bg-white text-white dark:text-gray-900",
+                                "hover:scale-[1.02] active:scale-[0.98]",
+                                "disabled:opacity-50 disabled:cursor-not-allowed"
+                            )}
+                        >
+                            {isExporting ? 'Export in progress...' : 'Export'}
+                        </button>
+                    </div>
+                )}
             </div>
         </div >
     );

@@ -189,6 +189,12 @@
   50% { box-shadow: 0 0 25px rgba(201, 169, 98, 0.5); }
 }
 
+/* Progress bar shimmer effect */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
 .animate-typewriter {
   overflow: hidden;
   border-right: 2px solid var(--accent-gold);

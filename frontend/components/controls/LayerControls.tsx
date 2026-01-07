@@ -81,8 +81,15 @@ export function LayerControls({ layers, rendering, onLayersChange, onRenderingCh
               {/* Volumetric Terrain Controls */}
               <div id="volumetric-terrain-control" className="pt-2 border-t border-gray-100 dark:border-gray-800">
                 <ControlCheckbox
-                  label="Volumetric 3D Terrain"
-                  description="Render terrain height"
+                  label={
+                    <span className="flex items-center gap-2">
+                      Volumetric 3D Terrain
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-medium uppercase">
+                        Experimental
+                      </span>
+                    </span>
+                  }
+                  description="Render terrain height (preview only)"
                   checked={Boolean(layers.volumetricTerrain)}
                   onChange={() => {
                     const newValue = !layers.volumetricTerrain;
