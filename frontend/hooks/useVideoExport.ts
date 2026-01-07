@@ -6,12 +6,13 @@ import { logger } from '@/lib/logger';
 import type { PosterConfig } from '@/types/poster';
 import { trackEventAction } from '@/lib/actions/events';
 import { getSessionId } from '@/lib/utils';
+import * as Mp4Muxer from 'mp4-muxer';
 
 export interface VideoExportOptions {
     duration: number; // seconds
     totalRotation: number; // degrees
     fps?: number;
-    animationMode: 'orbit' | 'cinematic';
+    animationMode: 'orbit' | 'cinematic' | 'spiral' | 'zoomIn' | 'zoomOut' | 'rise' | 'dive' | 'flyover';
 }
 
 interface UseVideoExportReturn {
@@ -58,7 +59,7 @@ export function useVideoExport(
             return;
         }
 
-        logger.info('Starting Video generation (Frame Buffer Mode)...');
+        logger.info('Starting Video generation (WebCodecs Mode)...');
         const startTime = Date.now();
 
         setIsExportingVideo(true);
@@ -75,16 +76,48 @@ export function useVideoExport(
             originalBearing = map.getBearing();
             originalPitch = map.getPitch();
 
-            const frames: Blob[] = [];
             const canvas = map.getCanvas();
+            const width = canvas.width;
+            const height = canvas.height;
+            // Ensure even dimensions for encoding
+            const evenWidth = width % 2 === 0 ? width : width - 1;
+            const evenHeight = height % 2 === 0 ? height : height - 1;
+
             const totalFrames = Math.round(duration * fps);
+
+            // Setup Muxer
+            const muxer = new Mp4Muxer.Muxer({
+                target: new Mp4Muxer.ArrayBufferTarget(),
+                video: {
+                    codec: 'avc', // H.264
+                    width: evenWidth,
+                    height: evenHeight,
+                },
+                fastStart: 'in-memory',
+            });
+
+            // Setup VideoEncoder
+            const videoEncoder = new VideoEncoder({
+                output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+                error: (e) => {
+                    logger.error('VideoEncoder error:', e);
+                    throw e;
+                },
+            });
+
+            videoEncoder.configure({
+                codec: 'avc1.4d0033', // Main Profile Level 5.1 (supports up to 4K / 4096x2304)
+                width: evenWidth,
+                height: evenHeight,
+                bitrate: 12_000_000, // 12 Mbps
+                framerate: fps,
+            });
 
             const startPitch = animationMode === 'cinematic' ? 0 : originalPitch;
             const targetPitch = animationMode === 'cinematic' ? Math.max(60, originalPitch) : originalPitch;
             const startZoom = originalZoom;
             const zoomPullback = animationMode === 'cinematic' ? 0.5 : 0;
 
-            // Phase 1: Capture Frames
             logger.info(`Starting capture of ${totalFrames} frames`);
 
             // Helper to determine when map is fully loaded
@@ -114,128 +147,115 @@ export function useVideoExport(
                 if (abortControllerRef.current?.signal.aborted) throw new Error('Aborted');
 
                 const p = i / (totalFrames - 1 || 1);
-                const targetBearing = originalBearing + (p * totalRotation);
-                let currentTargetPitch = startPitch;
-                let currentTargetZoom = startZoom;
 
-                if (animationMode === 'cinematic') {
-                    if (p < 0.2) {
-                        const t = easeInOutCubic(p / 0.2);
-                        currentTargetPitch = startPitch + (targetPitch - startPitch) * t;
-                        currentTargetZoom = startZoom - (zoomPullback * t);
-                    } else if (p < 0.8) {
-                        currentTargetPitch = targetPitch;
-                        currentTargetZoom = startZoom - zoomPullback;
-                    } else {
-                        const t = easeInOutCubic((p - 0.8) / 0.2);
-                        currentTargetPitch = targetPitch - (targetPitch - startPitch) * t;
-                        currentTargetZoom = (startZoom - zoomPullback) + (zoomPullback * t);
-                    }
+                let currentTargetBearing = originalBearing;
+                let currentTargetPitch = originalPitch;
+                let currentTargetZoom = originalZoom;
+                let currentTargetCenter = originalCenter;
+
+                switch (animationMode) {
+                    case 'orbit':
+                        currentTargetBearing = originalBearing + (p * totalRotation);
+                        break;
+                    case 'cinematic':
+                        currentTargetBearing = originalBearing + (p * (totalRotation / 4));
+                        if (p < 0.2) {
+                            const t = easeInOutCubic(p / 0.2);
+                            currentTargetPitch = startPitch + (targetPitch - startPitch) * t;
+                            currentTargetZoom = startZoom - (zoomPullback * t);
+                        } else if (p < 0.8) {
+                            currentTargetPitch = targetPitch;
+                            currentTargetZoom = startZoom - zoomPullback;
+                        } else {
+                            const t = easeInOutCubic((p - 0.8) / 0.2);
+                            currentTargetPitch = targetPitch - (targetPitch - startPitch) * t;
+                            currentTargetZoom = (startZoom - zoomPullback) + (zoomPullback * t);
+                        }
+                        break;
+                    case 'spiral':
+                        currentTargetBearing = originalBearing + (p * totalRotation);
+                        currentTargetZoom = originalZoom - (2 * p);
+                        break;
+                    case 'zoomIn':
+                        currentTargetZoom = originalZoom + (2 * p);
+                        break;
+                    case 'zoomOut':
+                        currentTargetZoom = originalZoom - (2 * p);
+                        break;
+                    case 'rise':
+                        currentTargetPitch = originalPitch + (60 - originalPitch) * p;
+                        break;
+                    case 'dive':
+                        currentTargetPitch = originalPitch + (0 - originalPitch) * p;
+                        break;
+                    case 'flyover':
+                        const moveAmount = (500 / Math.pow(2, originalZoom)) * p;
+                        const rad = (originalBearing * Math.PI) / 180;
+                        const dLng = Math.sin(rad) * moveAmount;
+                        const dLat = Math.cos(rad) * moveAmount;
+                        currentTargetCenter = {
+                            lng: originalCenter.lng + dLng,
+                            lat: originalCenter.lat + dLat,
+                        } as any; // Cast because maplibre center might be LngLat object vs {lng, lat}
+                        break;
                 }
 
-                // Set up and wait for idle
-                const idlePromise = waitForMapIdle();
+                // Update map
                 map.jumpTo({
-                    bearing: targetBearing,
+                    bearing: currentTargetBearing,
                     pitch: currentTargetPitch,
                     zoom: currentTargetZoom,
+                    center: currentTargetCenter,
                 });
-                await idlePromise;
 
-                // Extra safety wait for simple rendering
-                await new Promise(r => setTimeout(r, 50));
+                // Wait for idle
+                await waitForMapIdle();
 
-                // Capture Frame
-                const blob = await new Promise<Blob | null>(resolve =>
-                    canvas.toBlob(resolve, 'image/jpeg', 0.95)
-                );
+                // Small buffer to ensure paint is done
+                await new Promise(r => requestAnimationFrame(r));
 
-                if (blob) {
-                    frames.push(blob);
-                    // Capture latest frame for preview (every 5th frame to reduce overhead)
-                    if (i % 5 === 0) {
-                        setLatestFrame(canvas.toDataURL('image/jpeg', 0.6));
-                    }
-                } else {
-                    logger.error(`Failed to capture frame ${i}`);
-                }
+                // Capture Frame immediately
+                // We create a bitmap instead of blob to keep it on GPU/fast path
+                const bitmap = await createImageBitmap(canvas, {
+                    resizeWidth: evenWidth,
+                    resizeHeight: evenHeight,
+                    resizeQuality: 'high'
+                });
 
-                // Update Progress (0-50%)
-                setProgress(Math.round((i / totalFrames) * 50));
-            }
+                // Create VideoFrame
+                // Timestamp in microseconds
+                const timestamp = (i / fps) * 1_000_000;
+                const frame = new VideoFrame(bitmap, { timestamp });
 
-            logger.info(`Captured ${frames.length} frames. Starting encoding...`);
+                // Encode immediately
+                // This is key: we don't store the frame, we push it to encoder and drop it
+                videoEncoder.encode(frame, { keyFrame: i % (fps * 2) === 0 });
 
-            // Phase 2: Encode Video from Buffer
-            const playbackCanvas = document.createElement('canvas');
-            playbackCanvas.width = canvas.width;
-            playbackCanvas.height = canvas.height;
-            const ctx = playbackCanvas.getContext('2d');
-
-            if (!ctx) throw new Error('Failed to create playback context');
-
-            // Find supported mime type
-            const mimeTypes = [
-                'video/webm;codecs=vp9',
-                'video/webm;codecs=vp8',
-                'video/webm',
-                'video/mp4'
-            ];
-            const selectedMimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type));
-            if (!selectedMimeType) throw new Error('No supported video mime type');
-
-            const stream = playbackCanvas.captureStream(fps);
-            const recorder = new MediaRecorder(stream, {
-                mimeType: selectedMimeType,
-                videoBitsPerSecond: 12000000 // 12 Mbps
-            });
-
-            const chunks: Blob[] = [];
-            recorder.ondataavailable = (e) => {
-                if (e.data.size > 0) chunks.push(e.data);
-            };
-
-            const recordingComplete = new Promise<void>((resolve) => {
-                recorder.onstop = () => {
-                    resolve();
-                };
-            });
-
-            recorder.start();
-
-            // Playback Loop
-            const frameInterval = 1000 / fps;
-
-            // We use a recursive timeout loop to feed frames to the recorder
-            // behaving like a real-time source.
-            for (let i = 0; i < frames.length; i++) {
-                if (abortControllerRef.current?.signal.aborted) {
-                    recorder.stop();
-                    throw new Error('Aborted');
-                }
-
-                // Create ImageBitmap for fast drawing
-                const bitmap = await createImageBitmap(frames[i]);
-                ctx.drawImage(bitmap, 0, 0);
+                // Cleanup immediately
+                frame.close();
                 bitmap.close();
 
-                // Update Progress (50-100%)
-                setProgress(50 + Math.round((i / frames.length) * 50));
+                // Capture latest frame for preview (every 10th frame)
+                if (i % 10 === 0) {
+                    setLatestFrame(canvas.toDataURL('image/jpeg', 0.5));
+                }
 
-                // Wait for one frame duration to simulate real-time playback
-                await new Promise(resolve => setTimeout(resolve, frameInterval));
+                // Update Progress (0-100%)
+                setProgress(Math.round((i / totalFrames) * 100));
             }
 
-            recorder.stop();
-            await recordingComplete;
+            // Finish encoding
+            await videoEncoder.flush();
+            muxer.finalize();
+
+            const { buffer } = muxer.target;
+            const blob = new Blob([buffer], { type: 'video/mp4' });
 
             // Save File
-            const videoBlob = new Blob(chunks, { type: selectedMimeType });
-            const url = URL.createObjectURL(videoBlob);
+            const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            const ext = selectedMimeType.includes('mp4') ? 'mp4' : 'webm';
-            link.download = `orbit-video-${Date.now()}.${ext}`;
+            link.download = `orbit-video-${Date.now()}.mp4`;
             link.click();
             URL.revokeObjectURL(url);
 
@@ -254,8 +274,8 @@ export function useVideoExport(
                     style_name: config.style.name,
                     resolution: {
                         name: 'ORBIT_VIDEO',
-                        width: canvas.width,
-                        height: canvas.height,
+                        width: evenWidth,
+                        height: evenHeight,
                         dpi: 72
                     },
                     source: 'in-app',
@@ -265,8 +285,6 @@ export function useVideoExport(
             });
 
             // Cleanup
-            playbackCanvas.remove();
-
             setTimeout(() => {
                 setIsExportingVideo(false);
                 isExportingVideoRef.current = false;

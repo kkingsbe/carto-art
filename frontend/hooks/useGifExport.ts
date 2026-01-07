@@ -80,11 +80,12 @@ export function useGifExport(
             logger.info('Initial map state', { originalBearing, originalPitch, originalCenter, originalZoom, animationMode });
 
             const gif = new GIF({
-                workers: 2,
+                workers: 4, // Increased workers
                 quality: 10,
                 width: map.getCanvas().width,
                 height: map.getCanvas().height,
                 workerScript: '/gif.worker.js',
+                background: '#000000', // Ensure black background for transparency edge-cases
             });
 
             gif.on('finished', async (blob) => {
@@ -151,17 +152,16 @@ export function useGifExport(
                     const timeoutId = setTimeout(() => {
                         if (!resolved) {
                             resolved = true;
-                            logger.warn('Map idle timeout - forcing capture');
+                            // logger.warn('Map idle timeout - forcing capture');
                             map.off('idle', onIdle);
                             resolve();
                         }
-                    }, 4000); // Increased timeout for safety
+                    }, 2000); // Reduced timeout for speed
 
                     const onIdle = () => {
                         if (!resolved) {
                             resolved = true;
                             clearTimeout(timeoutId);
-                            console.log('Map idle event fired'); // Direct console log to be sure
                             resolve();
                         }
                     };
@@ -202,9 +202,6 @@ export function useGifExport(
                     }
                 }
 
-                // Set up listener before triggering the change
-                const idlePromise = waitForMapIdle();
-
                 // Update map state
                 map.jumpTo({
                     bearing: targetBearing,
@@ -212,31 +209,21 @@ export function useGifExport(
                     zoom: currentTargetZoom,
                 });
 
-                // Wait for the map to fully settle
-                await idlePromise;
+                // Wait for idle
+                await waitForMapIdle();
 
-                // Extra safety wait for canvas buffer
-                await new Promise(r => setTimeout(r, 100));
+                // Use requestAnimationFrame for tightly coupled render-capture
+                await new Promise(r => requestAnimationFrame(r));
 
-                const currentBearing = map.getBearing();
-                logger.info(`Capturing frame ${i + 1}/${totalFrames}`, {
-                    targetBearing,
-                    currentBearing,
-                    diff: Math.abs(currentBearing - targetBearing)
-                });
-
-                // Verify canvas content isn't empty (sanity check)
                 const canvas = map.getCanvas();
-                if (canvas.width === 0 || canvas.height === 0) {
-                    logger.error('Canvas has 0 dimensions!');
-                }
 
                 // Add frame
+                // We pass copy: true so gif.js copies pixel data immediately
                 gif.addFrame(canvas, { delay: frameDelay, copy: true });
 
-                // Capture latest frame for preview (every 3rd frame to reduce overhead)
-                if (i % 3 === 0) {
-                    setLatestFrame(canvas.toDataURL('image/jpeg', 0.6));
+                // Capture latest frame for preview (every 5th frame to reduce overhead)
+                if (i % 5 === 0) {
+                    setLatestFrame(canvas.toDataURL('image/jpeg', 0.5));
                 }
 
                 // Update capture progress (0-50% of total)

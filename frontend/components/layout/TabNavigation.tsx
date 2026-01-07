@@ -1,10 +1,10 @@
 'use client';
 
-import { Map as MapIcon, Type, Layout, Sparkles, Palette, User, Layers, Camera } from 'lucide-react';
+import { Map as MapIcon, Type, Layout, Sparkles, Palette, User, Layers, Camera, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
-export type Tab = 'library' | 'location' | 'camera' | 'style' | 'layers' | 'text' | 'frame' | 'account';
+export type Tab = 'library' | 'location' | 'camera' | 'style' | 'layers' | 'text' | 'frame' | 'automations' | 'account';
 
 interface TabNavigationProps {
   activeTab: Tab;
@@ -71,6 +71,7 @@ export function TabNavigation({
         <TabButton id="layers" icon={Layers} label="Layers" />
         <TabButton id="text" icon={Type} label="Text" />
         <TabButton id="frame" icon={Layout} label="Frame" />
+        <TabButton id="automations" icon={Play} label="Automations" />
       </div>
 
       <div className="mt-auto flex flex-col w-full space-y-3 pt-4 border-t border-gray-200/50 dark:border-gray-700/50">

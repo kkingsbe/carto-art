@@ -13,6 +13,7 @@ import { FormatControls } from '@/components/controls/FormatControls';
 import { VistasGallery } from '@/components/controls/VistasGallery';
 import { SavedProjects } from '@/components/controls/SavedProjects';
 import { AccountPanel } from '@/components/controls/AccountPanel';
+import { AutomationControls } from '@/components/controls/AutomationControls';
 import type { Tab } from './TabNavigation';
 import type { PosterConfig, PosterLocation, PosterStyle, ColorPalette, SavedProject } from '@/types/poster';
 
@@ -41,6 +42,10 @@ interface ControlDrawerProps {
   } | null;
   onLoadProject: (project: SavedProject) => void;
   onPublishSuccess: () => void;
+  onAnimationStart: (type: 'orbit' | 'cinematic') => void;
+  onAnimationStop: () => void;
+  isAnimationPlaying: boolean;
+  activeAnimation: 'orbit' | 'cinematic' | null;
 }
 
 export function ControlDrawer({
@@ -64,6 +69,10 @@ export function ControlDrawer({
   currentMapStatus,
   onLoadProject,
   onPublishSuccess,
+  onAnimationStart,
+  onAnimationStop,
+  isAnimationPlaying,
+  activeAnimation,
 }: ControlDrawerProps) {
   const [libraryTab, setLibraryTab] = useState<'vistas' | 'saved'>('vistas');
   const [tipDismissed, setTipDismissed] = useState(() => {
@@ -264,6 +273,15 @@ export function ControlDrawer({
                 onPublishSuccess={onPublishSuccess}
               />
             </div>
+          )}
+
+          {activeTab === 'automations' && (
+            <AutomationControls
+              onAnimationStart={onAnimationStart}
+              onAnimationStop={onAnimationStop}
+              isPlaying={isAnimationPlaying}
+              activeAnimation={activeAnimation}
+            />
           )}
         </div>
       </div>

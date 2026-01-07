@@ -9,6 +9,7 @@ import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { useMapExport } from '@/hooks/useMapExport';
 import { useGifExport, type GifExportOptions } from '@/hooks/useGifExport';
 import { useVideoExport, type VideoExportOptions } from '@/hooks/useVideoExport';
+import { useMapAnimation } from '@/hooks/useMapAnimation';
 import { useProjectManager } from '@/hooks/useProjectManager';
 import { useEditorKeyboardShortcuts } from '@/hooks/useEditorKeyboardShortcuts';
 import { useAnonExportUsage } from '@/hooks/useAnonExportUsage';
@@ -142,6 +143,7 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
   const { isExporting, isExportingRef, exportProgress, exportToPNG, setMapRef, fitToLocation, zoomIn, zoomOut } = useMapExport(config);
   const { isGeneratingGif, isGeneratingGifRef, generateOrbitGif, progress, latestFrame: gifLatestFrame } = useGifExport(mapInstanceRef, config);
   const { isExportingVideo, isExportingVideoRef, exportVideo, progress: videoProgress, latestFrame: videoLatestFrame } = useVideoExport(mapInstanceRef, config);
+  const { isPlaying: isAnimationPlaying, activeAnimation, playAnimation, stopAnimation } = useMapAnimation(mapInstanceRef);
 
   // Project Manager Hook
   const {
@@ -683,6 +685,10 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
             currentMapStatus={currentMapStatus}
             onLoadProject={loadProject}
             onPublishSuccess={refreshStatus}
+            onAnimationStart={playAnimation}
+            onAnimationStop={stopAnimation}
+            isAnimationPlaying={isAnimationPlaying}
+            activeAnimation={activeAnimation}
           />
         </div>
       </div>
@@ -716,7 +722,7 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
               layers={config.layers}
               layerToggles={config.style.layerToggles}
               onInteraction={handleMapInteraction}
-              locked={isGeneratingGif || isExportingVideo}
+              locked={isGeneratingGif || isExportingVideo || isAnimationPlaying}
               is3DMode={config.is3DMode}
             />
 
@@ -889,6 +895,10 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
                   currentMapStatus={currentMapStatus}
                   onLoadProject={loadProject}
                   onPublishSuccess={refreshStatus}
+                  onAnimationStart={playAnimation}
+                  onAnimationStop={stopAnimation}
+                  isAnimationPlaying={isAnimationPlaying}
+                  activeAnimation={activeAnimation}
                 />
               </div>
             </div>
