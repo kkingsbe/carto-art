@@ -1,21 +1,19 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe/client';
+import { printful } from '@/lib/printful/client';
+import { getSiteConfig } from '@/lib/actions/usage';
+import { CONFIG_KEYS } from '@/lib/actions/usage.types';
 import { z } from 'zod';
 import type { Database } from '@/types/database';
 
-// Define product prices (could be moved to DB or config)
-const PRICES: Record<number, number> = {
-    // Example IDs - REPLACE with actual Printful Variant IDs
-    // 18x24
-    12345: 9900, // $99.00
-    // 24x36
-    67890: 14900, // $149.00
-};
+
+
+
 
 const checkoutSchema = z.object({
     variant_id: z.number(),
-    design_file_id: z.number(), // ID from Printful
+    design_file_id: z.union([z.number(), z.string()]), // ID from Printful OR signed URL
     quantity: z.number().min(1),
     shipping: z.object({
         name: z.string(),
@@ -42,11 +40,64 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { variant_id, design_file_id, quantity, shipping } = checkoutSchema.parse(body);
 
-        // Calculate Amount
-        // TODO: Fetch Real Price / Use Config
-        // For now fallback to $99 defaults if ID not found, to allow testing
-        const unitPrice = PRICES[variant_id] || 9900;
-        const amount = unitPrice * quantity;
+        // Calculate Amount from DB
+        const { data: variant, error: variantError } = await supabase
+            .from('product_variants')
+            .select('price_cents')
+            .eq('id', variant_id)
+            .eq('is_active', true)
+            .single<{ price_cents: number }>();
+
+        if (variantError || !variant) {
+            console.error("Variant lookup failed", variantError, variant_id);
+            return NextResponse.json({ error: 'Invalid or inactive Variant ID' }, { status: 400 });
+        }
+        const basePrice = variant.price_cents;
+
+        // Apply profit margin from site config
+        const marginPercent = await getSiteConfig(CONFIG_KEYS.PRODUCT_MARGIN_PERCENT);
+        const unitPrice = Math.round(basePrice * (1 + marginPercent / 100));
+        const productAmount = unitPrice * quantity;
+
+        // Fetch Shipping Rates
+        let shippingCost = 0;
+        try {
+            const rates = await printful.getShippingRates({
+                address: {
+                    address1: shipping.address.line1,
+                    city: shipping.address.city,
+                    country_code: shipping.address.country,
+                    state_code: shipping.address.state,
+                    zip: shipping.address.postal_code,
+                },
+                items: [
+                    {
+                        variant_id: variant_id,
+                        quantity: quantity
+                    }
+                ]
+            });
+
+            if (rates.length === 0) {
+                throw new Error('No shipping rates found for this address');
+            }
+
+            // Find cheapest rate
+            const cheaptestRate = rates.reduce((min: any, curr: any) => {
+                return parseFloat(curr.rate) < parseFloat(min.rate) ? curr : min;
+            });
+
+            shippingCost = Math.round(parseFloat(cheaptestRate.rate) * 100);
+
+        } catch (error: any) {
+            console.error('Shipping Rate Error:', error);
+            return NextResponse.json(
+                { error: error.message || 'Unable to calculate shipping. Please check your address.' },
+                { status: 400 }
+            );
+        }
+
+        const amount = productAmount + shippingCost;
 
         // Create PaymentIntent
         const paymentIntent = await stripe.paymentIntents.create({
@@ -56,7 +107,9 @@ export async function POST(request: Request) {
             metadata: {
                 user_id: user.id,
                 variant_id: variant_id.toString(),
-                design_id: design_file_id.toString(),
+                design_id: typeof design_file_id === 'number'
+                    ? design_file_id.toString()
+                    : (design_file_id.length > 100 ? 'URL_PENDING' : design_file_id),
                 quantity: quantity.toString(),
             },
             shipping: {

@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 
 export default function CheckoutForm({
     amount,
-    onSuccess
+    onSuccess,
+    mockupUrl
 }: {
     amount: number;
     onSuccess: () => void;
+    mockupUrl?: string | null;
 }) {
     const stripe = useStripe();
     const elements = useElements();
@@ -47,7 +49,18 @@ export default function CheckoutForm({
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
             <div className="bg-muted p-4 rounded-md mb-4">
-                <h3 className="font-medium mb-2">Order Summary</h3>
+                <h3 className="font-medium mb-4">Order Summary</h3>
+
+                {mockupUrl && (
+                    <div className="mb-4 aspect-square relative rounded-md overflow-hidden bg-white">
+                        <img
+                            src={mockupUrl}
+                            alt="Product Preview"
+                            className="w-full h-full object-contain"
+                        />
+                    </div>
+                )}
+
                 <div className="flex justify-between">
                     <span>Framed Print</span>
                     <span>${(amount / 100).toFixed(2)}</span>

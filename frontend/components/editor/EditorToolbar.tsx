@@ -37,7 +37,7 @@ interface EditorToolbarProps {
     onExport: (resolution?: any, gifOptions?: any, videoOptions?: any) => Promise<void>;
     isExporting: boolean;
     exportProgress: { stage: string; percent: number } | null;
-    gifProgress: number;
+    gifProgress?: number;
     videoProgress?: number;
     currentMapName: string | null;
     hasUnsavedChanges?: boolean;

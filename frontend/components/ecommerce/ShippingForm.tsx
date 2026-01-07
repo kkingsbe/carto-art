@@ -1,9 +1,20 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, Controller } from "react-hook-form";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { COUNTRIES, STATES } from "@/lib/constants/shipping";
 
 export function ShippingForm() {
-    const { register, formState: { errors } } = useFormContext();
+    const { register, control, watch, formState: { errors } } = useFormContext();
+
+    const selectedCountry = watch("shipping.address.country");
+    const hasStates = selectedCountry && STATES[selectedCountry];
 
     return (
         <div className="grid gap-4 py-4">
@@ -47,12 +58,34 @@ export function ShippingForm() {
                     {(errors.shipping as any)?.address?.city && <p className="text-red-500 text-xs">{String((errors.shipping as any).address?.city?.message)}</p>}
                 </div>
                 <div className="grid gap-2">
-                    <Label htmlFor="state">State</Label>
-                    <Input
-                        id="state"
-                        placeholder="NY"
-                        {...register("shipping.address.state", { required: "State is required" })}
-                    />
+                    <Label htmlFor="state">{hasStates ? "State / Province" : "State / Region"}</Label>
+                    {hasStates ? (
+                        <Controller
+                            name="shipping.address.state"
+                            control={control}
+                            rules={{ required: "State is required" }}
+                            render={({ field }) => (
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <SelectTrigger id="state">
+                                        <SelectValue placeholder="Select state" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {STATES[selectedCountry].map((state) => (
+                                            <SelectItem key={state.code} value={state.code}>
+                                                {state.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        />
+                    ) : (
+                        <Input
+                            id="state"
+                            placeholder="NY"
+                            {...register("shipping.address.state", { required: "State is required" })}
+                        />
+                    )}
                     {(errors.shipping as any)?.address?.state && <p className="text-red-500 text-xs">{String((errors.shipping as any).address?.state?.message)}</p>}
                 </div>
             </div>
@@ -68,16 +101,25 @@ export function ShippingForm() {
                     {(errors.shipping as any)?.address?.postal_code && <p className="text-red-500 text-xs">{String((errors.shipping as any).address?.postal_code?.message)}</p>}
                 </div>
                 <div className="grid gap-2">
-                    <Label htmlFor="country">Country Code</Label>
-                    <Input
-                        id="country"
-                        placeholder="US"
-                        maxLength={2}
-                        {...register("shipping.address.country", {
-                            required: "Country is required",
-                            minLength: { value: 2, message: "Use 2-letter code (e.g. US)" },
-                            maxLength: { value: 2, message: "Use 2-letter code (e.g. US)" },
-                        })}
+                    <Label htmlFor="country">Country</Label>
+                    <Controller
+                        name="shipping.address.country"
+                        control={control}
+                        rules={{ required: "Country is required" }}
+                        render={({ field }) => (
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <SelectTrigger id="country">
+                                    <SelectValue placeholder="Select country" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {COUNTRIES.map((country) => (
+                                        <SelectItem key={country.code} value={country.code}>
+                                            {country.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
                     />
                     {(errors.shipping as any)?.address?.country && <p className="text-red-500 text-xs">{String((errors.shipping as any).address?.country?.message)}</p>}
                 </div>
@@ -85,3 +127,4 @@ export function ShippingForm() {
         </div>
     );
 }
+

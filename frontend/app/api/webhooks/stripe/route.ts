@@ -208,8 +208,9 @@ export async function POST(request: Request) {
 
             // Submit to Printful
             try {
+                // Printful external_id limit is 32 chars, UUID is 36 - remove dashes
                 const printfulOrder = await printful.createOrder({
-                    external_id: typedOrder.id,
+                    external_id: typedOrder.id.replace(/-/g, ''),
                     recipient: {
                         name: shipping?.name,
                         address1: shipping?.address?.line1,
@@ -230,7 +231,7 @@ export async function POST(request: Request) {
                             ]
                         }
                     ],
-                    confirm: true
+                    confirm: false
                 });
 
                 await (supabase as any)
@@ -247,7 +248,7 @@ export async function POST(request: Request) {
                 await (supabase as any)
                     .from('orders')
                     .update({
-                        status: 'failed',
+                        status: 'paid_fulfillment_failed',
                         shipping_name: `FAILED: ${err.message || 'Unknown error'}`.substring(0, 255)
                     })
                     .eq('id', typedOrder.id);

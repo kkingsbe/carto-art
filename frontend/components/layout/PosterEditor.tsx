@@ -627,8 +627,8 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
         onExport={handleExport}
         isExporting={isExporting || isGeneratingGif || isExportingVideo || isExportingStl}
         exportProgress={exportProgress}
-        gifProgress={progress}
-        videoProgress={videoProgress}
+        gifProgress={isGeneratingGif ? progress : undefined}
+        videoProgress={isExportingVideo ? videoProgress : undefined}
         currentMapName={currentMapName}
         hasUnsavedChanges={currentMapStatus?.hasUnsavedChanges}
         isAuthenticated={isAuthenticated}
@@ -808,6 +808,8 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
             isOpen={showProductModal}
             onClose={() => setShowProductModal(false)}
             imageUrl={exportedImage}
+            aspectRatio={config.format.aspectRatio}
+            orientation={config.format.orientation}
           />
         )
       }

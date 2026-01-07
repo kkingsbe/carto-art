@@ -497,7 +497,7 @@ export interface Database {
           stripe_payment_status: string | null;
           amount_total: number | null;
           printful_order_id: number | null;
-          status: 'pending' | 'paid' | 'fulfilled' | 'failed';
+          status: 'pending' | 'paid' | 'fulfilled' | 'failed' | 'paid_fulfillment_failed';
           shipping_name: string | null;
           shipping_address_line1: string | null;
           shipping_address_line2: string | null;
@@ -518,7 +518,7 @@ export interface Database {
           stripe_payment_status?: string | null;
           amount_total?: number | null;
           printful_order_id?: number | null;
-          status?: 'pending' | 'paid' | 'fulfilled' | 'failed';
+          status?: 'pending' | 'paid' | 'fulfilled' | 'failed' | 'paid_fulfillment_failed';
           shipping_name?: string | null;
           shipping_address_line1?: string | null;
           shipping_address_line2?: string | null;
@@ -539,7 +539,7 @@ export interface Database {
           stripe_payment_status?: string | null;
           amount_total?: number | null;
           printful_order_id?: number | null;
-          status?: 'pending' | 'paid' | 'fulfilled' | 'failed';
+          status?: 'pending' | 'paid' | 'fulfilled' | 'failed' | 'paid_fulfillment_failed';
           shipping_name?: string | null;
           shipping_address_line1?: string | null;
           shipping_address_line2?: string | null;
@@ -675,6 +675,41 @@ export interface Database {
           description?: string;
           published_at?: string;
           is_published?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      product_variants: {
+        Row: {
+          id: number;
+          product_id: number | null;
+          name: string;
+          price_cents: number;
+          is_active: boolean;
+          display_order: number;
+          image_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: number;
+          product_id?: number | null;
+          name: string;
+          price_cents: number;
+          is_active?: boolean;
+          display_order?: number;
+          image_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: number;
+          product_id?: number | null;
+          name?: string;
+          price_cents?: number;
+          is_active?: boolean;
+          display_order?: number;
+          image_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };

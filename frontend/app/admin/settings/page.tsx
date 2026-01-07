@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Settings, Loader2, Save, Download, FolderOpen } from 'lucide-react';
+import { Settings, Loader2, Save, Download, FolderOpen, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +15,11 @@ interface SiteConfig {
 }
 
 const CONFIG_LABELS: Record<string, { label: string; icon: React.ReactNode; description: string }> = {
+    'product_margin_percent': {
+        label: 'Product Margin',
+        icon: <DollarSign className="w-4 h-4" />,
+        description: 'Profit margin percentage added to product base prices (e.g., 25 = 25% markup)',
+    },
     'free_tier_daily_export_limit': {
         label: 'Daily Export Limit',
         icon: <Download className="w-4 h-4" />,
