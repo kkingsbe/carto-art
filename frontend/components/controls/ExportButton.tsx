@@ -152,6 +152,7 @@ export function ExportButton({
         subscriptionTier={subscriptionTier}
         exportUsage={exportUsage}
         isAuthenticated={isAuthenticated}
+        onBuyPrint={onBuyPrint}
       />
 
       <ExportSuccessModal

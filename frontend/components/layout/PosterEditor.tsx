@@ -652,6 +652,7 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
         subscriptionTier={subscriptionTier}
         exportUsage={effectiveExportUsage}
         onExportComplete={refreshExportUsage}
+        exportedImage={exportedImage}
       />
 
       {/* Floating Sidebar Container - Hidden on mobile */}

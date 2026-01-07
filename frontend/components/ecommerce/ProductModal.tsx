@@ -12,7 +12,8 @@ import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { getMarginAdjustedVariants } from '@/lib/actions/ecommerce';
 import { VariantCard, VariantCardSkeleton } from './VariantCard';
-import { ChevronLeft, Loader2, Check, Package, Truck, CreditCard } from 'lucide-react';
+import { FrameMockupRenderer } from './FrameMockupRenderer';
+import { ChevronLeft, Loader2, Check, Package, Truck, CreditCard, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Replace with your actual Publishable Key from environment
@@ -123,11 +124,34 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
     );
 }
 
+// Safely parse print area which might be a JSON string
+function getSafePrintArea(area: any) {
+    if (!area) return null;
+
+    let parsed = area;
+    if (typeof area === 'string') {
+        try {
+            parsed = JSON.parse(area);
+        } catch (e) {
+            console.error("Failed to parse mockup_print_area", e);
+            return null;
+        }
+    }
+
+    // Validation: ensure we have numbers
+    if (typeof parsed.x !== 'number' || typeof parsed.width !== 'number') {
+        return null;
+    }
+
+    return parsed;
+}
+
 export function ProductModal({ isOpen, onClose, imageUrl, designId, aspectRatio = '2:3', orientation = 'portrait' }: ProductModalProps) {
     const [step, setStep] = useState(1); // 1: Select, 2: Shipping, 3: Payment
     const [variants, setVariants] = useState<any[]>([]);
     const [isLoadingVariants, setIsLoadingVariants] = useState(true);
     const [selectedVariant, setSelectedVariant] = useState<any>(null);
+    const [showTemplateOnly, setShowTemplateOnly] = useState(false);
 
     // Calculate the target aspect ratio from props
     const targetAspectRatio = parseAspectRatio(aspectRatio, orientation);
@@ -180,96 +204,9 @@ export function ProductModal({ isOpen, onClose, imageUrl, designId, aspectRatio 
         }
     });
 
-    const [mockupUrl, setMockupUrl] = useState<string | null>(null);
-    const [isMockupLoading, setIsMockupLoading] = useState(false);
+    // Note: We no longer need to upload image for preview since FrameMockupRenderer
+    // works with blob URLs directly via Canvas. We only upload when proceeding to checkout.
     const [previewPublicUrl, setPreviewPublicUrl] = useState<string | null>(null);
-
-    // Initial Image Upload for Printful Access
-    useEffect(() => {
-        const uploadImageForPreview = async () => {
-            if (!imageUrl || previewPublicUrl) return;
-
-            try {
-                // If it's already a remote URL (not a blob), we might be able to use it directly 
-                // IF it is publicly accessible. But usually imageUrl here is a blob: URL from the editor.
-                if (!imageUrl.startsWith('blob:')) {
-                    setPreviewPublicUrl(imageUrl);
-                    return;
-                }
-
-                const response = await fetch(imageUrl);
-                const blob = await response.blob();
-                console.log('Upload Preview: Blob size:', blob.size, 'Type:', blob.type);
-
-                if (blob.size === 0) {
-                    console.error('Upload Preview: Blob is empty!');
-                    throw new Error('Image data is empty');
-                }
-
-                // const formData = new FormData();
-                // formData.append('file', blob, 'preview.png');
-
-                // Use API route to upload file raw (bypassing FormData issues)
-                const uploadRes = await fetch('/api/upload-design', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': blob.type || 'image/png',
-                    },
-                    body: blob,
-                });
-
-                if (!uploadRes.ok) {
-                    const errorData = await uploadRes.json();
-                    throw new Error(errorData.error || 'Failed to upload preview');
-                }
-
-                const { signedUrl } = await uploadRes.json();
-                setPreviewPublicUrl(signedUrl);
-            } catch (e) {
-                console.error("Failed to upload preview image", e);
-            }
-        };
-
-        if (isOpen && imageUrl) {
-            uploadImageForPreview();
-        }
-    }, [isOpen, imageUrl, previewPublicUrl]);
-
-    // Generate Mockup when variant changes (Debounced)
-    useEffect(() => {
-        if (selectedVariant && previewPublicUrl) {
-            setIsMockupLoading(true);
-            const timer = setTimeout(() => {
-                generateMockup(selectedVariant.id, previewPublicUrl)
-                    .finally(() => setIsMockupLoading(false));
-            }, 1000); // 1s debounce to respect rate limits
-
-            return () => clearTimeout(timer);
-        }
-    }, [selectedVariant, previewPublicUrl]);
-
-
-    const generateMockup = async (variantId: number, designUrl: string) => {
-        try {
-            const res = await fetch('/api/printful/mockup', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    variant_id: variantId,
-                    image_url: designUrl
-                })
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                if (data.mockup_url) {
-                    setMockupUrl(data.mockup_url);
-                }
-            }
-        } catch (e) {
-            console.error("Mockup generation failed", e);
-        }
-    };
 
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -385,23 +322,47 @@ export function ProductModal({ isOpen, onClose, imageUrl, designId, aspectRatio 
 
                 {step === 1 && (
                     <div className="space-y-6">
-                        {/* Mockup Preview */}
+                        {/* Mockup Preview - Now using client-side Canvas compositing */}
                         <div className="relative rounded-xl overflow-hidden border bg-gradient-to-br from-muted/50 to-muted">
-                            <div className="aspect-[4/3] relative flex items-center justify-center p-4">
-                                <img
-                                    src={mockupUrl || imageUrl}
-                                    alt="Preview"
-                                    className={cn(
-                                        "max-w-full max-h-full object-contain rounded-lg shadow-2xl transition-all duration-500",
-                                        isMockupLoading ? "opacity-50 scale-95" : "opacity-100 scale-100"
+                            {/* Toggle button for template-only view */}
+                            {selectedVariant?.mockup_template_url && (
+                                <button
+                                    onClick={() => setShowTemplateOnly(!showTemplateOnly)}
+                                    className="absolute top-2 right-2 z-10 p-2 rounded-lg bg-background/80 backdrop-blur-sm border shadow-sm hover:bg-background transition-colors"
+                                    title={showTemplateOnly ? "Show with design" : "Show template only"}
+                                >
+                                    {showTemplateOnly ? (
+                                        <Eye className="w-4 h-4" />
+                                    ) : (
+                                        <EyeOff className="w-4 h-4" />
                                     )}
-                                />
-                                {isMockupLoading && (
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/50 backdrop-blur-sm">
-                                        <Loader2 className="w-8 h-8 animate-spin text-primary mb-2" />
-                                        <div className="text-muted-foreground">${selectedVariant.display_price_cents / 100}</div>
-                                        <span className="text-sm text-muted-foreground">Generating preview...</span>
-                                    </div>
+                                </button>
+                            )}
+                            <div className="aspect-[4/3] relative flex items-center justify-center p-4">
+                                {selectedVariant?.mockup_template_url ? (
+                                    showTemplateOnly ? (
+                                        /* Template-only view */
+                                        <img
+                                            src={`/api/proxy-image?url=${encodeURIComponent(selectedVariant.mockup_template_url)}`}
+                                            alt="Template preview"
+                                            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                                        />
+                                    ) : (
+                                        <FrameMockupRenderer
+                                            templateUrl={selectedVariant.mockup_template_url}
+                                            printArea={getSafePrintArea(selectedVariant.mockup_print_area)}
+                                            designUrl={imageUrl}
+                                            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                                            alt="Product preview"
+                                        />
+                                    )
+                                ) : (
+                                    /* Fallback: show raw design if no template available */
+                                    <img
+                                        src={imageUrl}
+                                        alt="Preview"
+                                        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                                    />
                                 )}
                             </div>
                         </div>
@@ -479,7 +440,6 @@ export function ProductModal({ isOpen, onClose, imageUrl, designId, aspectRatio 
                             <CheckoutForm
                                 amount={selectedVariant.display_price_cents}
                                 onSuccess={onClose}
-                                mockupUrl={mockupUrl}
                             />
                         </Elements>
                         <Button

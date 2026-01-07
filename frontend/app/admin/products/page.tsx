@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getProductVariants, upsertProductVariant, deleteProductVariant, deleteProductVariants } from "@/lib/actions/ecommerce";
+import { generateMockupTemplates, getMissingTemplateCount } from "@/lib/actions/printful";
 import { getSiteConfig } from "@/lib/actions/usage";
 import { CONFIG_KEYS } from "@/lib/actions/usage.types";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, ImageIcon, AlertTriangle, CheckCircle2 } from "lucide-react";
 
 export default function AdminProductsPage() {
     const [variants, setVariants] = useState<any[]>([]);
@@ -35,6 +36,8 @@ export default function AdminProductsPage() {
     const [editingVariant, setEditingVariant] = useState<any>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedVariants, setSelectedVariants] = useState<number[]>([]);
+    const [isGeneratingTemplates, setIsGeneratingTemplates] = useState(false);
+    const [missingTemplateCount, setMissingTemplateCount] = useState<number>(0);
 
     const fetchVariants = async () => {
         setIsLoading(true);
@@ -55,7 +58,37 @@ export default function AdminProductsPage() {
 
     useEffect(() => {
         fetchVariants();
+        fetchMissingCount();
     }, []);
+
+    const fetchMissingCount = async () => {
+        try {
+            const count = await getMissingTemplateCount();
+            setMissingTemplateCount(count);
+        } catch (e) {
+            console.error('Failed to fetch missing template count', e);
+        }
+    };
+
+    const handleGenerateTemplates = async () => {
+        setIsGeneratingTemplates(true);
+        toast.info(`Generating templates for ${missingTemplateCount} variants. This will take ~${Math.ceil(missingTemplateCount * 10 / 60)} minutes...`);
+
+        try {
+            const result = await generateMockupTemplates();
+            if (result.errors.length > 0) {
+                toast.warning(`Generated ${result.processed} templates with ${result.errors.length} errors`);
+            } else {
+                toast.success(`Successfully generated ${result.processed} templates`);
+            }
+            fetchVariants();
+            fetchMissingCount();
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to generate templates');
+        } finally {
+            setIsGeneratingTemplates(false);
+        }
+    };
 
     const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -131,6 +164,20 @@ export default function AdminProductsPage() {
                     <p className="text-muted-foreground">Manage Printful variants and pricing.</p>
                 </div>
                 <div className="flex items-center gap-2">
+                    {missingTemplateCount > 0 && (
+                        <Button
+                            variant="outline"
+                            onClick={handleGenerateTemplates}
+                            disabled={isGeneratingTemplates}
+                        >
+                            {isGeneratingTemplates ? (
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                                <ImageIcon className="w-4 h-4 mr-2" />
+                            )}
+                            Generate Templates ({missingTemplateCount})
+                        </Button>
+                    )}
                     {selectedVariants.length > 0 && (
                         <Button variant="destructive" onClick={handleBulkDelete}>
                             <Trash2 className="w-4 h-4 mr-2" />
@@ -213,6 +260,7 @@ export default function AdminProductsPage() {
                             <TableHead>Internal Price</TableHead>
                             <TableHead>External Price</TableHead>
                             <TableHead>Order</TableHead>
+                            <TableHead>Mockup</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -220,13 +268,13 @@ export default function AdminProductsPage() {
                     <TableBody>
                         {isLoading ? (
                             <TableRow>
-                                <TableCell colSpan={8} className="text-center py-8">
+                                <TableCell colSpan={9} className="text-center py-8">
                                     <Loader2 className="w-6 h-6 animate-spin mx-auto" />
                                 </TableCell>
                             </TableRow>
                         ) : variants.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                                     No variants found.
                                 </TableCell>
                             </TableRow>
@@ -245,6 +293,19 @@ export default function AdminProductsPage() {
                                     <TableCell className="text-muted-foreground">${(v.price_cents / 100).toFixed(2)}</TableCell>
                                     <TableCell className="font-medium">${(Math.round(v.price_cents * (1 + marginPercent / 100)) / 100).toFixed(2)}</TableCell>
                                     <TableCell>{v.display_order}</TableCell>
+                                    <TableCell>
+                                        {v.mockup_template_url ? (
+                                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">
+                                                <CheckCircle2 className="w-3 h-3" />
+                                                Ready
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700">
+                                                <AlertTriangle className="w-3 h-3" />
+                                                Missing
+                                            </span>
+                                        )}
+                                    </TableCell>
                                     <TableCell>
                                         <span className={`px-2 py-1 rounded-full text-xs ${v.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                             {v.is_active ? 'Active' : 'Inactive'}

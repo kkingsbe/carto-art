@@ -57,6 +57,7 @@ interface EditorToolbarProps {
     subscriptionTier?: 'free' | 'carto_plus';
     exportUsage?: ExportUsageResult | null;
     onExportComplete?: () => void;
+    exportedImage?: string | null;
 }
 
 export function EditorToolbar({
@@ -90,7 +91,8 @@ export function EditorToolbar({
     exportCount,
     subscriptionTier,
     exportUsage,
-    onExportComplete
+    onExportComplete,
+    exportedImage
 }: EditorToolbarProps) {
     const router = useRouter();
 
@@ -545,6 +547,8 @@ export function EditorToolbar({
                 onFormatChange={onFormatChange}
                 subscriptionTier={subscriptionTier}
                 exportUsage={exportUsage}
+                isAuthenticated={isAuthenticated}
+                onBuyPrint={onBuyPrint}
             />
 
             {/* Export Success Modal */}
@@ -554,6 +558,7 @@ export function EditorToolbar({
                 onBuyPrint={onBuyPrint}
                 onSave={onSave}
                 isAuthenticated={isAuthenticated}
+                previewUrl={exportedImage}
                 currentMapName={currentMapName}
                 hasUnsavedChanges={hasUnsavedChanges}
                 exportCount={exportCount}

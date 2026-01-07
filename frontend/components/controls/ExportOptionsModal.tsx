@@ -15,7 +15,7 @@ import type { VideoExportOptions } from '@/hooks/useVideoExport';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { Sparkles, Lock, Check } from 'lucide-react';
 import { createCheckoutSession } from '@/lib/actions/subscription';
-import { Film, RotateCw, Box } from 'lucide-react';
+import { Film, RotateCw, Box, ShoppingBag } from 'lucide-react';
 import { trackEventAction } from '@/lib/actions/events';
 import type { ExportUsageResult } from '@/lib/actions/usage.types';
 
@@ -38,6 +38,7 @@ interface ExportOptionsModalProps {
     subscriptionTier?: 'free' | 'carto_plus';
     exportUsage?: ExportUsageResult | null;
     isAuthenticated?: boolean;
+    onBuyPrint?: () => void;
 }
 
 export function ExportOptionsModal({
@@ -53,7 +54,8 @@ export function ExportOptionsModal({
     onFormatChange,
     subscriptionTier = 'free',
     exportUsage,
-    isAuthenticated = false
+    isAuthenticated = false,
+    onBuyPrint
 }: ExportOptionsModalProps) {
     const router = useRouter();
     const [selectedKey, setSelectedKey] = useState<string>('SMALL');
@@ -978,7 +980,7 @@ export function ExportOptionsModal({
 
 
                 {!isExportLimitReached && (
-                    <div className="p-6 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700">
+                    <div className="p-6 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700 space-y-3">
                         <button
                             onClick={() => {
                                 if (selectedKey === 'ORBIT_GIF') {
@@ -1020,6 +1022,19 @@ export function ExportOptionsModal({
                         >
                             {isExporting ? 'Export in progress...' : 'Export'}
                         </button>
+
+                        {onBuyPrint && !isExporting && (
+                            <button
+                                onClick={onBuyPrint}
+                                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                            >
+                                <ShoppingBag className="w-4 h-4" />
+                                <span>Order Framed Print</span>
+                                <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                    From $35
+                                </span>
+                            </button>
+                        )}
                     </div>
                 )}
             </div>

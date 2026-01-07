@@ -260,35 +260,58 @@ export const printful = {
             files: validFiles
         });
 
-        const response = await fetch(`${PRINTFUL_API_URL}/mockup-generator/create-task/${productId}`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${API_KEY}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                variant_ids,
-                format,
-                files: validFiles
-            }),
-        });
+        // Retry logic for rate limiting
+        const maxRetries = 3;
+        let lastError: Error | null = null;
 
-        if (!response.ok) {
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            const response = await fetch(`${PRINTFUL_API_URL}/mockup-generator/create-task/${productId}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${API_KEY}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    variant_ids,
+                    format,
+                    files: validFiles
+                }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                return data.result; // user_id, task_key, status
+            }
+
             const errorBody = await response.json();
             console.error('Printful Create Mockup Task Failed:', JSON.stringify(errorBody, null, 2));
 
-            // Extract message recursively or check specific fields
+            // Handle rate limiting (429)
+            if (response.status === 429) {
+                // Parse retry-after time from error message
+                let waitSeconds = 60; // Default wait time
+                const retryMatch = errorBody.result?.match(/after (\d+) seconds/);
+                if (retryMatch) {
+                    waitSeconds = parseInt(retryMatch[1], 10) + 5; // Add 5s buffer
+                }
+
+                console.log(`Rate limited. Waiting ${waitSeconds} seconds before retry ${attempt + 1}/${maxRetries}...`);
+                await new Promise(resolve => setTimeout(resolve, waitSeconds * 1000));
+                continue;
+            }
+
+            // Extract message for other errors
             let msg = '';
             if (typeof errorBody.error === 'string') msg = errorBody.error;
             else if (errorBody.error && typeof errorBody.error === 'object' && errorBody.error.message) msg = errorBody.error.message;
             else if (errorBody.result) msg = errorBody.result;
             else msg = JSON.stringify(errorBody);
 
-            throw new Error(`Printful Error: ${msg}`);
+            lastError = new Error(`Printful Error: ${msg}`);
+            break; // Don't retry non-rate-limit errors
         }
 
-        const data = await response.json();
-        return data.result; // user_id, task_key, status
+        throw lastError || new Error('Mockup task creation failed after retries');
     },
 
     /**
