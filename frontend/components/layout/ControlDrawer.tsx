@@ -16,6 +16,7 @@ import { AccountPanel } from '@/components/controls/AccountPanel';
 import { AutomationControls } from '@/components/controls/AutomationControls';
 import type { Tab } from './TabNavigation';
 import type { PosterConfig, PosterLocation, PosterStyle, ColorPalette, SavedProject } from '@/types/poster';
+import type { AnimationType } from '@/hooks/useMapAnimation';
 
 interface ControlDrawerProps {
   activeTab: Tab;
@@ -42,10 +43,10 @@ interface ControlDrawerProps {
   } | null;
   onLoadProject: (project: SavedProject) => void;
   onPublishSuccess: () => void;
-  onAnimationStart: (type: 'orbit' | 'cinematic') => void;
+  onAnimationStart: (type: AnimationType) => void;
   onAnimationStop: () => void;
   isAnimationPlaying: boolean;
-  activeAnimation: 'orbit' | 'cinematic' | null;
+  activeAnimation: AnimationType | null;
 }
 
 export function ControlDrawer({

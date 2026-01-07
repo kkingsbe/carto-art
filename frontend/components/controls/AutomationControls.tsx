@@ -1,12 +1,12 @@
 import { Play, Square, Video, Orbit, Tornado, ZoomIn, ZoomOut, TrendingUp, TrendingDown, Plane } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useMapAnimation } from '@/hooks/useMapAnimation';
+import { useMapAnimation, type AnimationType } from '@/hooks/useMapAnimation';
 
 interface AutomationControlsProps {
-    onAnimationStart: (type: 'orbit' | 'cinematic' | 'spiral' | 'zoomIn' | 'zoomOut' | 'rise' | 'dive' | 'flyover') => void;
+    onAnimationStart: (type: AnimationType) => void;
     onAnimationStop: () => void;
     isPlaying: boolean;
-    activeAnimation: 'orbit' | 'cinematic' | 'spiral' | 'zoomIn' | 'zoomOut' | 'rise' | 'dive' | 'flyover' | null;
+    activeAnimation: AnimationType | null;
 }
 
 export function AutomationControls({

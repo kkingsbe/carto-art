@@ -4,6 +4,7 @@ import { useEffect, useMemo } from 'react';
 import { useControl } from 'react-map-gl/maplibre';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import { TerrainLayer } from '@deck.gl/geo-layers';
+import { LightingEffect, AmbientLight, DirectionalLight } from '@deck.gl/core';
 import type { MapboxOverlayProps } from '@deck.gl/mapbox';
 
 interface DeckTerrainLayerProps {
@@ -80,12 +81,40 @@ export function DeckTerrainLayer({
     elevationData,
     bounds,
     visible = true,
-    ambientLight = 0.35,
-    diffuseLight = 0.8,
+    ambientLight = 0.2, // Darker shadows for drama
+    diffuseLight = 1.0, // Brighter highlights
     lightAzimuth,
     lightAltitude,
     zoomOffset = 0,
 }: DeckTerrainLayerProps) {
+
+    const lightingEffect = useMemo(() => {
+        // Calculate light direction
+        // Default to a dramatic angle if not specified
+        const azimuth = lightAzimuth ?? 150;
+        const altitude = lightAltitude ?? 35;
+
+        const azimuthRad = (azimuth * Math.PI) / 180;
+        const altitudeRad = (altitude * Math.PI) / 180;
+
+        const dirX = Math.sin(azimuthRad) * Math.cos(altitudeRad);
+        const dirY = Math.cos(azimuthRad) * Math.cos(altitudeRad);
+        const dirZ = Math.sin(altitudeRad);
+
+        const ambient = new AmbientLight({
+            color: [255, 255, 255],
+            intensity: ambientLight
+        });
+
+        const dirLight = new DirectionalLight({
+            color: [255, 255, 255],
+            intensity: diffuseLight,
+            direction: [-dirX, -dirY, -dirZ],
+            _shadow: true // Enable shadow casting for this light
+        });
+
+        return new LightingEffect({ ambient, dirLight });
+    }, [lightAzimuth, lightAltitude, ambientLight, diffuseLight]);
 
     const terrainLayer = useMemo(() => {
         return new TerrainLayer({
@@ -121,13 +150,17 @@ export function DeckTerrainLayer({
             visible,
             // Tell deck.gl this layer handles terrain + drawing
             operation: 'terrain+draw',
+
+            // Shadows behavior might be implicit with lighting effect now
+            // or require specific props. In v9 _shadow: true on light is key.
         });
-    }, [exaggeration, meshMaxError, elevationData, bounds, visible, zoomOffset]);
+    }, [exaggeration, meshMaxError, elevationData, bounds, visible, zoomOffset, ambientLight, diffuseLight]);
 
     // Use the overlay hook to integrate with MapLibre
     useDeckOverlay({
         layers: [terrainLayer],
         interleaved: true,
+        effects: [lightingEffect]
     });
 
     return null;
