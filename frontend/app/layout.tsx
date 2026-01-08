@@ -7,6 +7,7 @@ import { BuyMeACoffeeWidget } from "@/components/third-party/BuyMeACoffeeWidget"
 import { Navbar } from "@/components/layout/Navbar";
 import { Toaster } from "sonner";
 import { PageViewTracker } from "@/components/analytics/PageViewTracker";
+import { ReferrerSaver } from "@/components/analytics/ReferrerSaver";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { Suspense } from "react";
 
@@ -81,6 +82,7 @@ export default function RootLayout({
         <Navbar />
         <Suspense fallback={null}>
           <PageViewTracker />
+          <ReferrerSaver />
         </Suspense>
         <main className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden">
           {children}

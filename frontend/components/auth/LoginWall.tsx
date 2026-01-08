@@ -1,8 +1,10 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sparkles, Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, getSessionId } from '@/lib/utils';
+import { trackEventAction } from '@/lib/actions/events';
 
 interface LoginWallProps {
     onClose?: () => void;
@@ -18,6 +20,18 @@ export function LoginWall({
     className
 }: LoginWallProps) {
     const router = useRouter();
+
+    // Track login_wall_shown event on mount
+    useEffect(() => {
+        trackEventAction({
+            eventType: 'login_wall_shown',
+            eventName: 'login_wall_displayed',
+            sessionId: getSessionId(),
+            metadata: {
+                location: typeof window !== 'undefined' ? window.location.pathname : 'unknown'
+            }
+        });
+    }, []);
 
     const handleSignUp = () => {
         const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);

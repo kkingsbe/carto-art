@@ -234,6 +234,44 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
     return () => clearInteractionTimer();
   }, [hasInteracted, clearInteractionTimer]);
 
+  // Track editor_open event on mount
+  useEffect(() => {
+    const sessionId = getSessionId();
+    trackEventAction({
+      eventType: 'editor_open',
+      eventName: 'editor_opened',
+      sessionId,
+      metadata: {
+        hasExistingProject: !!currentMapId,
+        source: searchParams?.get('from') || 'direct'
+      }
+    });
+  }, []); // Only on mount
+
+  // Track editor_abandon when leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (currentMapStatus?.hasUnsavedChanges) {
+        trackEventAction({
+          eventType: 'editor_abandon',
+          eventName: 'editor_abandoned',
+          sessionId: getSessionId(),
+          metadata: {
+            hadUnsavedChanges: true,
+            mapId: currentMapId,
+            mapName: currentMapName
+          }
+        });
+        // Browser may show confirmation dialog
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [currentMapStatus?.hasUnsavedChanges, currentMapId, currentMapName]);
+
   // Walkthrough State
   const [runTour, setRunTour] = useState(false);
   const [hasCheckedTour, setHasCheckedTour] = useState(false);

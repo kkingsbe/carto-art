@@ -60,6 +60,20 @@ export function useGifExport(
 
         logger.info('Starting GIF generation...');
         const startTime = Date.now();
+        const sessionId = getSessionId();
+
+        // Track export start
+        await trackEventAction({
+            eventType: 'export_start',
+            eventName: 'gif_export_started',
+            sessionId,
+            metadata: {
+                animationMode,
+                duration,
+                fps,
+                location_name: config.location.name
+            }
+        });
 
         setIsGeneratingGif(true);
         isGeneratingGifRef.current = true;
@@ -234,6 +248,17 @@ export function useGifExport(
             gif.render();
 
         } catch (error) {
+            // Track export failure
+            await trackEventAction({
+                eventType: 'export_fail',
+                eventName: 'gif_export_failed',
+                sessionId,
+                metadata: {
+                    animationMode,
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                    duration_ms: Date.now() - startTime
+                }
+            });
             logger.error('Failed to generate GIF', error);
             setIsGeneratingGif(false);
             isGeneratingGifRef.current = false;

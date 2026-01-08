@@ -52,6 +52,18 @@ export function useMapExport(config: PosterConfig) {
     }
 
     const filename = typeof filenameOrEvent === 'string' ? filenameOrEvent : undefined;
+    const sessionId = getSessionId();
+
+    // Track export start
+    await trackEventAction({
+      eventType: 'export_start',
+      eventName: 'png_export_started',
+      sessionId,
+      metadata: {
+        resolution: resolution?.name || 'DEFAULT',
+        location_name: config.location.name
+      }
+    });
 
     setIsExporting(true);
     setExportProgress({ stage: 'Starting...', percent: 0 });
@@ -110,6 +122,17 @@ export function useMapExport(config: PosterConfig) {
 
       return blob;
     } catch (error) {
+      // Track export failure
+      await trackEventAction({
+        eventType: 'export_fail',
+        eventName: 'png_export_failed',
+        sessionId,
+        metadata: {
+          resolution: resolution?.name || 'DEFAULT',
+          error: error instanceof Error ? error.message : 'Unknown error',
+          duration_ms: Date.now() - startTime
+        }
+      });
       logger.error('Export failed:', error);
       throw error;
     } finally {

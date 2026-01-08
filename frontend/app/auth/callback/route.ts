@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { trackEvent } from '@/lib/events';
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -17,10 +18,27 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     console.log('[Auth Callback] Exchanging code for session...');
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
-    if (!error) {
+    if (!error && data.user) {
       console.log('[Auth Callback] Successfully exchanged code for session');
+
+      // Track signup event for new users (created within last minute = likely new signup)
+      const createdAt = new Date(data.user.created_at);
+      const isNewUser = (Date.now() - createdAt.getTime()) < 60000; // 1 minute
+
+      if (isNewUser) {
+        await trackEvent({
+          eventType: 'signup',
+          eventName: 'user_signup',
+          userId: data.user.id,
+          metadata: {
+            provider: data.user.app_metadata?.provider || 'email',
+            email_domain: data.user.email?.split('@')[1]
+          }
+        });
+        console.log('[Auth Callback] Tracked signup event for new user');
+      }
 
       const forwardedHost = request.headers.get('x-forwarded-host'); // original origin before load balancer
       const isLocalEnv = process.env.NODE_ENV === 'development';

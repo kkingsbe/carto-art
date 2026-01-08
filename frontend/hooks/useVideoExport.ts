@@ -61,6 +61,20 @@ export function useVideoExport(
 
         logger.info('Starting Video generation (WebCodecs Mode)...');
         const startTime = Date.now();
+        const sessionId = getSessionId();
+
+        // Track export start
+        await trackEventAction({
+            eventType: 'export_start',
+            eventName: 'video_export_started',
+            sessionId,
+            metadata: {
+                animationMode,
+                duration,
+                fps,
+                location_name: config.location.name
+            }
+        });
 
         setIsExportingVideo(true);
         isExportingVideoRef.current = true;
@@ -301,6 +315,17 @@ export function useVideoExport(
             });
 
         } catch (error) {
+            // Track export failure
+            await trackEventAction({
+                eventType: 'export_fail',
+                eventName: 'video_export_failed',
+                sessionId,
+                metadata: {
+                    animationMode,
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                    duration_ms: Date.now() - startTime
+                }
+            });
             logger.error('Failed to export video', error);
             setIsExportingVideo(false);
             isExportingVideoRef.current = false;

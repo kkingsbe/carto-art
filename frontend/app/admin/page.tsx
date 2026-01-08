@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { RecentActivityFeed } from '@/components/admin/RecentActivityFeed';
 import { AddDonationDialog } from '@/components/admin/AddDonationDialog';
+import { ReferrerLeaderboard } from '@/components/admin/ReferrerLeaderboard';
 
 export default async function AdminDashboardPage() {
     const supabase = await createClient();
@@ -142,6 +143,11 @@ export default async function AdminDashboardPage() {
                 <div className="space-y-6">
                     <RecentActivityFeed initialEvents={recentEvents || []} />
                 </div>
+            </div>
+
+            {/* Acquisition & Growth Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+                <ReferrerLeaderboard />
             </div>
         </div>
     );

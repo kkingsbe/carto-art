@@ -4,8 +4,9 @@ import { Notification, NotificationType } from '@/lib/actions/notifications';
 import { formatDistanceToNow } from 'date-fns';
 import { UserPlus, Heart, MessageSquare, Map as MapIcon, Circle, Eye } from 'lucide-react';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import { cn, getSessionId } from '@/lib/utils';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { trackEventAction } from '@/lib/actions/events';
 
 interface NotificationItemProps {
     notification: Notification;
@@ -49,10 +50,26 @@ export function NotificationItem({ notification, onRead }: NotificationItemProps
         ? `/user/${notification.actor?.username}`
         : `/map/${notification.resource_id}`;
 
+    const handleClick = () => {
+        // Track notification click
+        trackEventAction({
+            eventType: 'notification_click',
+            eventName: 'notification_clicked',
+            sessionId: getSessionId(),
+            metadata: {
+                notification_type: notification.type,
+                notification_id: notification.id,
+                was_unread: isUnread
+            }
+        });
+
+        onRead?.(notification.id);
+    };
+
     return (
         <Link
             href={href}
-            onClick={() => onRead?.(notification.id)}
+            onClick={handleClick}
             className={cn(
                 "flex items-start gap-3 p-4 transition-colors hover:bg-muted/50 border-b border-border/50",
                 isUnread && "bg-muted/30"

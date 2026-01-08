@@ -155,6 +155,22 @@ export function ExportOptionsModal({
         router.push(`/register?next=${returnUrl}`);
     };
 
+    // Track export_abandon when closing without exporting
+    const handleClose = () => {
+        if (selectedKey && !isExporting && !isExportLimitReached) {
+            trackEventAction({
+                eventType: 'export_abandon',
+                eventName: 'export_modal_closed',
+                sessionId: getSessionId(),
+                metadata: {
+                    selectedResolution: selectedKey,
+                    wasExporting: isExporting
+                }
+            });
+        }
+        onClose();
+    };
+
     // Determine current progress
     const activeProgress = exportProgress?.percent ?? gifProgress ?? videoProgress ?? 0;
     const activeStage = exportProgress?.stage ?? (gifProgress !== undefined ? 'Generating GIF...' : (videoProgress !== undefined ? 'Recording Video...' : 'Preparing...'));
@@ -166,7 +182,7 @@ export function ExportOptionsModal({
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
-                onClick={() => !isExporting && onClose()}
+                onClick={() => !isExporting && handleClose()}
             />
 
             {/* Content */}
@@ -177,7 +193,7 @@ export function ExportOptionsModal({
                     </h2>
                     {!isExporting && (
                         <button
-                            onClick={onClose}
+                            onClick={handleClose}
                             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
                             <X className="w-5 h-5 text-gray-500" />
