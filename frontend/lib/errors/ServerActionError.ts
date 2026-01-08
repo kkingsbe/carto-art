@@ -66,6 +66,7 @@ export enum ErrorCode {
 
   // Configuration
   CONFIGURATION_ERROR = 'CONFIGURATION_ERROR',
+  SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
 }
 
 /**
@@ -98,5 +99,8 @@ export const createError = {
 
   configurationError: (message: string) =>
     new ServerActionError(message, ErrorCode.CONFIGURATION_ERROR, 500),
+
+  serviceUnavailable: (message = 'Service unavailable') =>
+    new ServerActionError(message, ErrorCode.SERVICE_UNAVAILABLE, 503),
 };
 

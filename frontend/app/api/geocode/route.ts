@@ -130,8 +130,8 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     logger.error('Unhandled geocode API error:', error);
 
-    // Pass through status codes if they exist (e.g. 429 from lib)
-    const status = error.status || 500;
+    // Pass through status codes if they exist (e.g. 429 from lib, or statusCode from ServerActionError)
+    const status = error.statusCode || error.status || 500;
     const message = error.message || 'Internal Server Error';
 
     return NextResponse.json(

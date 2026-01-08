@@ -21,6 +21,11 @@ export async function searchLocation(
   const resp = await fetch(`/api/geocode?${params.toString()}`, { signal });
 
   if (!resp.ok) {
+    // Handle Service Unavailable specifically
+    if (resp.status === 503) {
+      throw new Error('Service busy');
+    }
+
     let errorDetail = '';
     try {
       const errorJson = await resp.json();

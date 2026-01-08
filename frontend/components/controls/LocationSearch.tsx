@@ -254,7 +254,18 @@ export function LocationSearch({ onLocationSelect, currentLocation }: LocationSe
         </p>
       )}
 
-      {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+      {error && (
+        <p className={cn(
+          "mt-2 text-sm",
+          error.includes('Service busy')
+            ? "text-yellow-600 dark:text-yellow-400 font-medium"
+            : "text-red-500"
+        )}>
+          {error.includes('Service busy')
+            ? "Search service is momentarily busy. Please try again."
+            : error}
+        </p>
+      )}
 
       {isOpen && results.length > 0 && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg dark:bg-gray-800 dark:border-gray-600">

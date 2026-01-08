@@ -25,6 +25,58 @@ export interface SearchOptions {
     limit?: number;
 }
 
+const RETRY_DELAYS = [500, 1000, 2000]; // Exponential backoff
+
+async function fetchWithRetry(url: string, signal?: AbortSignal, retries = 3): Promise<Response> {
+    let lastError: any;
+
+    for (let i = 0; i <= retries; i++) {
+        try {
+            const resp = await fetch(url, {
+                signal,
+                headers: {
+                    'Accept-Encoding': 'gzip, deflate' // LocationIQ recommendation
+                }
+            });
+
+            // If success, return immediately
+            if (resp.ok || resp.status === 404 || resp.status === 400) {
+                return resp;
+            }
+
+            // Client errors (except 429) shouldn't be retried
+            if (resp.status >= 400 && resp.status < 500 && resp.status !== 429) {
+                return resp;
+            }
+
+            // Check content of error if possible
+            const errorText = await resp.text().catch(() => 'Unknown error');
+            logger.warn(`LocationIQ request failed (attempt ${i + 1}/${retries + 1})`, {
+                status: resp.status,
+                url: url.replace(LOCATIONIQ_API_KEY || '', 'REDACTED'),
+                error: errorText
+            });
+
+            lastError = new Error(`Status ${resp.status}: ${errorText}`);
+
+        } catch (err: any) {
+            // Don't retry aborts
+            if (err.name === 'AbortError') throw err;
+            lastError = err;
+            logger.warn(`LocationIQ network error (attempt ${i + 1}/${retries + 1})`, err);
+        }
+
+        // Wait before next retry if implementation isn't out of attempts
+        if (i < retries) {
+            // Respect Retry-After if available? simpler to just use backoff for now
+            const delay = RETRY_DELAYS[i] || 2000;
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+
+    throw lastError;
+}
+
 export async function searchLocation(
     query: string,
     options: SearchOptions = {},
@@ -49,12 +101,7 @@ export async function searchLocation(
     });
 
     try {
-        const resp = await fetch(`https://us1.locationiq.com/v1/search.php?${params.toString()}`, {
-            signal,
-            headers: {
-                'Accept-Encoding': 'gzip, deflate' // LocationIQ recommendation
-            }
-        });
+        const resp = await fetchWithRetry(`https://us1.locationiq.com/v1/search.php?${params.toString()}`, signal);
 
         if (!resp.ok) {
             // Handle rate limiting specifically
@@ -65,6 +112,13 @@ export async function searchLocation(
             // LocationIQ returns 404 if no results found - treat as empty array
             if (resp.status === 404) {
                 return [];
+            }
+
+            // Server errors after retries -> Service Unavailable
+            if (resp.status >= 500) {
+                const errorText = await resp.text().catch(() => 'Unknown error');
+                logger.error('LocationIQ service unavailable', { status: resp.status, error: errorText });
+                throw createError.serviceUnavailable('Geocoding service unavailable');
             }
 
             const errorText = await resp.text().catch(() => 'Unknown error');
@@ -84,8 +138,9 @@ export async function searchLocation(
         // Propagate our typed errors, wrap others
         if (err.type && err.message) throw err;
 
+        // If it was a network error that exhausted retries
         logger.error('LocationIQ search error', err);
-        throw createError.internalError('Failed to search location');
+        throw createError.serviceUnavailable('Geocoding service unavailable');
     }
 }
 
@@ -111,7 +166,7 @@ export async function reverseGeocode(
     });
 
     try {
-        const resp = await fetch(`https://us1.locationiq.com/v1/reverse.php?${params.toString()}`, { signal });
+        const resp = await fetchWithRetry(`https://us1.locationiq.com/v1/reverse.php?${params.toString()}`, signal);
 
         if (!resp.ok) {
             // "Unable to geocode" usually returns 404 or 400
@@ -121,6 +176,14 @@ export async function reverseGeocode(
             if (resp.status === 429) {
                 throw createError.rateLimitExceeded('Geocoding rate limit exceeded');
             }
+
+            // Server errors after retries -> Service Unavailable
+            if (resp.status >= 500) {
+                const errorText = await resp.text().catch(() => 'Unknown error');
+                logger.error('LocationIQ service unavailable (reverse)', { status: resp.status, error: errorText });
+                throw createError.serviceUnavailable('Geocoding service unavailable');
+            }
+
             const errorText = await resp.text();
             logger.error('LocationIQ reverse geocode failed', { status: resp.status, error: errorText });
             throw createError.internalError(`Reverse geocoding failed: ${resp.status}`);
@@ -133,7 +196,7 @@ export async function reverseGeocode(
         if (err.type && err.message) throw err;
 
         logger.error('LocationIQ reverse geocode error', err);
-        throw createError.internalError('Failed to reverse geocode location');
+        throw createError.serviceUnavailable('Failed to reverse geocode location');
     }
 }
 
