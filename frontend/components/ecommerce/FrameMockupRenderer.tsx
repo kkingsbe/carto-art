@@ -14,6 +14,7 @@ interface FrameMockupRendererProps {
     templateUrl: string | null;
     printArea: PrintArea | null;
     designUrl: string;
+    imageClassName?: string;
     className?: string;
     alt?: string;
     onDebug?: (msg: string) => void;
@@ -29,6 +30,7 @@ export function FrameMockupRenderer({
     printArea,
     designUrl,
     className = '',
+    imageClassName = '',
     alt = 'Product preview',
     onDebug,
     onDebugStages
@@ -37,6 +39,19 @@ export function FrameMockupRenderer({
     const [compositeUrl, setCompositeUrl] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        // ... (effect logic remains unchanged, but we need to keep internal logic intact so we don't clear it)
+        // Ideally we should not replace the whole function body if we can avoid it, but we need to change the RETURN JSX.
+        // Wait, replace_file_content replaces the chunk. I need to be careful not to delete the useEffect.
+        // I will target the Props interface first, then the Return statement separately?
+        // Or I can replace the whole functional component if I have the context.
+        // I have the file content from previous read.
+        // But the previous read was earlier.
+        // I will split this into 2 replacements: 1. Interface, 2. Return JSX.
+        // Actually, let's just do the interface first.
+    }, []); // Placeholder to cancel this thought since I can't put comments in tool call
+
 
     useEffect(() => {
         // If no template, just show the raw design
@@ -89,6 +104,10 @@ export function FrameMockupRenderer({
                     height: printArea.height * templateImg.height
                 };
                 log('Print area (pixels):', JSON.stringify(printAreaPx));
+
+                // Step 0: Fill background with white
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
 
                 // Step 1: Draw the design on a separate canvas first
                 // We do this to have clean source pixels for the replacement
@@ -354,7 +373,7 @@ export function FrameMockupRenderer({
 
     // Show loading state
     return (
-        <div className={`relative ${className}`}>
+        <div className={`relative flex items-center justify-center ${className}`}>
             {/* Hidden canvas for compositing - ALWAYS RENDER so ref stays valid */}
             <canvas ref={canvasRef} style={{ display: 'none' }} />
 
@@ -376,7 +395,7 @@ export function FrameMockupRenderer({
             <img
                 src={compositeUrl || designUrl}
                 alt={alt}
-                className="w-full h-full object-contain"
+                className={`block max-w-full max-h-full w-auto h-auto object-contain mx-auto ${imageClassName}`}
             />
         </div>
     );
@@ -390,6 +409,8 @@ function getProxiedUrl(src: string): string {
             url.hostname.includes('amazonaws.com');
 
         if (needsProxy) {
+            // Check if already proxied to avoid double proxying
+            if (src.includes('/api/proxy-image')) return src;
             return `/api/proxy-image?url=${encodeURIComponent(src)}`;
         }
     } catch {

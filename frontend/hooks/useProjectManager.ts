@@ -17,7 +17,7 @@ interface UseProjectManagerProps {
     config: PosterConfig;
     setConfig: (config: PosterConfig) => void;
     isAuthenticated: boolean;
-    saveProjectApi: (name: string, config: PosterConfig, thumbnailBlob?: Blob) => Promise<SavedProject>;
+    saveProjectApi: (name: string, config: PosterConfig, thumbnailBlob?: Blob, id?: string) => Promise<SavedProject>;
     handleError: (error: unknown) => void;
     mapInstanceRef: MutableRefObject<MapLibreMap | null>;
 }
@@ -85,12 +85,12 @@ export function useProjectManager({
             }
         }
 
-        // Save the project and get the saved project back
-        const savedProject = await saveProjectApi(name, configToSave, thumbnailBlob);
+        // Save the project and get the saved project back (pass ID if updating)
+        const savedProject = await saveProjectApi(name, configToSave, thumbnailBlob, currentMapId || undefined);
 
         // Automatically load the saved project
         await loadProject(savedProject);
-    }, [saveProjectApi, loadProject, isAuthenticated, mapInstanceRef, config]);
+    }, [saveProjectApi, loadProject, isAuthenticated, mapInstanceRef, config, currentMapId]);
 
     // Handle save a copy - always creates a NEW project and switches to it
     const saveCopy = useCallback(async (name: string) => {
@@ -106,7 +106,7 @@ export function useProjectManager({
         }
 
         // Always create NEW project (never update existing)
-        const savedProject = await saveProjectApi(name, config, thumbnailBlob);
+        const savedProject = await saveProjectApi(name, config, thumbnailBlob, undefined);
 
         // Switch to the newly created copy
         setCurrentMapId(savedProject.id);
@@ -153,6 +153,34 @@ export function useProjectManager({
             setCurrentMapStatus(prev => prev ? { ...prev, hasUnsavedChanges: hasChanges } : null);
         }
     }, [config, originalConfig, currentMapId]);
+
+    // Handle Map Loading from URL
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const searchParams = new URLSearchParams(window.location.search);
+        const mapId = searchParams.get('map') || searchParams.get('mapId');
+
+        if (mapId && !currentMapId) {
+            const loadOnInit = async () => {
+                try {
+                    const mapData = await getMapById(mapId);
+                    if (mapData) {
+                        // Map internal SavedMap type to SavedProject type used by editor hooks
+                        loadProject({
+                            id: mapData.id,
+                            name: mapData.title,
+                            config: mapData.config,
+                            updatedAt: new Date(mapData.updated_at).getTime()
+                        });
+                    }
+                } catch (error) {
+                    console.error('Failed to load map from URL:', error);
+                    handleError(new Error('Failed to load the requested map.'));
+                }
+            };
+            loadOnInit();
+        }
+    }, [loadProject, currentMapId, handleError]);
 
     // Handle Remix from URL
     useEffect(() => {

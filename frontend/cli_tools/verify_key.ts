@@ -1,9 +1,18 @@
+import https from 'https';
+import dotenv from 'dotenv';
+import path from 'path';
 
-const https = require('https');
+export function testKey() {
+    dotenv.config({ path: path.join(__dirname, '../.env') });
 
-const API_KEY = 'pk.c591714b39866f1887ab5d15ed1395e6';
+    // Prefer env var, fallback to hardcoded if strictly needed (but should use env)
+    const API_KEY = process.env.LOCATIONIQ_API_KEY;
 
-function testKey() {
+    if (!API_KEY) {
+        console.error("Missing LOCATIONIQ_API_KEY in .env");
+        return;
+    }
+
     console.log('Testing LocationIQ Key...');
     const url = `https://us1.locationiq.com/v1/search.php?key=${API_KEY}&q=Paris&format=json&limit=1`;
 
@@ -14,7 +23,6 @@ function testKey() {
             console.log('Status:', res.statusCode);
             if (res.statusCode === 200) {
                 console.log('Success! API Key is valid.');
-                // console.log('Response:', data.substring(0, 100) + '...');
             } else {
                 console.error('Failed:', data);
             }
@@ -24,4 +32,6 @@ function testKey() {
     });
 }
 
-testKey();
+if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {
+    testKey();
+}

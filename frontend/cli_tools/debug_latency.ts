@@ -3,17 +3,13 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Load environment variables from the frontend directory
-dotenv.config({ path: path.resolve('frontend/.env') });
-dotenv.config({ path: path.resolve('frontend/.env.local') });
-
-async function debug() {
+export async function debugLatency() {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!url || !key) {
         console.error('Missing Supabase credentials in environment');
-        process.exit(1);
+        return;
     }
 
     const supabase = createClient(url, key);
@@ -58,4 +54,9 @@ async function debug() {
     }
 }
 
-debug();
+if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {
+    // Load environment variables from the frontend directory
+    dotenv.config({ path: path.join(__dirname, '../.env') });
+    dotenv.config({ path: path.join(__dirname, '../.env.local') });
+    debugLatency();
+}

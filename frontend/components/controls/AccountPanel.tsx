@@ -31,6 +31,8 @@ interface AccountPanelProps {
     hasUnsavedChanges: boolean;
   } | null;
   onPublishSuccess?: () => void;
+  onPublish?: () => void;
+  onUnpublish?: () => void;
 }
 
 export function AccountPanel({
@@ -38,7 +40,9 @@ export function AccountPanel({
   currentMapId,
   currentMapName,
   currentMapStatus,
-  onPublishSuccess
+  onPublishSuccess,
+  onPublish,
+  onUnpublish
 }: AccountPanelProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -168,7 +172,7 @@ export function AccountPanel({
                   variant="outline"
                   size="sm"
                   className="w-full justify-center gap-2 bg-white dark:bg-gray-800"
-                  onClick={handleUnpublish}
+                  onClick={onUnpublish}
                 >
                   <EyeOff className="w-4 h-4" />
                   Unpublish from Gallery
@@ -178,7 +182,7 @@ export function AccountPanel({
                   variant="default"
                   size="sm"
                   className="w-full justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={() => setShowPublishModal(true)}
+                  onClick={onPublish}
                 >
                   <Upload className="w-4 h-4" />
                   Publish to Gallery

@@ -219,25 +219,88 @@ export const printful = {
             });
             if (templatesRes.ok) {
                 const templatesData = await templatesRes.json();
-                console.log('Fetched Templates:', JSON.stringify(templatesData));
+                console.log(`[DEBUG] Fetched ${templatesData.result?.templates?.length} templates for Product ${productId}`);
 
-                // templatesData.result.templates is an array of objects with 'placement' property
                 if (templatesData.result && templatesData.result.templates && templatesData.result.templates.length > 0) {
-                    // Just take the first one for now, or prefer 'default' if it exists
-                    const placements = templatesData.result.templates.map((t: any) => t.placement);
-                    validPlacement = placements.includes('default') ? 'default' : (placements[0] || 'default');
+                    // Find the best template match based on aspect ratio
+                    // 1. Get variant info to know expected aspect ratio
+                    // const variant = await printful.getVariant(productId); // REMOVED potentially erroneous call
 
-                    // Get the first template to extract print area dimensions
-                    const firstTemplate = templatesData.result.templates[0];
-                    if (firstTemplate.print_area_width && firstTemplate.print_area_height) {
-                        printAreaWidth = firstTemplate.print_area_width;
-                        printAreaHeight = firstTemplate.print_area_height;
-                        console.log(`Using print area dimensions: ${printAreaWidth}x${printAreaHeight}`);
+                    const targetVariantId = variant_ids[0];
+                    const targetVariant = await printful.getVariant(targetVariantId);
+
+                    let bestTemplate = templatesData.result.templates[0];
+                    let bestMatchScore = 0; // Higher is better
+
+                    const variantName = targetVariant.variant.size || targetVariant.variant.name || "";
+                    console.log(`[DEBUG] Target Variant Name: "${variantName}"`);
+
+                    const match = variantName.match(/(\d+)["″]?\s*[x×]\s*(\d+)["″]?/i);
+
+                    if (match) {
+                        const w = parseFloat(match[1]);
+                        const h = parseFloat(match[2]);
+                        const targetRatio = w / h;
+                        console.log(`[DEBUG] Target ratio: ${targetRatio.toFixed(3)} (${w}x${h})`);
+
+                        // Find template with closest aspect ratio
+                        let bestRatioDiff = Infinity;
+
+                        for (const tmpl of templatesData.result.templates) {
+                            if (!tmpl.print_area_width || !tmpl.print_area_height) continue;
+                            const tmplRatio = tmpl.print_area_width / tmpl.print_area_height;
+                            const diff = Math.abs(tmplRatio - targetRatio);
+
+                            // Also check the inverse ratio (landscape/portrait swap)
+                            // Ideally we want exact orientation match if possible, but Printful might rotate?
+                            // No, for "Canvas", orientation matters. "12x36" is typically portrait or landscape depending on WxH.
+                            // If user says "12x36", it's usually WxH. So 1:3.
+                            // If template is 3:1, it's rotated. 
+                            // Printful templates usually have specific orientation.
+                            // Let's favor EXACT match first.
+
+                            // Only check DIRECT ratio first
+                            if (diff < bestRatioDiff) {
+                                bestRatioDiff = diff;
+                                bestTemplate = tmpl;
+                            }
+                        }
+
+                        // If direct match is poor, check rotated?
+                        // For now let's stick to direct match.
+
+                        console.log(`[DEBUG] Best template found: ID ${bestTemplate.template_id}, Ratio: ${(bestTemplate.print_area_width / bestTemplate.print_area_height).toFixed(3)}, Diff: ${bestRatioDiff.toFixed(3)}`);
+
+                        if (bestRatioDiff < 0.05) {
+                            console.log(`[DEBUG] Found matching template ID ${bestTemplate.template_id}`);
+                        } else {
+                            console.log(`[DEBUG] No exact aspect ratio match found. Closest diff: ${bestRatioDiff.toFixed(3)}. using default.`);
+                            // If we didn't find a good match, assume default?
+                            // But bestTemplate is updated to the "closest" anyway.
+                        }
+                    } else {
+                        console.log('[DEBUG] Could not parse dimensions from variant name');
+                    }
+
+                    // Use the best template info
+                    if (bestTemplate) {
+                        // Crucial: Use template_id not placement if different from default?
+                        // if (bestTemplate.template_id) {
+                        //     console.log(`[DEBUG] Switching Product ID ${productId} -> Template ID ${bestTemplate.template_id}`);
+                        //     productId = bestTemplate.template_id;
+                        //     validPlacement = 'default';
+                        // } else 
+                        if (bestTemplate.placement) {
+                            validPlacement = bestTemplate.placement;
+                        }
+
+                        printAreaWidth = bestTemplate.print_area_width;
+                        printAreaHeight = bestTemplate.print_area_height;
                     }
                 }
             }
         } catch (e) {
-            console.error("Failed to fetch templates", e);
+            console.error("[DEBUG] Failed to fetch templates", e);
         }
 
         const validFiles = files.map(f => ({

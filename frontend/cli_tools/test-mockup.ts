@@ -1,23 +1,23 @@
-
 import { config } from 'dotenv';
 import path from 'path';
-config({ path: path.join(__dirname, '.env') });
 
 // Hack to handle relative imports if we run this with tsx from frontend root
-import { printful } from './lib/printful/client';
+import { printful } from '../lib/printful/client';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+export async function testMockup() {
+    config({ path: path.join(__dirname, '../.env') });
 
-if (!supabaseUrl || !supabaseKey) {
-    console.error("Missing Supabase credentials in .env");
-    process.exit(1);
-}
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+    if (!supabaseUrl || !supabaseKey) {
+        console.error("Missing Supabase credentials in .env");
+        return;
+    }
 
-async function main() {
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
     console.log("Fetching variants...");
     const { data: variants, error } = await supabase.from('product_variants').select('*').limit(1);
 
@@ -52,4 +52,6 @@ async function main() {
     }
 }
 
-main();
+if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {
+    testMockup();
+}

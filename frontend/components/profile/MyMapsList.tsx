@@ -145,7 +145,7 @@ export function MyMapsList({ maps, userProfile, onDelete, onPublish, onUnpublish
                     </div>
                   ) : (
                     <div className="flex-1 flex gap-2">
-                      <Link href={`/editor?mapId=${map.id}`} className="flex-1">
+                      <Link href={`/editor?map=${map.id}`} className="flex-1">
                         <Button variant="outline" className="w-full border-white/20 bg-white/5 hover:bg-white/10 text-[#f5f0e8] h-10 rounded-xl font-semibold">
                           <Edit className="w-4 h-4 mr-2" />
                           Edit

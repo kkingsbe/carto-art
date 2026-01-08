@@ -14,6 +14,7 @@ import { useProjectManager } from '@/hooks/useProjectManager';
 import { useEditorKeyboardShortcuts } from '@/hooks/useEditorKeyboardShortcuts';
 import { useAnonExportUsage } from '@/hooks/useAnonExportUsage';
 import { Maximize, Plus, Minus, X, Map as MapIcon, Type, Layout, Sparkles, Palette, User, Layers, MousePointer2, RotateCw } from 'lucide-react';
+import { toast } from 'sonner';
 import { styles } from '@/lib/styles';
 import { MapPreview } from '@/components/map/MapPreview';
 import { PosterCanvas } from '@/components/map/PosterCanvas';
@@ -43,6 +44,9 @@ import { AdvancedControls } from '@/components/controls/AdvancedControls';
 import { Walkthrough } from '@/components/ui/Walkthrough';
 import { CreationCelebrationModal } from '@/components/controls/CreationCelebrationModal';
 import { SubscriptionSuccessModal } from '@/components/controls/SubscriptionSuccessModal';
+import { publishMap, unpublishMap } from '@/lib/actions/maps';
+import { PublishModal } from '@/components/profile/PublishModal';
+import { LoginWall } from '@/components/auth/LoginWall';
 import type { Step } from 'react-joyride';
 
 interface PosterEditorProps {
@@ -133,9 +137,13 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
   const [showDonationModal, setShowDonationModal] = useState(false);
   const [showCreationCelebration, setShowCreationCelebration] = useState(false);
   const [showSubscriptionSuccess, setShowSubscriptionSuccess] = useState(false);
-  const [showProductModal, setShowProductModal] = useState(false);
+
   const [exportedImage, setExportedImage] = useState<string | null>(null);
   const [isExportingStl, setIsExportingStl] = useState(false);
+
+  // Publishing State
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showLoginWall, setShowLoginWall] = useState(false);
 
   // Keep a reference to the map instance for thumbnail generation
   const mapInstanceRef = useRef<MapLibreGL.Map | null>(null);
@@ -551,6 +559,36 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
     }
   }, [config, handleError]);
 
+  const handlePublishClick = useCallback(() => {
+    if (!isAuthenticated) {
+      setShowLoginWall(true);
+      return;
+    }
+    setShowPublishModal(true);
+  }, [isAuthenticated]);
+
+  const handlePublish = useCallback(async (subtitle?: string) => {
+    if (!currentMapId) return;
+    try {
+      await publishMap(currentMapId, subtitle);
+      await refreshStatus();
+      toast.success('Map published to gallery!');
+    } catch (error) {
+      handleError(error);
+    }
+  }, [currentMapId, refreshStatus, handleError]);
+
+  const handleUnpublish = useCallback(async () => {
+    if (!currentMapId) return;
+    try {
+      await unpublishMap(currentMapId);
+      await refreshStatus();
+      toast.success('Map unpublished from gallery');
+    } catch (error) {
+      handleError(error);
+    }
+  }, [currentMapId, refreshStatus, handleError]);
+
   const numericRatio = useMemo(() => {
     return getNumericRatio(config.format.aspectRatio, config.format.orientation);
   }, [config.format.aspectRatio, config.format.orientation]);
@@ -641,9 +679,46 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
         showDonationModal={showDonationModal}
         onDonationModalChange={setShowDonationModal}
         onOpenCommandMenu={() => setIsCommandMenuOpen(true)}
-        onBuyPrint={isEcommerceEnabled ? () => {
+        onBuyPrint={isEcommerceEnabled ? async () => {
           setShowDonationModal(false);
-          setShowProductModal(true);
+
+          if (!exportedImage) return;
+
+          // Show loading state implicitly via button or just proceed? 
+          // Ideally EditorToolbar handles async onClick. Assuming it doesn't block, we might want a toast.
+          const toastId = toast.loading("Preparing your design...");
+
+          try {
+            // 1. Upload design to Supabase (via our API route for signed URL)
+            const response = await fetch(exportedImage);
+            const blob = await response.blob();
+            const formData = new FormData();
+            formData.append('file', blob, 'poster.png');
+
+            const uploadRes = await fetch('/api/upload-design', {
+              method: 'POST',
+              body: formData,
+            });
+
+            if (!uploadRes.ok) throw new Error("Failed to upload design");
+
+            const { signedUrl } = await uploadRes.json();
+
+            toast.dismiss(toastId);
+
+            // 2. Navigate to order page
+            const params = new URLSearchParams({
+              image: signedUrl,
+              aspect: config.format.aspectRatio,
+              orientation: config.format.orientation
+            });
+
+            router.push(`/store?${params.toString()}`);
+
+          } catch (e) {
+            console.error("Order navigation failed", e);
+            toast.error("Failed to prepare order. Please try again.", { id: toastId });
+          }
         } : undefined}
         onFormatChange={updateFormat}
         onCopyState={handleCopyState}
@@ -651,8 +726,11 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
         exportCount={exportCount}
         subscriptionTier={subscriptionTier}
         exportUsage={effectiveExportUsage}
-        onExportComplete={refreshExportUsage}
+        onExportComplete={refreshStatus}
         exportedImage={exportedImage}
+        onPublish={handlePublishClick}
+        onUnpublish={handleUnpublish}
+        currentMapStatus={currentMapStatus}
       />
 
       {/* Floating Sidebar Container - Hidden on mobile */}
@@ -685,6 +763,8 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
             currentMapName={currentMapName}
             currentMapStatus={currentMapStatus}
             onLoadProject={loadProject}
+            onPublish={handlePublishClick}
+            onUnpublish={handleUnpublish}
             onPublishSuccess={refreshStatus}
             onAnimationStart={playAnimation}
             onAnimationStop={stopAnimation}
@@ -788,9 +868,8 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
         />
       </main>
 
-      {/* Feedback Modal - Only show if indicated AND donation modal is closed */}
       <FeedbackModal
-        isOpen={shouldShowFeedback && !showDonationModal && !showProductModal && !showCreationCelebration}
+        isOpen={shouldShowFeedback && !showDonationModal && !showCreationCelebration}
         onClose={hideFeedback}
         onSubmit={handleFeedbackSubmit}
         isSubmitting={isFeedbackSubmitting}
@@ -810,18 +889,7 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
         />
       )}
 
-      {/* Product Modal */}
-      {
-        exportedImage && isEcommerceEnabled && (
-          <ProductModal
-            isOpen={showProductModal}
-            onClose={() => setShowProductModal(false)}
-            imageUrl={exportedImage}
-            aspectRatio={config.format.aspectRatio}
-            orientation={config.format.orientation}
-          />
-        )
-      }
+
 
       {/* Mobile Tab Bar - Above Action Bar */}
       <div className="fixed left-0 right-0 z-40 md:hidden" style={{ bottom: 'calc(72px + env(safe-area-inset-bottom, 0px))' }}>
@@ -895,6 +963,8 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
                   currentMapName={currentMapName}
                   currentMapStatus={currentMapStatus}
                   onLoadProject={loadProject}
+                  onPublish={handlePublishClick}
+                  onUnpublish={handleUnpublish}
                   onPublishSuccess={refreshStatus}
                   onAnimationStart={playAnimation}
                   onAnimationStop={stopAnimation}

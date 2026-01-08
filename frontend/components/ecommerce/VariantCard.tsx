@@ -11,6 +11,7 @@ interface VariantCardProps {
         price_cents: number;
         display_price_cents?: number; // Margin-adjusted price for display
         image_url?: string;
+        generatedPreviewUrl?: string | null;
     };
     isSelected: boolean;
     onClick: () => void;
@@ -49,22 +50,22 @@ export function VariantCard({ variant, isSelected, onClick, isLoading }: Variant
             )}
         >
             {/* Image Preview */}
-            <div className="aspect-square relative rounded-lg overflow-hidden bg-muted mb-3">
+            <div className="aspect-square relative rounded-lg overflow-hidden bg-white mb-3">
                 {isLoading ? (
                     <div className="absolute inset-0 flex items-center justify-center">
                         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                     </div>
-                ) : variant.image_url ? (
+                ) : (variant.generatedPreviewUrl || variant.image_url) ? (
                     <>
-                        {!imageLoaded && (
+                        {(!imageLoaded && !variant.generatedPreviewUrl) && (
                             <div className="absolute inset-0 animate-pulse bg-muted" />
                         )}
                         <img
-                            src={variant.image_url}
+                            src={variant.generatedPreviewUrl || variant.image_url}
                             alt={variant.name}
                             className={cn(
-                                "w-full h-full object-cover transition-opacity duration-300",
-                                imageLoaded ? "opacity-100" : "opacity-0"
+                                "w-full h-full object-contain transition-opacity duration-300",
+                                (imageLoaded || variant.generatedPreviewUrl) ? "opacity-100" : "opacity-0"
                             )}
                             onLoad={() => setImageLoaded(true)}
                         />

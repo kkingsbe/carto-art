@@ -119,7 +119,12 @@ export function usePosterConfig() {
   const urlUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [config, dispatch] = useReducer(posterReducer, DEFAULT_CONFIG);
-  const [shouldAutoLocate, setShouldAutoLocate] = useState(() => !searchParams.has('s'));
+  const [shouldAutoLocate, setShouldAutoLocate] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const params = new URLSearchParams(window.location.search);
+    // Don't auto-locate if we're loading a specific map or state
+    return !params.has('s') && !params.has('map') && !params.has('mapId') && !params.has('remix');
+  });
 
   // Initialize from URL on mount
   useEffect(() => {
@@ -132,8 +137,8 @@ export function usePosterConfig() {
         setShouldAutoLocate(false);
         dispatch({ type: 'SET_CONFIG', payload: { ...DEFAULT_CONFIG, ...decoded } });
       }
-    } else {
-      // Initialize with a random vista if no state is provided
+    } else if (!searchParams.has('map') && !searchParams.has('mapId') && !searchParams.has('remix')) {
+      // Initialize with a random vista if no state or map ID is provided
       const randomVista = getRandomVista();
       dispatch({ type: 'UPDATE_LOCATION', payload: randomVista.location });
     }

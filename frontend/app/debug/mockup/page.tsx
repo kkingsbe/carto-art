@@ -236,7 +236,35 @@ export default function DebugMockupPage() {
                                 disabled={!selectedVariantId}
                                 className="w-full"
                             >
-                                Debug API Response (Console)
+                                Debug Mockup Generation
+                            </Button>
+
+                            <Button
+                                variant="destructive"
+                                onClick={async () => {
+                                    if (!selectedVariantId) return;
+                                    handleLog(`Inspecting templates for variant ${selectedVariantId}...`);
+                                    try {
+                                        const { inspectVariantTemplates } = await import('@/lib/actions/printful');
+                                        const res = await inspectVariantTemplates(parseInt(selectedVariantId));
+                                        handleLog('Template Inspection Result:');
+                                        handleLog(`Product ID: ${res.productId}`);
+                                        handleLog(`Product Name: ${res.productName}`);
+                                        handleLog(`Found ${res.templates.length} templates:`);
+                                        res.templates.forEach((t: any) => {
+                                            handleLog(`- Placement: ${t.placement}`);
+                                            handleLog(`  ID: ${t.template_id}`);
+                                            handleLog(`  Size: ${t.print_area_width}x${t.print_area_height}`);
+                                            handleLog(`  Image: ${t.image_url}`);
+                                        });
+                                    } catch (e: any) {
+                                        handleLog(`Inspection Error: ${e.message}`);
+                                    }
+                                }}
+                                disabled={!selectedVariantId}
+                                className="w-full"
+                            >
+                                Inspect Available Templates
                             </Button>
 
                             <Button

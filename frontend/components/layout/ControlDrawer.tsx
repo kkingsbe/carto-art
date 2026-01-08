@@ -47,6 +47,8 @@ interface ControlDrawerProps {
   onAnimationStop: () => void;
   isAnimationPlaying: boolean;
   activeAnimation: AnimationType | null;
+  onPublish: () => void;
+  onUnpublish: () => void;
 }
 
 export function ControlDrawer({
@@ -74,6 +76,8 @@ export function ControlDrawer({
   onAnimationStop,
   isAnimationPlaying,
   activeAnimation,
+  onPublish,
+  onUnpublish,
 }: ControlDrawerProps) {
   const [libraryTab, setLibraryTab] = useState<'vistas' | 'saved'>('vistas');
   const [tipDismissed, setTipDismissed] = useState(() => {
@@ -272,6 +276,8 @@ export function ControlDrawer({
                 currentMapName={currentMapName}
                 currentMapStatus={currentMapStatus}
                 onPublishSuccess={onPublishSuccess}
+                onPublish={onPublish}
+                onUnpublish={onUnpublish}
               />
             </div>
           )}

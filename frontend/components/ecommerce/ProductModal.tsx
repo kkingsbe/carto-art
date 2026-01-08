@@ -323,7 +323,7 @@ export function ProductModal({ isOpen, onClose, imageUrl, designId, aspectRatio 
                 {step === 1 && (
                     <div className="space-y-6">
                         {/* Mockup Preview - Now using client-side Canvas compositing */}
-                        <div className="relative rounded-xl overflow-hidden border bg-gradient-to-br from-muted/50 to-muted">
+                        <div className="relative rounded-xl overflow-hidden border bg-slate-50/50">
                             {/* Toggle button for template-only view */}
                             {selectedVariant?.mockup_template_url && (
                                 <button
@@ -345,14 +345,15 @@ export function ProductModal({ isOpen, onClose, imageUrl, designId, aspectRatio 
                                         <img
                                             src={`/api/proxy-image?url=${encodeURIComponent(selectedVariant.mockup_template_url)}`}
                                             alt="Template preview"
-                                            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                                            className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg shadow-2xl m-auto"
                                         />
                                     ) : (
                                         <FrameMockupRenderer
                                             templateUrl={selectedVariant.mockup_template_url}
                                             printArea={getSafePrintArea(selectedVariant.mockup_print_area)}
                                             designUrl={imageUrl}
-                                            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                                            className="w-full h-full"
+                                            imageClassName="rounded-lg shadow-2xl"
                                             alt="Product preview"
                                         />
                                     )
@@ -361,7 +362,7 @@ export function ProductModal({ isOpen, onClose, imageUrl, designId, aspectRatio 
                                     <img
                                         src={imageUrl}
                                         alt="Preview"
-                                        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                                        className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg shadow-2xl m-auto"
                                     />
                                 )}
                             </div>
@@ -440,6 +441,9 @@ export function ProductModal({ isOpen, onClose, imageUrl, designId, aspectRatio 
                             <CheckoutForm
                                 amount={selectedVariant.display_price_cents}
                                 onSuccess={onClose}
+                                templateUrl={selectedVariant.mockup_template_url}
+                                printArea={getSafePrintArea(selectedVariant.mockup_print_area)}
+                                designUrl={imageUrl}
                             />
                         </Elements>
                         <Button

@@ -13,7 +13,8 @@ import {
     Search,
     Loader2,
     Check,
-    MoreHorizontal
+    MoreHorizontal,
+    Upload
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -58,6 +59,13 @@ interface EditorToolbarProps {
     exportUsage?: ExportUsageResult | null;
     onExportComplete?: () => void;
     exportedImage?: string | null;
+    onPublish?: () => void;
+    onUnpublish?: () => void;
+    currentMapStatus: {
+        isSaved: boolean;
+        isPublished: boolean;
+        hasUnsavedChanges: boolean;
+    } | null;
 }
 
 export function EditorToolbar({
@@ -92,7 +100,10 @@ export function EditorToolbar({
     subscriptionTier,
     exportUsage,
     onExportComplete,
-    exportedImage
+    exportedImage,
+    onPublish,
+    onUnpublish,
+    currentMapStatus
 }: EditorToolbarProps) {
     const router = useRouter();
 
@@ -396,6 +407,36 @@ export function EditorToolbar({
 
                         <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1.5" />
 
+                        {/* Publish Button */}
+                        <Tooltip content={
+                            currentMapStatus?.isPublished
+                                ? "Published to Gallery"
+                                : "Publish to Gallery"
+                        } side="bottom">
+                            <button
+                                onClick={onPublish}
+                                disabled={isExporting}
+                                className={cn(
+                                    iconButtonBase,
+                                    "relative group transition-all duration-300",
+                                    currentMapStatus?.isPublished
+                                        ? "text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900/30"
+                                        : "text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/30",
+                                    isExporting && "opacity-50 cursor-not-allowed"
+                                )}
+                            >
+                                <Upload className={cn(
+                                    "w-[18px] h-[18px] transition-transform group-hover:-translate-y-0.5",
+                                    currentMapStatus?.isPublished && "text-green-600 dark:text-green-400"
+                                )} />
+                                {currentMapStatus?.isPublished && (
+                                    <Check className="absolute -top-1 -right-1 w-3 h-3 text-green-500 bg-white dark:bg-gray-900 rounded-full" />
+                                )}
+                            </button>
+                        </Tooltip>
+
+                        <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1.5" />
+
                         {/* Export Button - Text hidden on mobile, Icon shown */}
                         <div id="walkthrough-export">
                             <Tooltip content="Export Poster" side="bottom">
@@ -562,6 +603,7 @@ export function EditorToolbar({
                 currentMapName={currentMapName}
                 hasUnsavedChanges={hasUnsavedChanges}
                 exportCount={exportCount}
+                onPublish={onPublish}
             />
         </>
     );

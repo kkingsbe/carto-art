@@ -3,15 +3,27 @@
 import { useState } from "react";
 import { useStripe, useElements, PaymentElement } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
+import { FrameMockupRenderer } from "./FrameMockupRenderer";
+
+interface PrintArea {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
 
 export default function CheckoutForm({
     amount,
     onSuccess,
-    mockupUrl
+    templateUrl,
+    printArea,
+    designUrl
 }: {
     amount: number;
     onSuccess: () => void;
-    mockupUrl?: string | null;
+    templateUrl?: string | null;
+    printArea?: PrintArea | null;
+    designUrl?: string | null;
 }) {
     const stripe = useStripe();
     const elements = useElements();
@@ -51,12 +63,14 @@ export default function CheckoutForm({
             <div className="bg-muted p-4 rounded-md mb-4">
                 <h3 className="font-medium mb-4">Order Summary</h3>
 
-                {mockupUrl && (
-                    <div className="mb-4 aspect-square relative rounded-md overflow-hidden bg-white">
-                        <img
-                            src={mockupUrl}
-                            alt="Product Preview"
+                {templateUrl && designUrl && (
+                    <div className="mb-4 aspect-square relative rounded-md overflow-hidden bg-white flex items-center justify-center">
+                        <FrameMockupRenderer
+                            templateUrl={templateUrl}
+                            printArea={printArea ?? null}
+                            designUrl={designUrl}
                             className="w-full h-full object-contain"
+                            alt="Product Preview"
                         />
                     </div>
                 )}

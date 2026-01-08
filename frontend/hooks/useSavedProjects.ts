@@ -114,47 +114,78 @@ export function useSavedProjects() {
     }
   }, [projects, isLoaded, isAuthenticated]);
 
-  const saveProject = useCallback(async (name: string, config: PosterConfig, thumbnailBlob?: Blob): Promise<SavedProject> => {
+  const saveProject = useCallback(async (name: string, config: PosterConfig, thumbnailBlob?: Blob, id?: string): Promise<SavedProject> => {
     if (isAuthenticated) {
       // Save to Supabase
       try {
         let savedMap;
 
-        if (thumbnailBlob) {
-          // First save the map to get an ID
-          const tempMap = await saveMap(config, name);
+        if (id) {
+          // Update existing map
+          if (thumbnailBlob) {
+            // Get current user for thumbnail upload
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
 
-          // Get current user for thumbnail upload
-          const supabase = createClient();
-          const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              try {
+                // Upload thumbnail
+                const thumbnailUrl = await uploadThumbnail(id, user.id, thumbnailBlob);
+                // Update map with thumbnail
+                savedMap = await updateMapThumbnail(id, thumbnailUrl);
+              } catch (thumbnailError) {
+                logger.error('Failed to upload thumbnail:', thumbnailError);
+              }
+            }
+          }
+          // Update map config/title
+          savedMap = await updateMap(id, config, name);
+        } else {
+          // Create new map
+          if (thumbnailBlob) {
+            // First save the map to get an ID
+            const tempMap = await saveMap(config, name);
 
-          if (user) {
-            try {
-              // Upload thumbnail
-              const thumbnailUrl = await uploadThumbnail(tempMap.id, user.id, thumbnailBlob);
+            // Get current user for thumbnail upload
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
 
-              // Update the map with thumbnail URL using server action
-              savedMap = await updateMapThumbnail(tempMap.id, thumbnailUrl);
-            } catch (thumbnailError) {
-              logger.error('Failed to upload thumbnail:', thumbnailError);
-              // Continue without thumbnail
+            if (user) {
+              try {
+                // Upload thumbnail
+                const thumbnailUrl = await uploadThumbnail(tempMap.id, user.id, thumbnailBlob);
+
+                // Update the map with thumbnail URL using server action
+                savedMap = await updateMapThumbnail(tempMap.id, thumbnailUrl);
+              } catch (thumbnailError) {
+                logger.error('Failed to upload thumbnail:', thumbnailError);
+                // Continue without thumbnail
+                savedMap = tempMap;
+              }
+            } else {
               savedMap = tempMap;
             }
           } else {
-            savedMap = tempMap;
+            savedMap = await saveMap(config, name);
           }
-        } else {
-          savedMap = await saveMap(config, name);
         }
 
         const savedProject: SavedProject = {
           id: savedMap.id,
           name: savedMap.title,
           config: savedMap.config,
-          updatedAt: new Date(savedMap.created_at).getTime(),
+          updatedAt: new Date(savedMap.updated_at).getTime(), // Use updated_at
         };
 
-        setProjects(prev => [savedProject, ...prev]);
+        // Update local state: replace if updating, prepend if new
+        setProjects(prev => {
+          if (id) {
+            return prev.map(p => p.id === id ? savedProject : p);
+          } else {
+            return [savedProject, ...prev];
+          }
+        });
+
         setStorageError(null);
         return savedProject;
       } catch (error) {
@@ -164,14 +195,27 @@ export function useSavedProjects() {
       }
     } else {
       // Save to localStorage
-      const newProject: SavedProject = {
-        id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11),
-        name,
-        config,
-        updatedAt: Date.now(),
-      };
-      setProjects(prev => [newProject, ...prev]);
-      return newProject;
+      if (id) {
+        // Update existing
+        const updatedProject: SavedProject = {
+          id,
+          name,
+          config,
+          updatedAt: Date.now(),
+        };
+        setProjects(prev => prev.map(p => p.id === id ? updatedProject : p));
+        return updatedProject;
+      } else {
+        // Create new
+        const newProject: SavedProject = {
+          id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11),
+          name,
+          config,
+          updatedAt: Date.now(),
+        };
+        setProjects(prev => [newProject, ...prev]);
+        return newProject;
+      }
     }
   }, [isAuthenticated]);
 
@@ -195,7 +239,7 @@ export function useSavedProjects() {
     if (isAuthenticated) {
       try {
         await updateMap(id, projects.find(p => p.id === id)!.config, name);
-        setProjects(prev => prev.map(p => 
+        setProjects(prev => prev.map(p =>
           p.id === id ? { ...p, name, updatedAt: Date.now() } : p
         ));
         setStorageError(null);
@@ -205,7 +249,7 @@ export function useSavedProjects() {
         throw error;
       }
     } else {
-      setProjects(prev => prev.map(p => 
+      setProjects(prev => prev.map(p =>
         p.id === id ? { ...p, name, updatedAt: Date.now() } : p
       ));
     }

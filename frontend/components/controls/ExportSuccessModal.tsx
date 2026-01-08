@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, MessageCircle, Heart, ExternalLink, Share2, Save, ShoppingBag, Check, Twitter, Facebook, Link as LinkIcon } from 'lucide-react';
+import { X, MessageCircle, Heart, ExternalLink, Share2, Save, ShoppingBag, Check, Twitter, Link as LinkIcon, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { SaveButton } from './SaveButton';
+import { Button } from '@/components/ui/control-components';
 
 interface ExportSuccessModalProps {
     isOpen: boolean;
@@ -16,6 +17,7 @@ interface ExportSuccessModalProps {
     hasUnsavedChanges?: boolean;
     exportCount?: number;
     previewUrl?: string | null;
+    onPublish?: () => void;
 }
 
 export function ExportSuccessModal({
@@ -27,7 +29,8 @@ export function ExportSuccessModal({
     currentMapName,
     hasUnsavedChanges,
     exportCount = 0,
-    previewUrl
+    previewUrl,
+    onPublish
 }: ExportSuccessModalProps) {
     const router = useRouter();
     const [copied, setCopied] = useState(false);
@@ -56,6 +59,7 @@ export function ExportSuccessModal({
     };
 
     const donationMessage = getDonationMessage();
+
     // Handle ESC key to close
     useEffect(() => {
         if (!isOpen) return;
@@ -92,8 +96,6 @@ export function ExportSuccessModal({
     };
 
     const handleSignUp = () => {
-        // Redirect to register, preserving the current state via url if possible, 
-        // but for now just register. The editor state is in the URL ?s=... so it should persist.
         const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
         router.push(`/register?next=${returnUrl}`);
     };
@@ -159,23 +161,19 @@ export function ExportSuccessModal({
                     {onBuyPrint && (
                         <div className="col-span-1 md:col-span-2">
                             <div className="bg-white dark:bg-gray-800/80 p-5 rounded-2xl border border-blue-100 dark:border-blue-900/30 shadow-xl shadow-blue-500/5 relative overflow-hidden group">
-                                {/* Ambient Background Glow */}
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
 
                                 <div className="relative flex flex-col md:flex-row gap-6 items-center">
-                                    {/* Mockup Preview - CSS Based Frame */}
                                     {previewUrl && (
-                                        <div className="shrink-0 w-32 md:w-48 relative transform group-hover:scale-[1.02] transition-transform duration-500">
+                                        <div className="shrink-0 relative transform group-hover:scale-[1.02] transition-transform duration-500" style={{ maxWidth: '12rem' }}>
                                             <div className="relative shadow-2xl rounded-sm overflow-hidden bg-white border-[8px] border-gray-900 dark:border-gray-200">
-                                                {/* Mat board effect */}
                                                 <div className="border-[6px] border-white bg-white">
                                                     <img
                                                         src={previewUrl}
                                                         alt="Your Design"
-                                                        className="w-full h-auto block"
+                                                        className="max-w-full max-h-48 md:max-h-64 w-auto h-auto block"
                                                     />
                                                 </div>
-                                                {/* Glare effect */}
                                                 <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/20 pointer-events-none" />
                                             </div>
                                             <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-[90%] h-4 bg-black/30 blur-xl rounded-full" />
@@ -207,20 +205,29 @@ export function ExportSuccessModal({
                                             </span>
                                         </div>
 
-                                        <div className="pt-1">
-                                            <button
+                                        <div className="flex flex-col gap-2 pt-2">
+                                            <Button
+                                                variant="default"
+                                                className="w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold"
                                                 onClick={onBuyPrint}
-                                                className={cn(
-                                                    "w-full md:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-white text-sm",
-                                                    "bg-gray-900 hover:bg-black dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100",
-                                                    "transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-                                                )}
                                             >
-                                                <span>Order Print</span>
-                                                <span className="opacity-80 font-normal border-l border-white/20 dark:border-black/10 pl-2 ml-1">
-                                                    From $35
-                                                </span>
-                                            </button>
+                                                <ShoppingBag className="w-4 h-4" />
+                                                Order Print from $35
+                                            </Button>
+
+                                            <Button
+                                                variant="outline"
+                                                className="w-full gap-2 border-2 hover:bg-gray-50 dark:hover:bg-gray-800 font-bold"
+                                                onClick={() => {
+                                                    if (onPublish) {
+                                                        onPublish();
+                                                        onClose();
+                                                    }
+                                                }}
+                                            >
+                                                <Upload className="w-4 h-4 text-blue-600" />
+                                                Publish to Gallery
+                                            </Button>
                                         </div>
                                     </div>
                                 </div>
@@ -231,7 +238,6 @@ export function ExportSuccessModal({
                     {/* Featured Donation CTA */}
                     <div className="col-span-1 md:col-span-2">
                         <div className="relative overflow-hidden rounded-xl border border-yellow-200 dark:border-yellow-900/50 bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-100 dark:from-yellow-900/20 dark:via-amber-900/20 dark:to-yellow-800/20 p-3 md:p-4 shadow-lg">
-                            {/* Decorative pattern */}
                             <div className="absolute inset-0 opacity-5 dark:opacity-10" style={{
                                 backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)',
                                 backgroundSize: '24px 24px'
@@ -351,7 +357,7 @@ export function ExportSuccessModal({
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 md:gap-3">
                         <div className="flex items-center gap-2.5 md:gap-3 text-center sm:text-left">
                             <div className="flex-shrink-0 w-9 h-9 md:w-10 md:h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                                <MessageCircle className="w-4.5 h-4.5 md:w-5 md:h-5 text-white" />
+                                <MessageCircle className="w-5 h-5 text-white" />
                             </div>
                             <div>
                                 <h4 className="text-white font-bold text-xs md:text-sm mb-0 md:mb-0.5">Join the CartoArt Community</h4>

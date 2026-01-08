@@ -12,7 +12,8 @@
     "test:coverage": "jest --coverage",
     "test:ecommerce": "jest --testPathPattern='(checkout|stripe|printful|ecommerce)'",
     "test:integration": "jest --testPathPattern='integration'",
-    "lint": "eslint"
+    "lint": "eslint",
+    "pcli": "npx tsx cli_tools/pcli.ts"
   },
   "dependencies": {
     "@deck.gl/core": "^9.2.5",

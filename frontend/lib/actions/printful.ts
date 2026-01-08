@@ -323,7 +323,7 @@ export async function generateMockupTemplates(): Promise<{
             // Update each variant with its mockup
             for (const variantId of variantIds) {
                 const mockup = completedMockups.find((m: any) => m.variant_id === variantId);
-                const mockupUrl = mockup?.mockup_url || completedMockups[0]?.mockup_url;
+                const mockupUrl = mockup?.mockup_url;
 
                 if (mockupUrl) {
                     try {
@@ -545,6 +545,53 @@ export async function regenerateVariantMockup(variantId: number) {
 
     } catch (e: any) {
         console.error('Regenerate error:', e);
+        throw new Error(e.message);
+    }
+}
+
+/**
+ * Inspect available templates for a variant
+ */
+export async function inspectVariantTemplates(variantId: number) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) throw new Error('Unauthorized');
+
+    // Check admin
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single<{ is_admin: boolean }>();
+
+    if (!(profile as any)?.is_admin) throw new Error('Admin only');
+
+    try {
+        // 1. Get Product ID
+        const variantInfo = await printful.getVariant(variantId);
+        const productId = variantInfo.variant.product_id;
+        const productName = variantInfo.variant.name;
+
+        // 2. Fetch Templates
+        const templatesRes = await fetch(`https://api.printful.com/mockup-generator/templates/${productId}`, {
+            headers: { 'Authorization': `Bearer ${process.env.PRINTFUL_API_KEY}` }
+        });
+
+        if (!templatesRes.ok) {
+            throw new Error(`Failed to fetch templates: ${templatesRes.statusText}`);
+        }
+
+        const templatesData = await templatesRes.json();
+        const templates = templatesData.result.templates;
+
+        return {
+            productId,
+            productName,
+            templates
+        };
+    } catch (e: any) {
+        console.error('Inspect error:', e);
         throw new Error(e.message);
     }
 }
