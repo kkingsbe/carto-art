@@ -38,40 +38,45 @@ export function FeedClient({ initialSort }: FeedClientProps) {
   }, [hasMore, loading, initialLoading, loadMore]);
 
   return (
-    <>
+    <div className="bg-[#0a0f1a]">
       <FeedFilters currentSort={initialSort} />
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        <div className="mx-4 sm:mx-6 lg:mx-10 mb-6 p-4 bg-red-900/20 border border-red-800 rounded-lg">
+          <p className="text-sm text-red-400">{error}</p>
         </div>
       )}
 
       {initialLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <div className="flex items-center justify-center py-20">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-10 h-10 animate-spin text-[#c9a962]" />
+            <p className="text-sm text-[#d4cfc4]/60">Loading maps...</p>
+          </div>
         </div>
       ) : (
         <>
           <MapGrid maps={maps} />
 
           {/* Sentinel element for infinite scroll */}
-          <div ref={sentinelRef} className="h-10 flex items-center justify-center">
+          <div ref={sentinelRef} className="h-20 flex items-center justify-center bg-[#0a0f1a]">
             {loading && (
-              <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                <Loader2 className="w-5 h-5 animate-spin" />
+              <div className="flex items-center gap-3 text-[#d4cfc4]/60">
+                <Loader2 className="w-5 h-5 animate-spin text-[#c9a962]" />
                 <span className="text-sm">Loading more maps...</span>
               </div>
             )}
             {!hasMore && maps.length > 0 && (
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                No more maps to load
-              </p>
+              <div className="flex flex-col items-center gap-2 py-8">
+                <div className="w-12 h-[1px] bg-gradient-to-r from-transparent via-[#c9a962]/30 to-transparent" />
+                <p className="text-sm text-[#d4cfc4]/40">
+                  You've reached the end
+                </p>
+              </div>
             )}
           </div>
         </>
       )}
-    </>
+    </div>
   );
 }
-

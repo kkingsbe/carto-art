@@ -23,15 +23,17 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
   const stats = await getSiteStats();
 
   return (
-    <>
+    <div className="min-h-screen bg-[#0a0f1a] flex flex-col">
       {/* Hero Section */}
       <GalleryHero stats={stats} />
 
-      {/* Filter Bar + Content */}
-      <div className="min-h-screen bg-[#0a0f1a]">
+      {/* Filter Bar + Content - Full height dark background */}
+      <div className="flex-1 bg-[#0a0f1a]">
         <FeedClient initialSort={sort} />
       </div>
-    </>
+
+      {/* Bottom spacer to ensure dark background extends */}
+      <div className="h-16 bg-[#0a0f1a]" />
+    </div>
   );
 }
-
