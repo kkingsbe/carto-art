@@ -28,7 +28,20 @@ export type EventType =
     | 'return_visit'
     | 'notification_click'
     | 'changelog_view'
-    | 'changelog_close';
+    | 'changelog_close'
+    // Ecommerce Funnel Events
+    | 'shop_transition_start'
+    | 'shop_transition_success'
+    | 'gallery_view'
+    | 'gallery_map_click'
+    | 'gallery_remix_click'
+    | 'store_view'
+    | 'product_view'
+    | 'checkout_start'
+    | 'checkout_variant_select'
+    | 'checkout_step_complete'
+    | 'checkout_abandon'
+    | 'purchase_complete';
 
 /**
  * Tracks a user event in the database for admin analytics.

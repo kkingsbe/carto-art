@@ -1,12 +1,14 @@
 
 'use client';
 
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ProductGroup, parseAspectRatio, variantMatchesAspectRatio, variantMatchesOrientationStrict } from '@/lib/utils/store';
+import { ProductGroup, parseAspectRatio, findBestMatchingVariant } from '@/lib/utils/store';
 import { FrameMockupRenderer } from '@/components/ecommerce/FrameMockupRenderer';
-import { cn } from '@/lib/utils';
-import { ArrowRight } from 'lucide-react';
+import { cn, getSessionId } from '@/lib/utils';
+import { ArrowRight, AlertTriangle } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
+import { trackEventAction } from '@/lib/actions/events';
 
 interface ProductCardProps {
     product: ProductGroup;
@@ -52,37 +54,56 @@ export function ProductCard({ product, designUrl: propDesignUrl }: ProductCardPr
     const orientation = searchParams?.get('orientation') as 'portrait' | 'landscape' | undefined;
 
     let displayVariant = product.thumbnailVariant;
+    let showWarning = false;
 
-    if (aspect && orientation) {
-        const isPortrait = orientation === 'portrait';
-        const targetRatio = parseAspectRatio(aspect, orientation);
+    if (aspect) {
+        // Use provided orientation or infer from aspect ratio
+        const effectiveOrientation = orientation || (parseAspectRatio(aspect) < 1 ? 'portrait' : 'landscape');
+        const targetRatio = parseAspectRatio(aspect, effectiveOrientation);
 
-        // Use strict orientation matching to find a variant whose mockup print area
-        // matches the design's orientation (prevents flipped aspect ratios)
-        const bestVariant = product.variants.find(v =>
-            v.mockup_template_url &&
-            variantMatchesOrientationStrict(v, isPortrait) &&
-            variantMatchesAspectRatio(v, targetRatio)
-        );
+        const match = findBestMatchingVariant(product.variants, targetRatio, effectiveOrientation);
 
-        if (bestVariant) {
-            displayVariant = bestVariant;
-        }
-    } else if (aspect) {
-        // Fallback: no orientation specified, use original logic
-        const targetRatio = parseAspectRatio(aspect, orientation);
-        const bestVariant = product.variants.find(v =>
-            v.mockup_template_url && variantMatchesAspectRatio(v, targetRatio)
-        );
-
-        if (bestVariant) {
-            displayVariant = bestVariant;
+        if (match) {
+            displayVariant = match.variant;
+            showWarning = !match.isExactMatch;
         }
     }
 
+    // Track product view when card becomes visible
+    const cardRef = useRef<HTMLDivElement>(null);
+    const hasTrackedRef = useRef(false);
+
+    useEffect(() => {
+        if (!cardRef.current || hasTrackedRef.current) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting && !hasTrackedRef.current) {
+                        hasTrackedRef.current = true;
+                        trackEventAction({
+                            eventType: 'product_view',
+                            eventName: 'product_card_viewed',
+                            sessionId: getSessionId(),
+                            metadata: {
+                                product_id: product.id,
+                                product_type: product.title,
+                                min_price: Math.ceil(product.minPrice / 100)
+                            }
+                        });
+                    }
+                });
+            },
+            { threshold: 0.5 } // Track when 50% visible
+        );
+
+        observer.observe(cardRef.current);
+        return () => observer.disconnect();
+    }, [product.id, product.title, product.minPrice]);
+
     return (
         <Link href={href} className="group block h-full">
-            <div className={cn(
+            <div ref={cardRef} className={cn(
                 "relative flex flex-col h-full overflow-hidden rounded-2xl",
                 "bg-white dark:bg-gray-900",
                 "border border-gray-200 dark:border-gray-800",
@@ -93,6 +114,13 @@ export function ProductCard({ product, designUrl: propDesignUrl }: ProductCardPr
                 <div className="relative min-h-[280px] bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center p-6 overflow-hidden">
                     {/* Background Glow */}
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                    {showWarning && (
+                        <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 px-2 py-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-[10px] font-bold shadow-sm border border-amber-200 dark:border-amber-800">
+                            <AlertTriangle className="w-3 h-3" />
+                            Closest Match
+                        </div>
+                    )}
 
                     <div className="relative z-10 w-full h-full flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
                         {designUrl && displayVariant.mockup_template_url ? (

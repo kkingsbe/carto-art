@@ -13,7 +13,7 @@ import { useMapAnimation } from '@/hooks/useMapAnimation';
 import { useProjectManager } from '@/hooks/useProjectManager';
 import { useEditorKeyboardShortcuts } from '@/hooks/useEditorKeyboardShortcuts';
 import { useAnonExportUsage } from '@/hooks/useAnonExportUsage';
-import { Maximize, Plus, Minus, X, Map as MapIcon, Type, Layout, Sparkles, Palette, User, Layers, MousePointer2, RotateCw } from 'lucide-react';
+import { Maximize, Plus, Minus, X, Map as MapIcon, Type, Layout, Sparkles, Palette, User, Layers, MousePointer2, RotateCw, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { styles } from '@/lib/styles';
 import { MapPreview } from '@/components/map/MapPreview';
@@ -56,6 +56,7 @@ interface PosterEditorProps {
 export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
   const [activeTab, setActiveTab] = useState<Tab>('location');
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [isAdvancedControlsOpen, setIsAdvancedControlsOpen] = useState(false);
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
@@ -753,7 +754,7 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
       />
 
       {/* Floating Sidebar Container - Hidden on mobile */}
-      <div className="hidden md:flex absolute top-16 left-2 bottom-2 md:top-4 md:left-4 md:bottom-4 z-40 flex-row pointer-events-none max-w-[calc(100vw-1rem)]">
+      <div className={`hidden md:flex absolute top-16 left-2 bottom-2 md:top-4 md:left-4 md:bottom-4 z-40 flex-row pointer-events-none max-w-[calc(100vw-1rem)] transition-transform duration-300 ease-in-out ${!isSidebarVisible ? '-translate-x-[calc(100%+1rem)]' : 'translate-x-0'}`}>
         <div id="walkthrough-sidebar" className="pointer-events-auto flex flex-row h-full shadow-2xl rounded-2xl overflow-hidden bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200 dark:border-gray-700/50">
           <TabNavigation
             activeTab={activeTab}
@@ -791,7 +792,32 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
             activeAnimation={activeAnimation}
           />
         </div>
+
+        {/* Sidebar Toggle Button - appears on the right edge of the sidebar */}
+        <button
+          onClick={() => setIsSidebarVisible(!isSidebarVisible)}
+          className="pointer-events-auto self-center ml-2 p-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-lg shadow-lg border border-gray-200 dark:border-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          title={isSidebarVisible ? 'Hide control panel' : 'Show control panel'}
+        >
+          {isSidebarVisible ? (
+            <PanelLeftClose className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+          ) : (
+            <PanelLeftOpen className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+          )}
+        </button>
       </div>
+
+      {/* Show sidebar button when sidebar is hidden */}
+      {!isSidebarVisible && (
+        <button
+          onClick={() => setIsSidebarVisible(true)}
+          className="hidden md:flex absolute top-4 left-4 z-40 p-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-lg shadow-lg border border-gray-200 dark:border-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors items-center gap-2"
+          title="Show control panel"
+        >
+          <PanelLeftOpen className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Controls</span>
+        </button>
+      )}
 
       {/* Main Content Area - Full Screen with Centered Poster */}
       <main

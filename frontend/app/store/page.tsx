@@ -4,6 +4,7 @@ import { groupVariantsByProduct } from '@/lib/utils/store';
 import { ProductCard } from '@/components/store/ProductCard';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
+import { trackEvent } from '@/lib/events';
 
 export const metadata = {
     title: 'Select Product | Carto Art',
@@ -24,8 +25,19 @@ export default async function StorePage({ searchParams }: StorePageProps) {
     // 2. Group into products
     const products = groupVariantsByProduct(allVariants, productsData);
 
-    // 3. Get design URL for preview
-    const designUrl = typeof searchParams.image === 'string' ? searchParams.image : undefined;
+    // 3. Get design URL for preview (await searchParams for Next.js 15+)
+    const params = await searchParams;
+    const designUrl = typeof params.image === 'string' ? params.image : undefined;
+
+    // Track store view
+    await trackEvent({
+        eventType: 'store_view',
+        eventName: 'store_page_loaded',
+        metadata: {
+            product_count: products.length,
+            has_design: !!designUrl
+        }
+    });
 
     return (
         <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950">

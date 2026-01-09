@@ -81,6 +81,54 @@ export function variantMatchesOrientationStrict(
     return printAreaIsPortrait === isPortrait;
 }
 
+export interface BestMatchResult {
+    variant: ProductVariant;
+    isExactMatch: boolean;
+    matchScore: number;
+}
+
+export function findBestMatchingVariant(
+    variants: ProductVariant[],
+    targetRatio: number,
+    orientation: 'portrait' | 'landscape',
+    tolerance: number = 0.05
+): BestMatchResult | null {
+    // NEW: Consider ALL variants, but penalize those without mockups
+    const candidates = variants;
+    if (candidates.length === 0) return null;
+
+    const isPortrait = orientation === 'portrait';
+
+    // Prioritize orientation matches (strict)
+    const strictMatches = candidates.filter(v =>
+        variantMatchesOrientationStrict(v, isPortrait, tolerance)
+    );
+
+    const pool = strictMatches.length > 0 ? strictMatches : candidates;
+
+    let bestMatch: BestMatchResult | null = null;
+    let minScore = Infinity;
+
+    for (const variant of pool) {
+        const dims = parseVariantDimensions(variant.name);
+        if (!dims) continue;
+
+        const variantRatio = dims.width / dims.height;
+        const diff = Math.abs(variantRatio - targetRatio) / targetRatio;
+
+        // Add a small penalty for missing mockups (e.g. 0.2 = 20% difference equivalent)
+        const mockupPenalty = variant.mockup_template_url ? 0 : 0.2;
+        const score = diff + mockupPenalty;
+
+        if (score < minScore) {
+            minScore = score;
+            bestMatch = { variant, isExactMatch: diff <= tolerance, matchScore: score };
+        }
+    }
+
+    return bestMatch;
+}
+
 export type ProductVariant = Database['public']['Tables']['product_variants']['Row'] & {
     display_price_cents: number;
 };

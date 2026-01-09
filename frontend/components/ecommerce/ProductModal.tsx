@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ShippingForm } from "./ShippingForm";
@@ -14,7 +14,8 @@ import { getMarginAdjustedVariants } from '@/lib/actions/ecommerce';
 import { VariantCard, VariantCardSkeleton } from './VariantCard';
 import { FrameMockupRenderer } from './FrameMockupRenderer';
 import { ChevronLeft, Loader2, Check, Package, Truck, CreditCard, Eye, EyeOff } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, getSessionId } from '@/lib/utils';
+import { trackEventAction } from '@/lib/actions/events';
 
 // Replace with your actual Publishable Key from environment
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -156,6 +157,9 @@ export function ProductModal({ isOpen, onClose, imageUrl, designId, aspectRatio 
     // Calculate the target aspect ratio from props
     const targetAspectRatio = parseAspectRatio(aspectRatio, orientation);
 
+    // Track checkout_start when modal opens
+    const hasTrackedStartRef = useRef(false);
+
     useEffect(() => {
         const fetchVariants = async () => {
             setIsLoadingVariants(true);
@@ -182,8 +186,25 @@ export function ProductModal({ isOpen, onClose, imageUrl, designId, aspectRatio 
         };
         if (isOpen) {
             fetchVariants();
+
+            // Track checkout start (once per open)
+            if (!hasTrackedStartRef.current) {
+                hasTrackedStartRef.current = true;
+                trackEventAction({
+                    eventType: 'checkout_start',
+                    eventName: 'checkout_modal_opened',
+                    sessionId: getSessionId(),
+                    metadata: {
+                        variant_count: variants.length,
+                        aspect_ratio: aspectRatio
+                    }
+                });
+            }
+        } else {
+            // Reset tracking when modal closes
+            hasTrackedStartRef.current = false;
         }
-    }, [isOpen, targetAspectRatio]);
+    }, [isOpen, targetAspectRatio, variants.length, aspectRatio]);
 
     const [clientSecret, setClientSecret] = useState("");
     const [uploadedDesignId, setUploadedDesignId] = useState<number | string | null>(designId || null);
@@ -212,6 +233,17 @@ export function ProductModal({ isOpen, onClose, imageUrl, designId, aspectRatio 
 
     const handleNextLimit = async () => {
         if (step === 1) {
+            // Track step 1 complete
+            trackEventAction({
+                eventType: 'checkout_step_complete',
+                eventName: 'variant_selected',
+                sessionId: getSessionId(),
+                metadata: {
+                    step: 1,
+                    variant_id: selectedVariant?.id,
+                    variant_name: selectedVariant?.name
+                }
+            });
             setStep(2);
         } else if (step === 2) {
             // Validate Shipping
@@ -294,6 +326,18 @@ export function ProductModal({ isOpen, onClose, imageUrl, designId, aspectRatio 
                 }
                 const data = await res.json();
                 setClientSecret(data.clientSecret);
+
+                // Track step 2 complete
+                trackEventAction({
+                    eventType: 'checkout_step_complete',
+                    eventName: 'shipping_entered',
+                    sessionId: getSessionId(),
+                    metadata: {
+                        step: 2,
+                        shipping_country: shippingData.address.country
+                    }
+                });
+
                 setStep(3);
 
             } catch (error: any) {
@@ -309,6 +353,22 @@ export function ProductModal({ isOpen, onClose, imageUrl, designId, aspectRatio 
         if (step > 1) {
             setStep(step - 1);
         }
+    };
+
+    // Track checkout abandon when closing before completion
+    const handleClose = () => {
+        if (step < 3) {
+            trackEventAction({
+                eventType: 'checkout_abandon',
+                eventName: 'checkout_modal_closed',
+                sessionId: getSessionId(),
+                metadata: {
+                    abandoned_at_step: step,
+                    variant_id: selectedVariant?.id
+                }
+            });
+        }
+        onClose();
     };
 
     return (

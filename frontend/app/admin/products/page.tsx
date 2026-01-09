@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getProducts, upsertProduct, deleteProduct, upsertProductVariant, deleteProductVariant, deleteProductVariants } from "@/lib/actions/ecommerce";
-import { generateMockupTemplates, getMissingTemplateCount, regenerateVariantMockup } from "@/lib/actions/printful";
+import { generateMockupTemplates, getMissingTemplateCount, regenerateVariantMockup, clearAllMockupTemplates, getGenerationStatus, GenerationJobStatus } from "@/lib/actions/printful";
 import { getSiteConfig } from "@/lib/actions/usage";
 import { CONFIG_KEYS } from "@/lib/actions/usage.types";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,8 @@ import {
 } from "@/components/ui/accordion";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Trash2, Loader2, ImageIcon, AlertTriangle, CheckCircle2, RefreshCcw, Eraser, ChevronDown, ChevronRight, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, ImageIcon, AlertTriangle, CheckCircle2, RefreshCcw, Eraser, ChevronDown, ChevronRight, Package, Clock, XCircle, Activity } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 export default function AdminProductsPage() {
     const [products, setProducts] = useState<any[]>([]);
@@ -52,6 +53,9 @@ export default function AdminProductsPage() {
     const [selectedVariants, setSelectedVariants] = useState<number[]>([]);
     const [isGeneratingTemplates, setIsGeneratingTemplates] = useState(false);
     const [missingTemplateCount, setMissingTemplateCount] = useState<number>(0);
+    const [currentJob, setCurrentJob] = useState<GenerationJobStatus | null>(null);
+    const [activeJobId, setActiveJobId] = useState<string | null>(null);
+    const [now, setNow] = useState(Date.now());
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -83,6 +87,53 @@ export default function AdminProductsPage() {
             console.error('Failed to fetch missing template count', e);
         }
     };
+
+    const fetchJobStatus = async (jobId?: string) => {
+        try {
+            console.log('[DEBUG] Fetching job status for:', jobId);
+            const status = await getGenerationStatus(jobId || undefined);
+            console.log('[DEBUG] Got job status:', status);
+            setCurrentJob(status);
+
+            // If job is still processing, keep polling
+            if (status && status.status === 'processing') {
+                setActiveJobId(status.id);
+            } else {
+                setActiveJobId(null);
+                setIsGeneratingTemplates(false);
+            }
+        } catch (e) {
+            console.error('Failed to fetch job status', e);
+        }
+    };
+
+    // Polling effect for active jobs
+    useEffect(() => {
+        if (!activeJobId && !isGeneratingTemplates) {
+            // Check for any recently active job on mount
+            fetchJobStatus();
+            return;
+        }
+
+        if (activeJobId || isGeneratingTemplates) {
+            const interval = setInterval(() => {
+                fetchJobStatus(activeJobId || undefined);
+            }, 3000); // Poll every 3 seconds
+
+            return () => clearInterval(interval);
+        }
+    }, [activeJobId, isGeneratingTemplates]);
+
+    // Update real-time ticker
+    useEffect(() => {
+        if (!currentJob || currentJob.status !== 'processing') return;
+
+        const timer = setInterval(() => {
+            setNow(Date.now());
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [currentJob?.status]);
 
     const handleSaveProduct = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -162,6 +213,14 @@ export default function AdminProductsPage() {
 
         try {
             const result = await generateMockupTemplates();
+            console.log('[DEBUG] Generate result:', result);
+            // Set active job ID to start polling
+            if (result.jobId) {
+                console.log('[DEBUG] Setting active job ID:', result.jobId);
+                setActiveJobId(result.jobId);
+            } else {
+                console.warn('[DEBUG] No jobId returned from generateMockupTemplates');
+            }
             if (result.errors.length > 0) {
                 toast.warning(`Generated ${result.processed} templates with ${result.errors.length} errors`);
             } else {
@@ -171,8 +230,22 @@ export default function AdminProductsPage() {
             fetchMissingCount();
         } catch (error: any) {
             toast.error(error.message || 'Failed to generate templates');
-        } finally {
             setIsGeneratingTemplates(false);
+        }
+        // Note: setIsGeneratingTemplates(false) is now handled by the polling effect
+    };
+
+    const handleClearAllTemplates = async () => {
+        if (!confirm("CRITICAL: Are you sure you want to clear ALL existing mockup templates? This will force a total regeneration of all product previews.")) return;
+
+        const toastId = toast.loading("Clearing all templates...");
+        try {
+            await clearAllMockupTemplates();
+            toast.success("All templates cleared", { id: toastId });
+            fetchData();
+            fetchMissingCount();
+        } catch (error: any) {
+            toast.error(error.message || "Failed to clear templates", { id: toastId });
         }
     };
 
@@ -228,86 +301,176 @@ export default function AdminProductsPage() {
                         </Button>
                     )}
 
-                    <Dialog open={isProductDialogOpen} onOpenChange={(open) => {
-                        setIsProductDialogOpen(open);
-                        if (!open) setEditingProduct(null);
-                    }}>
-                        <DialogTrigger asChild>
-                            <Button onClick={() => setEditingProduct(null)}>
-                                <Plus className="w-4 h-4 mr-2" />
-                                Add Product
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                                <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
-                            </DialogHeader>
-                            <form onSubmit={handleSaveProduct} className="space-y-4 pt-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="id">Product ID (Printful ID)</Label>
-                                        <Input
-                                            id="id"
-                                            name="id"
-                                            type="number"
-                                            defaultValue={editingProduct?.id}
-                                            required
-                                            disabled={!!editingProduct}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="starting_price">Starting Price (USD)</Label>
-                                        <Input
-                                            id="starting_price"
-                                            name="starting_price"
-                                            type="number"
-                                            step="0.01"
-                                            defaultValue={editingProduct ? editingProduct.starting_price / 100 : ''}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="title">Display Title</Label>
-                                    <Input id="title" name="title" defaultValue={editingProduct?.title} required />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="description">Description</Label>
-                                    <Textarea id="description" name="description" defaultValue={editingProduct?.description} />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="features">Features (One per line)</Label>
-                                    <Textarea
-                                        id="features"
-                                        name="features"
-                                        defaultValue={editingProduct?.features?.join('\n')}
-                                        rows={5}
-                                    />
-                                </div>
-
-                                <div className="flex items-center gap-4">
-                                    <div className="space-y-2 w-24">
-                                        <Label htmlFor="display_order">Order</Label>
-                                        <Input id="display_order" name="display_order" type="number" defaultValue={editingProduct?.display_order || 0} />
-                                    </div>
-                                    <div className="flex items-center gap-2 pt-6">
-                                        <Switch id="is_active" name="is_active" defaultChecked={editingProduct ? editingProduct.is_active : true} />
-                                        <Label htmlFor="is_active">Active</Label>
-                                    </div>
-                                </div>
-
-                                <Button type="submit" className="w-full" disabled={isSaving}>
-                                    {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                                    {editingProduct ? 'Update' : 'Create'} Product
-                                </Button>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
+                    <Button
+                        variant="ghost"
+                        className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                        onClick={handleClearAllTemplates}
+                    >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Clear All Templates
+                    </Button>
                 </div>
             </div>
 
+            {/* Generation Job Status Card */}
+            {currentJob && (currentJob.status === 'processing' || (currentJob.status === 'completed' && Date.now() - new Date(currentJob.completed_at || 0).getTime() < 60000)) && (
+                <div className="border rounded-lg p-4 bg-card">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                            <Activity className="w-4 h-4 text-blue-500" />
+                            <h3 className="font-semibold">Template Generation Status</h3>
+                        </div>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${currentJob.status === 'processing' ? 'bg-blue-100 text-blue-700' :
+                            currentJob.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                currentJob.status === 'failed' ? 'bg-red-100 text-red-700' :
+                                    'bg-gray-100 text-gray-700'
+                            }`}>
+                            {currentJob.status.charAt(0).toUpperCase() + currentJob.status.slice(1)}
+                        </span>
+                    </div>
+
+                    <Progress
+                        value={currentJob.total_items > 0 ? ((currentJob.processed_count + currentJob.failed_count) / currentJob.total_items) * 100 : 0}
+                        className="mb-3"
+                    />
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <div className="text-muted-foreground">Progress</div>
+                            <div className="font-semibold">
+                                {currentJob.processed_count + currentJob.failed_count} / {currentJob.total_items}
+                            </div>
+                        </div>
+                        <div>
+                            <div className="text-muted-foreground flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3 text-green-600" /> Processed
+                            </div>
+                            <div className="font-semibold text-green-600">{currentJob.processed_count}</div>
+                        </div>
+                        <div>
+                            <div className="text-muted-foreground flex items-center gap-1">
+                                <XCircle className="w-3 h-3 text-red-600" /> Errors
+                            </div>
+                            <div className="font-semibold text-red-600">{currentJob.failed_count}</div>
+                        </div>
+                        <div>
+                            <div className="text-muted-foreground flex items-center gap-1">
+                                <Clock className="w-3 h-3" /> Est. Remaining
+                            </div>
+                            <div className="font-semibold">
+                                {(() => {
+                                    if (currentJob.status === 'completed') return 'Done';
+                                    if (currentJob.status !== 'processing' || !currentJob.estimated_remaining_ms) return '--';
+
+                                    // Calculate time passed since server last updated this job record
+                                    const lastUpdate = new Date(currentJob.last_updated_at).getTime();
+                                    const elapsedSinceUpdate = Math.max(0, now - lastUpdate);
+                                    const effectiveRemaining = Math.max(0, currentJob.estimated_remaining_ms - elapsedSinceUpdate);
+
+                                    return formatDuration(effectiveRemaining);
+                                })()}
+                            </div>
+                        </div>
+                    </div>
+
+                    {currentJob.average_time_per_item_ms && currentJob.processed_count > 0 && (
+                        <div className="mt-2 text-xs text-muted-foreground">
+                            Avg. time per template: {(currentJob.average_time_per_item_ms / 1000).toFixed(1)}s
+                        </div>
+                    )}
+
+                    {currentJob.error_logs && currentJob.error_logs.length > 0 && (
+                        <div className="mt-3 pt-3 border-t">
+                            <div className="text-xs text-muted-foreground mb-1">Recent Errors:</div>
+                            <div className="text-xs text-red-600 space-y-1 max-h-20 overflow-auto">
+                                {currentJob.error_logs.slice(-3).map((err, i) => (
+                                    <div key={i}>Variant {err.id}: {err.error}</div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            <Dialog open={isProductDialogOpen} onOpenChange={(open) => {
+                setIsProductDialogOpen(open);
+                if (!open) setEditingProduct(null);
+            }}>
+                <DialogTrigger asChild>
+                    <Button onClick={() => setEditingProduct(null)}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Product
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleSaveProduct} className="space-y-4 pt-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="id">Product ID (Printful ID)</Label>
+                                <Input
+                                    id="id"
+                                    name="id"
+                                    type="number"
+                                    defaultValue={editingProduct?.id}
+                                    required
+                                    disabled={!!editingProduct}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="starting_price">Starting Price (USD)</Label>
+                                <Input
+                                    id="starting_price"
+                                    name="starting_price"
+                                    type="number"
+                                    step="0.01"
+                                    defaultValue={editingProduct ? editingProduct.starting_price / 100 : ''}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="title">Display Title</Label>
+                            <Input id="title" name="title" defaultValue={editingProduct?.title} required />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="description">Description</Label>
+                            <Textarea id="description" name="description" defaultValue={editingProduct?.description} />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="features">Features (One per line)</Label>
+                            <Textarea
+                                id="features"
+                                name="features"
+                                defaultValue={editingProduct?.features?.join('\n')}
+                                rows={5}
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                            <div className="space-y-2 w-24">
+                                <Label htmlFor="display_order">Order</Label>
+                                <Input id="display_order" name="display_order" type="number" defaultValue={editingProduct?.display_order || 0} />
+                            </div>
+                            <div className="flex items-center gap-2 pt-6">
+                                <Switch id="is_active" name="is_active" defaultChecked={editingProduct ? editingProduct.is_active : true} />
+                                <Label htmlFor="is_active">Active</Label>
+                            </div>
+                        </div>
+
+                        <Button type="submit" className="w-full" disabled={isSaving}>
+                            {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                            {editingProduct ? 'Update' : 'Create'} Product
+                        </Button>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Loading and Products Display */}
             {isLoading ? (
                 <div className="flex justify-center p-12">
                     <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -478,7 +641,7 @@ export default function AdminProductsPage() {
                                 type="number"
                                 defaultValue={editingVariant?.id}
                                 required
-                                disabled={!!editingVariant?.id} // Only allow setting ID on create? Actually Printful ID is external so maybe allow create only.
+                                disabled={!!editingVariant?.id}
                             />
                         </div>
                         <div className="space-y-2">
@@ -514,4 +677,18 @@ export default function AdminProductsPage() {
         </div>
     );
 }
+
+// Helper function to format duration
+function formatDuration(ms: number): string {
+    if (ms < 1000) return 'Less than 1s';
+    const seconds = Math.floor(ms / 1000);
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    if (minutes < 60) return `${minutes}m ${remainingSeconds}s`;
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return `${hours}h ${remainingMinutes}m`;
+}
+
 

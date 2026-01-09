@@ -335,7 +335,7 @@ export const printful = {
         });
 
         // Retry logic for rate limiting
-        const maxRetries = 3;
+        const maxRetries = 5;
         let lastError: Error | null = null;
 
         for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -366,10 +366,10 @@ export const printful = {
                 let waitSeconds = 60; // Default wait time
                 const retryMatch = errorBody.result?.match(/after (\d+) seconds/);
                 if (retryMatch) {
-                    waitSeconds = parseInt(retryMatch[1], 10) + 5; // Add 5s buffer
+                    waitSeconds = parseInt(retryMatch[1], 10) + 10; // Add 10s buffer instead of 5
                 }
 
-                console.log(`Rate limited. Waiting ${waitSeconds} seconds before retry ${attempt + 1}/${maxRetries}...`);
+                console.log(`Rate limited by Printful. Waiting ${waitSeconds} seconds before retry ${attempt + 1}/${maxRetries}...`);
                 await new Promise(resolve => setTimeout(resolve, waitSeconds * 1000));
                 continue;
             }

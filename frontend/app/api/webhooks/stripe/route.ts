@@ -243,6 +243,25 @@ export async function POST(request: Request) {
                     })
                     .eq('id', typedOrder.id);
 
+                // Track purchase completion
+                await (supabase as any).from('page_events').insert({
+                    user_id: typedOrder.user_id || null,
+                    session_id: metadata?.session_id || null,
+                    event_type: 'purchase_complete',
+                    event_name: 'order_placed',
+                    page_url: 'checkout',
+                    metadata: {
+                        order_id: typedOrder.id,
+                        variant_id: typedOrder.variant_id,
+                        amount_cents: paymentIntent.amount,
+                        currency: paymentIntent.currency,
+                        printful_order_id: printfulOrder.id,
+                        shipping_country: shipping?.address?.country
+                    }
+                });
+
+                console.log(`[Order] Successfully created Printful order ${printfulOrder.id} and tracked purchase_complete event`);
+
             } catch (err: any) {
                 console.error('[Order] Failed to create Printful order', err);
                 await (supabase as any)

@@ -200,12 +200,14 @@ export async function syncVariantImages() {
 /**
  * Generate mockup templates for all variants that don't have one.
  * Batches variants by product_id to minimize API calls.
+ * Tracks progress in the generation_jobs table for monitoring.
  * 
- * @returns Object with success count and any errors
+ * @returns Object with success count, errors, and job ID
  */
 export async function generateMockupTemplates(): Promise<{
     processed: number;
     errors: { id: number; error: string }[];
+    jobId?: string;
 }> {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -277,6 +279,58 @@ export async function generateMockupTemplates(): Promise<{
         variantsByProduct.get(productId)!.push(v.id);
     }
 
+    // Calculate total items to process
+    let totalItems = 0;
+    for (const ids of variantsByProduct.values()) {
+        totalItems += ids.length;
+    }
+
+    // Create a job record to track progress
+    const { data: job, error: jobError } = await (supabase as any)
+        .from('generation_jobs')
+        .insert({
+            job_type: 'mockup_template',
+            status: 'processing',
+            total_items: totalItems,
+            processed_count: 0,
+            failed_count: 0,
+            error_logs: [],
+            started_at: new Date().toISOString(),
+            last_updated_at: new Date().toISOString()
+        })
+        .select('id')
+        .single();
+
+    const jobId = job?.id;
+    if (jobError) {
+        console.warn('Failed to create job record:', jobError);
+    }
+
+    // Helper to update job progress
+    const updateJobProgress = async (processedCount: number, failedCount: number, errorLogs: any[], status?: string) => {
+        if (!jobId) return;
+        try {
+            const updateData: any = {
+                processed_count: processedCount,
+                failed_count: failedCount,
+                error_logs: errorLogs,
+                last_updated_at: new Date().toISOString()
+            };
+            if (status) {
+                updateData.status = status;
+                if (status === 'completed' || status === 'failed') {
+                    updateData.completed_at = new Date().toISOString();
+                }
+            }
+            await (supabase as any)
+                .from('generation_jobs')
+                .update(updateData)
+                .eq('id', jobId);
+        } catch (e) {
+            console.warn('Failed to update job progress:', e);
+        }
+    };
+
     // Magenta placeholder image URL (solid color for keying)
     // Large square image that Printful will automatically scale/crop to fit any product's print area
     const MAGENTA_PLACEHOLDER = 'https://cdhewcjfrghjhenztwdq.supabase.co/storage/v1/object/public/placeholder-templates/magenta-placeholder-4000x4000.png';
@@ -327,13 +381,36 @@ export async function generateMockupTemplates(): Promise<{
                 throw new Error('Mockup generation timed out');
             }
 
-            // Default print area for framed posters
-
+            // Debug log the mockup response structure
+            console.log(`[DEBUG] Completed mockups for product ${productId}:`, JSON.stringify(completedMockups.slice(0, 3), null, 2));
+            console.log(`[DEBUG] Looking for variant IDs: ${variantIds.join(', ')}`);
+            // Printful returns variant_ids as an ARRAY, not variant_id (single)
+            console.log(`[DEBUG] Mockup structures:`, completedMockups.map((m: any) => ({
+                variant_ids: m.variant_ids,
+                variant_id: m.variant_id,
+                has_mockup_url: !!m.mockup_url,
+                has_extra: !!(m.extra && m.extra.length > 0),
+                placement: m.placement
+            })));
 
             // Update each variant with its mockup
             for (const variantId of variantIds) {
-                const mockup = completedMockups.find((m: any) => m.variant_id === variantId);
-                const mockupUrl = mockup?.mockup_url;
+                // Printful returns variant_ids as an ARRAY in each mockup object
+                // A single mockup may apply to multiple variants
+                const mockup = completedMockups.find((m: any) => {
+                    // Check both structures: variant_ids (array) or variant_id (single)
+                    if (Array.isArray(m.variant_ids)) {
+                        return m.variant_ids.includes(variantId);
+                    }
+                    return m.variant_id === variantId;
+                });
+
+                // The URL may be in mockup_url, or in extra[0].url
+                let mockupUrl = mockup?.mockup_url;
+                if (!mockupUrl && mockup?.extra && mockup.extra.length > 0) {
+                    mockupUrl = mockup.extra[0]?.url;
+                }
+                console.log(`[DEBUG] Variant ${variantId}: mockup found = ${!!mockup}, url = ${mockupUrl?.substring(0, 50) || 'none'}`);
 
                 if (mockupUrl) {
                     try {
@@ -373,6 +450,9 @@ export async function generateMockupTemplates(): Promise<{
                 } else {
                     errors.push({ id: variantId, error: 'No mockup URL returned' });
                 }
+
+                // Update job progress after each variant
+                await updateJobProgress(processed, errors.length, errors.slice(-10)); // Keep last 10 errors
             }
 
         } catch (e: any) {
@@ -381,17 +461,22 @@ export async function generateMockupTemplates(): Promise<{
             for (const variantId of variantIds) {
                 errors.push({ id: variantId, error: e.message || 'Unknown error' });
             }
+            await updateJobProgress(processed, errors.length, errors.slice(-10));
         }
 
         // Rate limit between products - Printful has aggressive rate limits for mockup generation
-        // Use 30s delay to stay well under their limits
+        // Use 60s delay to stay well under their limits
         if (i < productEntries.length - 1) {
-            console.log(`Waiting 30 seconds before next product to avoid rate limits...`);
-            await new Promise(resolve => setTimeout(resolve, 30000));
+            console.log(`Waiting 60 seconds before next product to avoid rate limits...`);
+            await new Promise(resolve => setTimeout(resolve, 60000));
         }
     }
 
-    return { processed, errors };
+    // Mark job as completed
+    const finalStatus = errors.length > 0 && processed === 0 ? 'failed' : 'completed';
+    await updateJobProgress(processed, errors.length, errors.slice(-10), finalStatus);
+
+    return { processed, errors, jobId };
 }
 
 /**
@@ -407,6 +492,62 @@ export async function getMissingTemplateCount(): Promise<number> {
 
     if (error) throw error;
     return count || 0;
+}
+
+export interface GenerationJobStatus {
+    id: string;
+    job_type: string;
+    status: 'pending' | 'processing' | 'completed' | 'failed';
+    total_items: number;
+    processed_count: number;
+    failed_count: number;
+    error_logs: { id: number; error: string }[];
+    started_at: string;
+    completed_at: string | null;
+    last_updated_at: string;
+    // Computed fields
+    average_time_per_item_ms?: number;
+    estimated_remaining_ms?: number;
+}
+
+/**
+ * Get the status of the most recent generation job (or a specific job by ID)
+ */
+export async function getGenerationStatus(jobId?: string): Promise<GenerationJobStatus | null> {
+    const supabase = await createClient();
+
+    let query = (supabase as any)
+        .from('generation_jobs')
+        .select('*');
+
+    if (jobId) {
+        query = query.eq('id', jobId);
+    } else {
+        // Get the most recent job
+        query = query.order('started_at', { ascending: false }).limit(1);
+    }
+
+    const { data, error } = await query.single();
+
+    if (error || !data) {
+        return null;
+    }
+
+    // Calculate average time and estimated remaining
+    const job = data as GenerationJobStatus;
+
+    if (job.started_at && job.processed_count > 0) {
+        const startedAt = new Date(job.started_at).getTime();
+        const lastUpdated = new Date(job.last_updated_at).getTime();
+        const elapsedMs = lastUpdated - startedAt;
+
+        job.average_time_per_item_ms = Math.round(elapsedMs / job.processed_count);
+
+        const remaining = job.total_items - job.processed_count - job.failed_count;
+        job.estimated_remaining_ms = remaining * job.average_time_per_item_ms;
+    }
+
+    return job;
 }
 
 
@@ -517,9 +658,26 @@ export async function regenerateVariantMockup(variantId: number) {
 
         if (completedMockups.length === 0) throw new Error('No mockups generated');
 
-        // Find best mockup
-        const mockup = completedMockups.find((m: any) => m.variant_id === variantId);
-        const mockupUrl = mockup?.mockup_url || completedMockups[0]?.mockup_url;
+        // Find best mockup - Printful returns variant_ids as an ARRAY
+        const mockup = completedMockups.find((m: any) => {
+            if (Array.isArray(m.variant_ids)) {
+                return m.variant_ids.includes(variantId);
+            }
+            return m.variant_id === variantId;
+        });
+
+        // URL may be in mockup_url or extra[0].url
+        let mockupUrl = mockup?.mockup_url;
+        if (!mockupUrl && mockup?.extra && mockup.extra.length > 0) {
+            mockupUrl = mockup.extra[0]?.url;
+        }
+        // Fallback to first mockup if specific variant not found
+        if (!mockupUrl && completedMockups[0]) {
+            mockupUrl = completedMockups[0].mockup_url;
+            if (!mockupUrl && completedMockups[0].extra?.length > 0) {
+                mockupUrl = completedMockups[0].extra[0]?.url;
+            }
+        }
 
         if (!mockupUrl) throw new Error('No mockup URL found in response');
 
@@ -604,4 +762,41 @@ export async function inspectVariantTemplates(variantId: number) {
         console.error('Inspect error:', e);
         throw new Error(e.message);
     }
+}
+/**
+ * Clear mockup templates for ALL variants.
+ * This resets mockup_template_url and mockup_print_area to null.
+ * Use with CAUTION.
+ */
+export async function clearAllMockupTemplates() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) throw new Error('Unauthorized');
+
+    // Check admin
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single<{ is_admin: boolean }>();
+
+    if (!(profile as any)?.is_admin) throw new Error('Admin only');
+
+    console.log('Clearing ALL mockup templates from database...');
+
+    const { error } = await (supabase as any)
+        .from('product_variants')
+        .update({
+            mockup_template_url: null,
+            mockup_print_area: null
+        })
+        .not('id', 'eq', 0); // Safe-ish guard, though we want to clear all valid variants
+
+    if (error) {
+        console.error('Failed to clear mockup templates:', error);
+        throw new Error(error.message || 'Failed to clear templates');
+    }
+
+    return { success: true };
 }
