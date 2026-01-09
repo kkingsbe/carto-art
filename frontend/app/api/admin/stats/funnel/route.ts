@@ -4,6 +4,8 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
+
+
 export async function GET() {
     try {
         const isUserAdmin = await isAdmin();
@@ -13,94 +15,98 @@ export async function GET() {
 
         const supabase = await createClient();
 
-        // Fetch counts for each funnel step
-        // We use the new first_* columns on profiles table
+        // 30 day window
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const startTime = thirtyDaysAgo.toISOString();
 
+        // Fetch session_ids for each step to calculate unique sessions
+        // using separate queries for parallelism
         const [
-            { count: totalSignups },
-            { count: viewedEditor },
-            { count: createdMap },
-            { count: publishedMap },
-            { count: exportedPoster }
+            { data: landingEvents },
+            { data: editorEvents },
+            { data: checkoutEvents },
+            { data: purchaseEvents }
         ] = await Promise.all([
-            supabase.from('profiles').select('*', { count: 'exact', head: true }),
-            supabase.from('profiles').select('*', { count: 'exact', head: true }).not('first_view_editor_at', 'is', null),
-            supabase.from('profiles').select('*', { count: 'exact', head: true }).not('first_map_at', 'is', null),
-            supabase.from('profiles').select('*', { count: 'exact', head: true }).not('first_publish_at', 'is', null),
-            supabase.from('profiles').select('*', { count: 'exact', head: true }).not('first_export_at', 'is', null)
+            // Landing: any page view on the root path
+            supabase
+                .from('page_events')
+                .select('session_id')
+                .eq('event_type', 'page_view')
+                .ilike('page_url', '%/') // Simple heuristic for home page: ends in /
+                .gte('created_at', startTime),
+
+            // Editor Opened
+            supabase
+                .from('page_events')
+                .select('session_id')
+                .eq('event_type', 'editor_open')
+                .gte('created_at', startTime),
+
+            // Checkout Started
+            supabase
+                .from('page_events')
+                .select('session_id')
+                .eq('event_type', 'checkout_start')
+                .gte('created_at', startTime),
+
+            // Purchase Complete
+            supabase
+                .from('page_events')
+                .select('session_id')
+                .eq('event_type', 'purchase_complete')
+                .gte('created_at', startTime)
         ]);
 
-        // Calculate time metrics (avg time between steps)
-        // We need to fetch actual data for this, not just counts
-        // Taking a sample of recent activated users to keep it fast
-        const { data: recentUsersData } = await supabase
-            .from('profiles')
-            .select('created_at, first_view_editor_at, first_map_at, first_publish_at')
-            .not('first_map_at', 'is', null)
-            .order('created_at', { ascending: false })
-            .limit(100);
-
-        // Cast to any to avoid typescript inference issues with the new columns
-        const recentUsers = recentUsersData as any[];
-
-        const calculateAvgTime = (start: string | null, end: string | null) => {
-            if (!start || !end) return 0;
-            const diff = new Date(end).getTime() - new Date(start).getTime();
-            return diff > 0 ? diff / 1000 / 60 : 0; // minutes
+        // Helper to count unique sessions
+        const countUnique = (data: { session_id: string | null }[] | null) => {
+            if (!data) return 0;
+            const unique = new Set(data.map(d => d.session_id).filter(Boolean));
+            return unique.size;
         };
 
-        let avgSignupToEditor = 0;
-        let avgEditorToMap = 0;
+        const landingCount = countUnique(landingEvents);
+        const editorCount = countUnique(editorEvents);
+        const checkoutCount = countUnique(checkoutEvents);
+        const purchaseCount = countUnique(purchaseEvents);
 
-        if (recentUsers && recentUsers.length > 0) {
-            const signupToEditorTimes = recentUsers
-                .filter(u => u.first_view_editor_at)
-                .map(u => calculateAvgTime(u.created_at, u.first_view_editor_at))
-                .filter(t => t > 0 && t <= 60);
+        // Ensure strictly decreasing funnel for visualization sanity? 
+        // Real data might be messy (e.g. session started checkout without editor open if using deep link),
+        // but generally we display the raw unique counts for each stage.
+        // Funnel charts usually handle varying sizes, but visually it's nice if they shrink. 
+        // We will trust the data.
 
-            const editorToMapTimes = recentUsers
-                .filter(u => u.first_view_editor_at && u.first_map_at)
-                .map(u => calculateAvgTime(u.first_view_editor_at, u.first_map_at))
-                .filter(t => t > 0 && t <= 60);
-
-            avgSignupToEditor = signupToEditorTimes.length ? signupToEditorTimes.reduce((a, b) => a + b, 0) / signupToEditorTimes.length : 0;
-            avgEditorToMap = editorToMapTimes.length ? editorToMapTimes.reduce((a, b) => a + b, 0) / editorToMapTimes.length : 0;
-        }
-
-        const safeTotal = totalSignups || 1;
+        const safeTotal = landingCount || 1;
 
         const funnelData = [
             {
-                step: 'Signup',
-                count: totalSignups || 0,
+                step: 'Landing Page',
+                count: landingCount,
                 percentage: 100,
                 dropOff: 0,
-                avgTimeNext: avgSignupToEditor
+                // Avg time not easily calculated with this aggregation method without more complex queries
+                avgTimeNext: 0
             },
             {
-                step: 'Viewed Editor',
-                count: viewedEditor || 0,
-                percentage: Math.round(((viewedEditor || 0) / safeTotal) * 100),
-                dropOff: Math.round(((safeTotal - (viewedEditor || 0)) / safeTotal) * 100),
-                avgTimeNext: avgEditorToMap
+                step: 'Editor',
+                count: editorCount,
+                percentage: Math.round((editorCount / safeTotal) * 100),
+                dropOff: Math.round(((landingCount - editorCount) / landingCount) * 100),
+                avgTimeNext: 0
             },
             {
-                step: 'Created Map',
-                count: createdMap || 0,
-                percentage: Math.round(((createdMap || 0) / safeTotal) * 100),
-                dropOff: Math.round((((viewedEditor || 0) - (createdMap || 0)) / (viewedEditor || 1)) * 100)
+                step: 'Checkout',
+                count: checkoutCount,
+                percentage: Math.round((checkoutCount / safeTotal) * 100),
+                dropOff: Math.round((editorCount > 0 ? ((editorCount - checkoutCount) / editorCount) : 0) * 100),
+                avgTimeNext: 0
             },
             {
-                step: 'Published Map',
-                count: publishedMap || 0,
-                percentage: Math.round(((publishedMap || 0) / safeTotal) * 100),
-                dropOff: Math.round((((createdMap || 0) - (publishedMap || 0)) / (createdMap || 1)) * 100)
-            },
-            {
-                step: 'Exported Poster',
-                count: exportedPoster || 0,
-                percentage: Math.round(((exportedPoster || 0) / safeTotal) * 100),
-                dropOff: Math.round((((createdMap || 0) - (exportedPoster || 0)) / (createdMap || 1)) * 100)
+                step: 'Purchase',
+                count: purchaseCount,
+                percentage: Math.round((purchaseCount / safeTotal) * 100),
+                dropOff: Math.round((checkoutCount > 0 ? ((checkoutCount - purchaseCount) / checkoutCount) : 0) * 100),
+                avgTimeNext: 0
             }
         ];
 

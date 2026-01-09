@@ -48,9 +48,9 @@ export function FunnelChart() {
     return (
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 h-full">
             <div className="mb-6">
-                <h3 className="text-sm font-semibold">Activation Funnel</h3>
+                <h3 className="text-sm font-semibold">Sales Funnel (Last 30 Days)</h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Conversion from signup to first export
+                    Unique sessions from landing to purchase
                 </p>
             </div>
 

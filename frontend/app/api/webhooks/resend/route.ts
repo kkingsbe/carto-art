@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { resend } from '@/lib/email/client';
+import { sanitizeText } from '@/lib/utils/sanitize';
 
 export async function POST(request: Request) {
     try {
@@ -26,8 +28,37 @@ export async function POST(request: Request) {
         const customerEmail = emailMatch ? emailMatch[1] : fromStr;
 
         const subject = data.subject;
-        const text = data.text || '';
-        const html = data.html || '';
+        let text = data.text || '';
+        let html = data.html || '';
+
+        // If content is missing, try to fetch it from Resend API
+        if (!text && !html && data.email_id) {
+            console.log(`[Resend Webhook] Content missing in payload. Fetching email ${data.email_id}...`);
+            try {
+                const { data: emailData, error: fetchError } = await resend.emails.receiving.get(data.email_id);
+
+                if (fetchError) {
+                    console.error('[Resend Webhook] Error fetching email from Resend:', fetchError);
+                } else if (emailData) {
+                    text = emailData.text || '';
+                    html = emailData.html || '';
+                    console.log(`[Resend Webhook] Successfully fetched content for ${data.email_id}`);
+                }
+            } catch (err) {
+                console.error('[Resend Webhook] Exception during email fetch:', err);
+            }
+        }
+
+        // Determine final content to store
+        let finalContent = text;
+        if (!finalContent && html) {
+            console.log('[Resend Webhook] Plain text missing, extracting from HTML...');
+            finalContent = sanitizeText(html);
+        }
+
+        if (!finalContent) {
+            finalContent = 'No text content';
+        }
 
         console.log(`[Resend Webhook] Processing email from ${customerEmail} - Subject: ${subject}`);
 
@@ -96,7 +127,7 @@ export async function POST(request: Request) {
             .from('ticket_messages')
             .insert({
                 ticket_id: ticketId,
-                content: text || 'No text content', // Prefer text for now
+                content: finalContent,
                 sender_role: 'customer',
                 message_id: data.message_id || null // Store Resend/Email Message-ID if available
             } as any);
