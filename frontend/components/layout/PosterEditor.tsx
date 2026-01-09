@@ -13,7 +13,7 @@ import { useMapAnimation } from '@/hooks/useMapAnimation';
 import { useProjectManager } from '@/hooks/useProjectManager';
 import { useEditorKeyboardShortcuts } from '@/hooks/useEditorKeyboardShortcuts';
 import { useAnonExportUsage } from '@/hooks/useAnonExportUsage';
-import { Maximize, Plus, Minus, X, Map as MapIcon, Type, Layout, Sparkles, Palette, User, Layers, MousePointer2, RotateCw, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Maximize, Plus, Minus, X, Map as MapIcon, Type, Layout, Sparkles, Palette, User, Layers, MousePointer2, RotateCw, PanelLeftClose, PanelLeftOpen, Compass, Sliders, Film } from 'lucide-react';
 import { toast } from 'sonner';
 import { styles } from '@/lib/styles';
 import { MapPreview } from '@/components/map/MapPreview';
@@ -54,7 +54,7 @@ interface PosterEditorProps {
 }
 
 export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('location');
+  const [activeTab, setActiveTab] = useState<Tab>('essentials');
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
@@ -790,6 +790,7 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
             onAnimationStop={stopAnimation}
             isAnimationPlaying={isAnimationPlaying}
             activeAnimation={activeAnimation}
+            onRandomize={handleRandomize}
           />
         </div>
 
@@ -940,12 +941,11 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
       <div className="fixed left-0 right-0 z-40 md:hidden" style={{ bottom: 'calc(72px + env(safe-area-inset-bottom, 0px))' }}>
         <div className="flex justify-around items-center bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200/80 dark:border-gray-700 px-1 py-1.5">
           {[
-            { id: 'library' as Tab, icon: Sparkles, label: 'Library' },
-            { id: 'location' as Tab, icon: MapIcon, label: 'Location' },
-            { id: 'style' as Tab, icon: Palette, label: 'Style' },
-            { id: 'layers' as Tab, icon: Layers, label: 'Layers' },
-            { id: 'text' as Tab, icon: Type, label: 'Text' },
+            { id: 'essentials' as Tab, icon: Compass, label: 'Start' },
+            { id: 'customize' as Tab, icon: Sliders, label: 'Edit' },
+            { id: 'annotate' as Tab, icon: Type, label: 'Text' },
             { id: 'frame' as Tab, icon: Layout, label: 'Frame' },
+            { id: 'animate' as Tab, icon: Film, label: 'Animate' },
           ].map(({ id, icon: Icon, label }) => (
             <button
               key={id}
@@ -1015,6 +1015,7 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
                   onAnimationStop={stopAnimation}
                   isAnimationPlaying={isAnimationPlaying}
                   activeAnimation={activeAnimation}
+                  onRandomize={handleRandomize}
                 />
               </div>
             </div>

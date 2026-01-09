@@ -278,10 +278,14 @@ export function ProductModal({ isOpen, onClose, imageUrl, designId, aspectRatio 
                             throw new Error(errorData.error || 'Failed to upload print file');
                         }
 
-                        const { signedUrl } = await uploadRes.json();
-                        finalSignedUrl = signedUrl;
+                        const { readUrl } = await uploadRes.json();
+                        finalSignedUrl = readUrl;
                     }
 
+                    // SKIP Printful upload for now - it slows down checkout and we prefer storing the URL
+                    // so we can regenerate thumbnails in Order History.
+                    // Printful will download the file from the URL upon order creation.
+                    /*
                     try {
                         // Register with Printful
                         const uploadRes = await fetch('/api/printful/upload', {
@@ -301,6 +305,8 @@ export function ProductModal({ isOpen, onClose, imageUrl, designId, aspectRatio 
                         console.error('Printful upload error, falling back to direct URL:', err);
                         currentDesignId = finalSignedUrl;
                     }
+                    */
+                    currentDesignId = finalSignedUrl;
 
                     setUploadedDesignId(currentDesignId);
                 }

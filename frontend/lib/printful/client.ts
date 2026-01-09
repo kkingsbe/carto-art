@@ -27,6 +27,21 @@ export interface PrintfulOrder {
         shipping: string;
         total: string;
     };
+    shipments?: {
+        id: number;
+        carrier: string;
+        service: string;
+        tracking_number: string;
+        tracking_url: string;
+        created: number;
+        ship_date: string;
+        shipped_at: number;
+        reshipment: boolean;
+        items: {
+            item_id: number;
+            quantity: number;
+        }[];
+    }[];
 }
 
 export const printful = {
@@ -111,6 +126,34 @@ export const printful = {
             const error = await response.json();
             throw new Error(`Printful Order Creation Error: ${JSON.stringify(error)}`);
         }
+
+        const data = await response.json();
+        return data.result;
+    },
+
+    /**
+     * Get list of orders from Printful
+     */
+    async getOrders({ limit = 20, offset = 0 } = {}): Promise<PrintfulOrder[]> {
+        const response = await fetch(`${PRINTFUL_API_URL}/orders?limit=${limit}&offset=${offset}`, {
+            headers: { 'Authorization': `Bearer ${API_KEY}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch orders');
+
+        const data = await response.json();
+        return data.result;
+    },
+
+    /**
+     * Get a single order from Printful
+     */
+    async getOrder(orderId: number | string): Promise<PrintfulOrder> {
+        const response = await fetch(`${PRINTFUL_API_URL}/orders/${orderId}`, {
+            headers: { 'Authorization': `Bearer ${API_KEY}` }
+        });
+
+        if (!response.ok) throw new Error(`Failed to fetch order ${orderId}`);
 
         const data = await response.json();
         return data.result;
@@ -400,5 +443,35 @@ export const printful = {
 
         const data = await response.json();
         return data.result; // status, mockups
+    },
+
+    /**
+     * Get file info from Printful Library
+     */
+    async getFile(fileId: number | string): Promise<{
+        id: number;
+        type: string;
+        hash: string;
+        url: string;
+        filename: string;
+        mime_type: string;
+        size: number;
+        width: number;
+        height: number;
+        dpi: number;
+        status: string;
+        created: number;
+        thumbnail_url: string;
+        preview_url: string;
+        visible: boolean;
+    }> {
+        const response = await fetch(`${PRINTFUL_API_URL}/files/${fileId}`, {
+            headers: { 'Authorization': `Bearer ${API_KEY}` }
+        });
+
+        if (!response.ok) throw new Error(`Failed to fetch file ${fileId}`);
+
+        const data = await response.json();
+        return data.result;
     }
 };

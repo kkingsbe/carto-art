@@ -45,7 +45,7 @@ export default function CheckoutForm({
             confirmParams: {
                 // Return URL is required, but if we handle everything via webhooks/state,
                 // we might redirect to a success page.
-                return_url: `${window.location.origin}/profile?order_success=true`,
+                return_url: `${window.location.origin}/profile/orders?order_success=true`,
             },
         });
 
@@ -96,6 +96,11 @@ export default function CheckoutForm({
             <Button disabled={!stripe || loading} className="w-full mt-4" size="lg">
                 {loading ? "Processing..." : `Pay $${(amount / 100).toFixed(2)}`}
             </Button>
+
+            <p className="text-xs text-center text-muted-foreground mt-4">
+                By clicking "Pay", you agree to our <a href="/terms" target="_blank" className="underline hover:text-foreground">Terms of Service</a> and <a href="/privacy" target="_blank" className="underline hover:text-foreground">Privacy Policy</a>.
+                We use Stripe for secure payments and Printful for fulfillment.
+            </p>
         </form>
     );
 }

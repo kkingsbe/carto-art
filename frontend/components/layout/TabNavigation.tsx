@@ -1,10 +1,10 @@
 'use client';
 
-import { Map as MapIcon, Type, Layout, Sparkles, Palette, User, Layers, Camera, Play } from 'lucide-react';
+import { Compass, Sliders, Type, Layout, Film, Sparkles, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
-export type Tab = 'library' | 'location' | 'camera' | 'style' | 'layers' | 'text' | 'frame' | 'automations' | 'account';
+export type Tab = 'essentials' | 'customize' | 'annotate' | 'frame' | 'animate' | 'library' | 'account';
 
 interface TabNavigationProps {
   activeTab: Tab;
@@ -43,7 +43,7 @@ export function TabNavigation({
             ? "bg-blue-600 text-white shadow-md shadow-blue-900/20"
             : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 hover:bg-black/5 dark:hover:bg-white/5"
         )}>
-          <Icon className={cn("w-7 h-7 md:w-6 md:h-6", isActive && "text-white")} />
+          <Icon className={cn("w-6 h-6", isActive && "text-white")} />
           <span className={cn(
             "text-[10px] font-medium leading-tight",
             isActive ? "text-white/90" : "text-gray-400 dark:text-gray-500"
@@ -64,14 +64,17 @@ export function TabNavigation({
       </div>
 
       <div className="flex flex-col w-full space-y-3">
-        <TabButton id="library" icon={Sparkles} label="Library" />
-        <TabButton id="location" icon={MapIcon} label="Location" />
-        <TabButton id="camera" icon={Camera} label="Camera" />
-        <TabButton id="style" icon={Palette} label="Style" />
-        <TabButton id="layers" icon={Layers} label="Layers" />
-        <TabButton id="text" icon={Type} label="Text" />
+        {/* Core Workflow */}
+        <TabButton id="essentials" icon={Compass} label="Start" />
+        <TabButton id="customize" icon={Sliders} label="Edit" />
+        <TabButton id="annotate" icon={Type} label="Text" />
         <TabButton id="frame" icon={Layout} label="Frame" />
-        <TabButton id="automations" icon={Play} label="Automations" />
+        <TabButton id="animate" icon={Film} label="Animate" />
+
+        {/* Resources - Visually separated */}
+        <div className="w-8 h-px bg-gray-200 dark:bg-gray-700 my-2 mx-auto" />
+
+        <TabButton id="library" icon={Sparkles} label="Library" />
       </div>
 
       <div className="mt-auto flex flex-col w-full space-y-3 pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
@@ -80,4 +83,5 @@ export function TabNavigation({
     </nav>
   );
 }
+
 

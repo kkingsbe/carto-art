@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { ArrowLeft, Sparkles, Menu } from 'lucide-react';
 import { ChangelogModal } from '@/components/landing/ChangelogModal';
 import { MobileMenu } from './MobileMenu';
+import { ModeToggle } from '@/components/mode-toggle';
 import { useState, useEffect } from 'react';
 
 import { useAdmin } from '@/hooks/useAdmin';
@@ -92,7 +93,8 @@ export function Navbar() {
                     </div>
 
                     <div className="flex items-center gap-3 sm:gap-4">
-                        <div className="hidden sm:flex items-center gap-3">
+                        <div className="hidden sm:flex items-center gap-2">
+                            <ModeToggle className="h-9 w-9 px-0 text-foreground/60 hover:text-foreground hover:bg-muted/50" />
                             <ChangelogModal
                                 trigger={
                                     <button className="p-2 text-foreground/60 hover:text-foreground hover:bg-muted/50 rounded-full transition-all relative group">

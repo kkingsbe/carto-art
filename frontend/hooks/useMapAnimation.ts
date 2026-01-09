@@ -8,7 +8,7 @@ export interface AnimationOptions {
     fps?: number; // usually 60 for preview
 }
 
-export type AnimationType = 'orbit' | 'cinematic' | 'spiral' | 'zoomIn' | 'zoomOut' | 'rise' | 'dive' | 'flyover';
+export type AnimationType = 'orbit' | 'cinematic' | 'spiral' | 'swoopIn' | 'rocketOut' | 'rise' | 'dive' | 'flyover';
 
 interface UseMapAnimationReturn {
     isPlaying: boolean;
@@ -137,11 +137,25 @@ export function useMapAnimation(
                     targetBearing = originalBearing + (p * totalRotation);
                     currentTargetZoom = originalZoom - (2 * p);
                     break;
-                case 'zoomIn':
-                    currentTargetZoom = originalZoom + (2 * p);
+                case 'swoopIn':
+                    // Spiral Down + Pitch Up (The "Landing")
+                    // Zoom: +4 (Zoom In significantly)
+                    // Pitch: -> 60 (Look across the landscape)
+                    // Rotation: 180 deg
+                    const swoopProgress = easeInOutCubic(p);
+                    targetBearing = originalBearing + (swoopProgress * 180);
+                    currentTargetZoom = originalZoom + (4 * swoopProgress);
+                    currentTargetPitch = originalPitch + ((60 - originalPitch) * swoopProgress);
                     break;
-                case 'zoomOut':
-                    currentTargetZoom = originalZoom - (2 * p);
+                case 'rocketOut':
+                    // Spiral Up + Pitch Down (The "Launch")
+                    // Zoom: -4 (Zoom Out significantly)
+                    // Pitch: -> 0 (Look down)
+                    // Rotation: -180 deg
+                    const rocketProgress = easeInOutCubic(p);
+                    targetBearing = originalBearing - (rocketProgress * 180);
+                    currentTargetZoom = originalZoom - (4 * rocketProgress);
+                    currentTargetPitch = originalPitch + ((0 - originalPitch) * rocketProgress);
                     break;
                 case 'rise':
                     // Pitch from current (or 0) to 60

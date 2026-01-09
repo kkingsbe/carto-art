@@ -84,6 +84,12 @@ export function ControlRow({ children, className }: { children: React.ReactNode;
   );
 }
 
+export function Separator({ className }: { className?: string }) {
+  return (
+    <div className={cn("h-px bg-gray-200 dark:bg-gray-800", className)} />
+  );
+}
+
 interface CollapsibleSectionProps {
   title: string;
   children: React.ReactNode;

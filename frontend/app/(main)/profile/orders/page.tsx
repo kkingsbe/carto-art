@@ -5,6 +5,7 @@ import { getUserOrders } from '@/lib/actions/ecommerce';
 import { OrdersList } from '@/components/ecommerce/OrdersList';
 import { getProfileStats, type UserProfile } from '@/lib/actions/user';
 import { ProfileHeader } from '@/components/profile/ProfileHeader';
+import { OrderSuccessToast } from '@/components/ecommerce/OrderSuccessToast';
 
 export const metadata = {
     title: 'My Orders | CartoArt',
@@ -48,6 +49,7 @@ export default async function OrdersPage() {
     return (
         <div className="min-h-screen bg-[#0a0f1a] pb-20">
             <div className="w-full">
+                <OrderSuccessToast />
                 <ProfileHeader
                     profile={typedProfile}
                     stats={stats}

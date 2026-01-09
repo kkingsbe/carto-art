@@ -16,9 +16,12 @@ export function OrderSuccessToast() {
             });
 
             // Remove the query param to prevent toast on refresh
+
             const newParams = new URLSearchParams(searchParams);
             newParams.delete('order_success');
-            router.replace(`/profile?${newParams.toString()}`);
+            // content-independent clear of the param
+            const newPath = window.location.pathname;
+            router.replace(`${newPath}?${newParams.toString()}`);
         }
     }, [searchParams, router]);
 

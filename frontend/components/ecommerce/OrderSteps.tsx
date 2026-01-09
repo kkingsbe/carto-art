@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { Button } from "@/components/ui/button";
 import { ShippingForm } from "./ShippingForm";
 import CheckoutForm from "./CheckoutForm";
@@ -111,6 +112,23 @@ export function OrderSteps({ variants, designUrl, aspectRatio, orientation, prod
     const [selectedVariant, setSelectedVariant] = useState<any>(variants.length > 0 ? variants[0] : null);
     const [clientSecret, setClientSecret] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
+    const [user, setUser] = useState<any>(null);
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+    useEffect(() => {
+        const supabase = createClient();
+        const checkUser = async () => {
+            const { data } = await supabase.auth.getUser();
+            setUser(data.user);
+            setIsCheckingAuth(false);
+        };
+        checkUser();
+    }, []);
+
+    const handleLogin = () => {
+        const returnUrl = encodeURIComponent(window.location.href);
+        window.location.href = `/login?redirect=${returnUrl}`;
+    };
 
     const methods = useForm({
         defaultValues: {
@@ -269,10 +287,19 @@ export function OrderSteps({ variants, designUrl, aspectRatio, orientation, prod
                                 <Button
                                     size="lg"
                                     className="w-full text-lg h-12"
-                                    onClick={handleNext}
-                                    disabled={!selectedVariant}
+                                    onClick={!user && !isCheckingAuth ? handleLogin : handleNext}
+                                    disabled={!selectedVariant || isCheckingAuth}
                                 >
-                                    Continue to Shipping
+                                    {isCheckingAuth ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                            Checking availability...
+                                        </>
+                                    ) : !user ? (
+                                        'Sign In to Continue'
+                                    ) : (
+                                        'Continue to Shipping'
+                                    )}
                                 </Button>
                             </div>
                         )}

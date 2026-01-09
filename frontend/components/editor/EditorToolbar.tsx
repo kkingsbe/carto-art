@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip } from '@/components/ui/tooltip';
+import { ModeToggle } from '@/components/mode-toggle';
 import { ExportOptionsModal, type StlExportOptions } from '@/components/controls/ExportOptionsModal';
 import { ExportSuccessModal } from '@/components/controls/ExportSuccessModal';
 import type { PosterConfig } from '@/types/poster';
@@ -298,6 +299,10 @@ export function EditorToolbar({
                                 <HelpCircle className="w-[18px] h-[18px]" />
                             </button>
                         </Tooltip>
+
+                        <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1.5" />
+
+                        <ModeToggle />
                     </div>
 
                     {/* Mobile Menu Trigger */}
@@ -347,6 +352,14 @@ export function EditorToolbar({
                                         <HelpCircle className="w-4 h-4 text-blue-500" />
                                         Show Guide
                                     </button>
+
+                                    <div className="px-4 py-3 flex items-center justify-between text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                                        <span className="flex items-center gap-3">
+                                            <div className="w-4 h-4" /> {/* Spacer for alignment */}
+                                            Theme
+                                        </span>
+                                        <ModeToggle className="p-1 h-8 w-8" />
+                                    </div>
 
                                     {showCopyStateButton && onCopyState && (
                                         <button

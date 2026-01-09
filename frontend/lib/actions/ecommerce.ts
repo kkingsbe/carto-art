@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 import { getSiteConfig } from './usage';
 import { CONFIG_KEYS } from './usage.types';
+import { printful } from '@/lib/printful/client';
 import type { Database } from '@/types/database';
 
 export async function uploadDesignFile(formData: FormData) {
@@ -59,13 +60,103 @@ export async function getUserOrders() {
 
     if (!user) return [];
 
-    const { data } = await supabase
+    // 1. Fetch Orders
+    const { data: orders, error } = await supabase
         .from('orders')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-    return data || [];
+    if (error) {
+        console.error('Error fetching orders:', error);
+        return [];
+    }
+
+    if (!orders || orders.length === 0) return [];
+
+    // 2. Fetch related variants
+    const variantIds = Array.from(new Set(orders.map((o: any) => o.variant_id).filter(Boolean)));
+    let variantsMap = new Map();
+
+    if (variantIds.length > 0) {
+        const { data: variants } = await supabase
+            .from('product_variants')
+            .select(`
+                id,
+                name,
+                product:products (
+                    title
+                )
+            `)
+            .in('id', variantIds);
+
+        if (variants) {
+            variantsMap = new Map(variants.map((v: any) => [v.id, v]));
+        }
+    }
+
+    // Process orders to get fresh signed URLs and flatten structure
+    const processedOrders = await Promise.all((orders as any[]).map(async (order) => {
+        let thumbnailUrl = null;
+
+        // Check if design_id is a URL from our storage
+        // Typical format: .../storage/v1/object/sign/print-files/USER_ID/FILENAME.png?token=...
+        if (order.design_id && typeof order.design_id === 'string' && order.design_id.includes('/print-files/')) {
+            try {
+                // Extract path. We look for the segment after 'print-files/' and before '?'
+                // The URL might be URL encoded, so we decode it first just in case, but usually the path parts aren't weirdly encoded.
+                const matches = order.design_id.match(/\/print-files\/([^?]+)/);
+
+                if (matches && matches[1]) {
+                    const filePath = decodeURIComponent(matches[1]);
+
+                    // Generate a new signed URL valid for 1 hour
+                    const { data } = await supabase.storage
+                        .from('print-files')
+                        .createSignedUrl(filePath, 3600);
+
+                    if (data) {
+                        thumbnailUrl = data.signedUrl;
+                    }
+                }
+            } catch (e) {
+                console.error('Error regenerating thumbnail for order', order.id, e);
+            }
+        }
+        // Fallback: Check if design_id is a numeric Printful File ID
+        else if (order.design_id && /^\d+$/.test(order.design_id as string)) {
+            try {
+                // It's a Printful File ID, fetch preview from their API
+                const fileInfo = await printful.getFile(order.design_id);
+                if (fileInfo && fileInfo.preview_url) {
+                    thumbnailUrl = fileInfo.preview_url;
+                }
+            } catch (e) {
+                console.warn(`[Orders] Failed to fetch Printful file info for ${order.design_id}`, e);
+            }
+        }
+
+        // Map variant data
+        const variantData = variantsMap.get(order.variant_id);
+        const productData = Array.isArray(variantData?.product) ? variantData?.product[0] : variantData?.product;
+
+        const productTitle = productData?.title || 'Custom Map';
+        const variantName = variantData?.name || 'Standard';
+
+        // fallback logic: Only use order.design_id if it looks like a URL
+        const fallbackUrl = (order.design_id && typeof order.design_id === 'string' && order.design_id.startsWith('http'))
+            ? order.design_id
+            : null;
+
+        return {
+            ...order,
+            product_title: productTitle,
+            variant_name: variantName,
+            thumbnail_url: thumbnailUrl || fallbackUrl
+        };
+    }));
+
+    return processedOrders;
 }
 
 export async function getProductVariants(includeInactive = false) {
@@ -354,5 +445,133 @@ export async function getMarginAdjustedVariants() {
         ...v,
         display_price_cents: Math.round(v.price_cents * (1 + marginPercent / 100)),
     }));
+}
+
+/**
+ * Admin: Get all orders with user details
+ */
+export async function getAdminOrders() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) throw new Error('Unauthorized');
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single<{ is_admin: boolean }>();
+
+    if (!profile?.is_admin) throw new Error('Unauthorized - Admin only');
+
+    const { data: orders, error } = await (supabase as any)
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching admin orders:', error);
+        throw new Error(error.message);
+    }
+
+    if (!orders || orders.length === 0) return [];
+
+    // Manually join profiles since there isn't a direct FK for PostgREST
+    const userIds = Array.from(new Set(orders.map((o: any) => o.user_id).filter(Boolean)));
+
+    let profilesMap = new Map();
+
+    if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, display_name, username')
+            .in('id', userIds);
+
+        if (profiles) {
+            profilesMap = new Map(profiles.map((p: any) => [p.id, p]));
+        }
+    }
+
+    return orders.map((o: any) => ({
+        ...o,
+        user: profilesMap.get(o.user_id) || { display_name: 'Unknown', username: 'unknown' }
+    }));
+}
+
+/**
+ * Admin: Sync order statuses from Printful
+ */
+export async function syncOrderStatuses() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) throw new Error('Unauthorized');
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single<{ is_admin: boolean }>();
+
+    if (!profile?.is_admin) throw new Error('Unauthorized - Admin only');
+
+    // Get active orders
+    const { data: orders, error } = await (supabase as any)
+        .from('orders')
+        .select('id, printful_order_id, status, tracking_url, tracking_number')
+        .not('status', 'in', '("fulfilled","failed")')
+        .not('printful_order_id', 'is', null);
+
+    if (error) throw new Error(error.message);
+    if (!orders || orders.length === 0) return { synced: 0 };
+
+    let syncedCount = 0;
+
+    for (const order of orders) {
+        try {
+            if (!order.printful_order_id) continue;
+
+            // Fetch from Printful
+            const printfulOrder = await printful.getOrder(order.printful_order_id);
+            const newStatus = printfulOrder.status;
+
+            // Map Printful status to our status
+            // Printful: draft, pending, failed, canceled, inprocess, partial, fulfilled
+            // Our: pending, paid, fulfilled, failed
+            let mappedStatus = order.status;
+
+            if (newStatus === 'fulfilled') mappedStatus = 'fulfilled';
+            else if (newStatus === 'failed' || newStatus === 'canceled') mappedStatus = 'failed';
+            else if (newStatus === 'inprocess' || newStatus === 'pending') mappedStatus = 'paid';
+
+            // Extract tracking info
+            let trackingUrl = order.tracking_url;
+            let trackingNumber = order.tracking_number;
+
+            if (printfulOrder.shipments && printfulOrder.shipments.length > 0) {
+                // Use the most recent shipment
+                const shipment = printfulOrder.shipments[0];
+                if (shipment.tracking_url) trackingUrl = shipment.tracking_url;
+                if (shipment.tracking_number) trackingNumber = shipment.tracking_number;
+            }
+
+            if (mappedStatus !== order.status || trackingUrl !== order.tracking_url) {
+                await (supabase as any)
+                    .from('orders')
+                    .update({
+                        status: mappedStatus,
+                        tracking_url: trackingUrl,
+                        tracking_number: trackingNumber,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', order.id);
+                syncedCount++;
+            }
+        } catch (e) {
+            console.error(`Failed to sync order ${order.id}:`, e);
+        }
+    }
+
+    return { synced: syncedCount };
 }
 

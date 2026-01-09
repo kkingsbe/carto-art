@@ -457,8 +457,10 @@ export function MapPreview({
       {!is3DMode && (
         <div className="absolute top-4 right-4 z-20 pointer-events-none hidden md:block">
           <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm">
-            <span className="text-[11px] font-medium text-gray-600 dark:text-gray-300 tracking-wide">
-              {getZoomLabel(viewState.zoom)} View
+            <span className="text-[11px] font-medium text-gray-600 dark:text-gray-300 tracking-wide flex items-center gap-1.5">
+              <span>{getZoomLabel(viewState.zoom)} View</span>
+              <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+              <span className="font-mono text-[10px] opacity-75">z{viewState.zoom.toFixed(1)}</span>
             </span>
           </div>
         </div>

@@ -5,16 +5,22 @@ import { Package, Truck, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
+import Image from 'next/image';
 
 interface Order {
     id: string;
     created_at: string;
-    status: 'pending' | 'paid' | 'fulfilled' | 'failed';
+    status: 'pending' | 'paid' | 'fulfilled' | 'failed' | 'paid_fulfillment_failed';
     amount_total: number | null;
     shipping_name: string | null;
     shipping_city: string | null;
     shipping_country: string | null;
     quantity: number;
+    product_title: string;
+    variant_name: string;
+    thumbnail_url: string | null;
+    tracking_url: string | null;
+    tracking_number: string | null;
 }
 
 interface OrdersListProps {
@@ -34,77 +40,133 @@ export function OrdersList({ orders }: OrdersListProps) {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'fulfilled': return 'bg-green-500/10 text-green-500 hover:bg-green-500/20';
-            case 'paid': return 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20';
-            case 'pending': return 'bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20';
-            case 'failed': return 'bg-red-500/10 text-red-500 hover:bg-red-500/20';
-            default: return 'bg-gray-500/10 text-gray-500 hover:bg-gray-500/20';
+            case 'fulfilled': return 'bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20';
+            case 'paid': return 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-blue-500/20';
+            case 'pending': return 'bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 border-yellow-500/20';
+            case 'failed':
+            case 'paid_fulfillment_failed': return 'bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20';
+            default: return 'bg-gray-500/10 text-gray-500 hover:bg-gray-500/20 border-gray-500/20';
         }
     };
 
     const getStatusIcon = (status: string) => {
         switch (status) {
-            case 'fulfilled': return <CheckCircle className="w-4 h-4 mr-1" />;
-            case 'paid': return <Truck className="w-4 h-4 mr-1" />;
-            case 'pending': return <Clock className="w-4 h-4 mr-1" />;
-            case 'failed': return <AlertCircle className="w-4 h-4 mr-1" />;
-            default: return <Package className="w-4 h-4 mr-1" />;
+            case 'fulfilled': return <CheckCircle className="w-3 h-3 mr-1.5" />;
+            case 'paid': return <Package className="w-3 h-3 mr-1.5" />; // Paid = Processing
+            case 'pending': return <Clock className="w-3 h-3 mr-1.5" />;
+            case 'failed':
+            case 'paid_fulfillment_failed': return <AlertCircle className="w-3 h-3 mr-1.5" />;
+            default: return <Package className="w-3 h-3 mr-1.5" />;
+        }
+    };
+
+    const getStatusText = (status: string) => {
+        switch (status) {
+            case 'fulfilled': return 'Shipped';
+            case 'paid': return 'Processing';
+            case 'pending': return 'Pending';
+            case 'failed': return 'Failed';
+            case 'paid_fulfillment_failed': return 'Attention Needed';
+            default: return status;
         }
     };
 
     return (
-        <ScrollArea className="h-[600px] w-full rounded-md">
-            <div className="space-y-4">
+        <ScrollArea className="h-[calc(100vh-12rem)] w-full rounded-md pr-4">
+            <div className="space-y-4 pb-4">
                 {orders.map((order) => (
-                    <Card key={order.id} className="p-6 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                    <span className="font-mono text-sm text-gray-500 dark:text-gray-400">
-                                        #{order.id.slice(0, 8)}
-                                    </span>
-                                    <Badge variant="outline" className={getStatusColor(order.status)}>
-                                        <div className="flex items-center">
-                                            {getStatusIcon(order.status)}
-                                            <span className="capitalize">{order.status}</span>
-                                        </div>
-                                    </Badge>
-                                </div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400">
-                                    Placed on {format(new Date(order.created_at), 'MMM d, yyyy')}
-                                </div>
+                    <Card key={order.id} className="overflow-hidden bg-[#0d121f] border-white/5 hover:border-white/10 transition-colors">
+                        <div className="flex flex-col sm:flex-row gap-6 p-5">
+                            {/* Thumbnail */}
+                            <div className="relative w-full sm:w-24 aspect-[4/5] bg-white/5 rounded-lg overflow-hidden border border-white/5 flex-shrink-0">
+                                {order.thumbnail_url ? (
+                                    <Image
+                                        src={order.thumbnail_url}
+                                        alt={order.product_title}
+                                        fill
+                                        className="object-cover"
+                                        unoptimized // Avoid next/image domain checks for dynamic signed URLs
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-white/20">
+                                        <Package className="w-8 h-8" />
+                                    </div>
+                                )}
                             </div>
 
-                            <div className="flex items-center gap-8">
-                                <div className="text-right">
-                                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Quantity</div>
-                                    <div className="font-semibold">{order.quantity}</div>
+                            {/* Details */}
+                            <div className="flex-1 min-w-0 flex flex-col justify-between gap-4">
+                                <div>
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div>
+                                            <h3 className="font-semibold text-lg text-[#f5f0e8] leading-tight mb-1">
+                                                {order.product_title}
+                                            </h3>
+                                            <p className="text-[#9ca3af] text-sm font-medium">
+                                                {order.variant_name}
+                                            </p>
+                                        </div>
+                                        <div className="flex flex-col items-end">
+                                            <span className="font-bold text-lg text-white">
+                                                {order.amount_total
+                                                    ? `$${(order.amount_total / 100).toFixed(2)}`
+                                                    : '-'
+                                                }
+                                            </span>
+                                            <span className="text-xs text-[#6b7280]">
+                                                Qty: {order.quantity}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[#6b7280]">
+                                        <div className="flex items-center gap-1.5">
+                                            <Clock className="w-3.5 h-3.5" />
+                                            <span>{format(new Date(order.created_at), 'MMM d, yyyy')}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 font-mono text-xs opacity-60">
+                                            <span>#{order.id.slice(0, 8)}</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="text-right">
-                                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Total</div>
-                                    <div className="font-semibold">
-                                        {order.amount_total
-                                            ? `$${(order.amount_total / 100).toFixed(2)}`
-                                            : '-'
-                                        }
+
+                                <div className="flex items-end justify-between border-t border-white/5 pt-4 mt-1">
+                                    <div className="flex items-center">
+                                        {(order.shipping_name || order.shipping_city) && (
+                                            <div className="text-sm text-[#9ca3af] flex items-center gap-2">
+                                                <Truck className="w-3.5 h-3.5" />
+                                                <span className="truncate max-w-[200px] sm:max-w-[300px]">
+                                                    {order.shipping_city && order.shipping_country
+                                                        ? `${order.shipping_city}, ${order.shipping_country}`
+                                                        : order.shipping_name || 'Shipping address'
+                                                    }
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex items-center gap-3">
+                                        {order.tracking_url && (
+                                            <a
+                                                href={order.tracking_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1.5"
+                                            >
+                                                <Truck className="w-3.5 h-3.5" />
+                                                Track Package
+                                            </a>
+                                        )}
+                                        <Badge variant="outline" className={`${getStatusColor(order.status)} border whitespace-nowrap`}>
+                                            <div className="flex items-center">
+                                                {getStatusIcon(order.status)}
+                                                <span className="font-medium">{getStatusText(order.status)}</span>
+                                            </div>
+                                        </Badge>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
-                        {(order.shipping_name || order.shipping_city) && (
-                            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-                                <div className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2">
-                                    <Truck className="w-4 h-4" />
-                                    <span>
-                                        Shipping to <span className="font-medium">{order.shipping_name}</span>
-                                        {order.shipping_city && order.shipping_country && (
-                                            <> in {order.shipping_city}, {order.shipping_country}</>
-                                        )}
-                                    </span>
-                                </div>
-                            </div>
-                        )}
                     </Card>
                 ))}
             </div>

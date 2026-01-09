@@ -6,6 +6,7 @@ import { Footer } from '@/components/landing/Footer';
 import { FAQSchema } from '@/components/seo/FAQSchema';
 import { HowToSchema } from '@/components/seo/HowToSchema';
 import { ChangelogModal } from '@/components/changelog/ChangelogModal';
+import { FeaturedMaps } from '@/components/landing/FeaturedMaps';
 
 export default async function LandingPage() {
   return (
@@ -15,6 +16,7 @@ export default async function LandingPage() {
       <Hero />
       <Features />
       <StyleShowcase />
+      <FeaturedMaps />
       <FinalCTA />
       <Footer />
       <ChangelogModal showFloatingButton />

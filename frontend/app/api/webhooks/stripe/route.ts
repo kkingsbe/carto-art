@@ -5,6 +5,8 @@ import { printful } from '@/lib/printful/client';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import type { Database } from '@/types/database';
 import Stripe from 'stripe';
+import { resend, EMAIL_FROM, hasEmailConfig } from '@/lib/email/client';
+import { OrderConfirmationEmail } from '@/lib/email/templates/OrderConfirmation';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 
@@ -261,6 +263,62 @@ export async function POST(request: Request) {
                 });
 
                 console.log(`[Order] Successfully created Printful order ${printfulOrder.id} and tracked purchase_complete event`);
+
+                // --- Send Confirmation Email ---
+                try {
+                    // 1. Fetch details for email
+                    const { data: variantData } = await (supabase as any)
+                        .from('product_variants')
+                        .select('name, price_cents, display_price_cents, product:products(title)')
+                        .eq('id', typedOrder.variant_id)
+                        .single();
+
+                    const productName = variantData
+                        ? `${variantData.product?.title || 'Map'} - ${variantData.name}`
+                        : 'Custom Map Print';
+
+                    const unitPrice = variantData?.display_price_cents || variantData?.price_cents || 0;
+
+                    // 2. Determine Recipient Email
+                    let userEmail: string | null | undefined = paymentIntent.receipt_email;
+                    if (!userEmail && typedOrder.user_id) {
+                        const { data: userData } = await supabase.auth.admin.getUserById(typedOrder.user_id);
+                        userEmail = userData.user?.email;
+                    }
+
+                    // 3. Send Email
+                    if (userEmail && hasEmailConfig()) {
+                        await resend.emails.send({
+                            from: EMAIL_FROM,
+                            to: userEmail,
+                            subject: `Order Confirmed - Carto-Art #${typedOrder.id.slice(0, 8).toUpperCase()}`,
+                            react: OrderConfirmationEmail({
+                                orderId: typedOrder.id,
+                                customerName: shipping?.name || 'Customer',
+                                orderTotal: `$${(paymentIntent.amount / 100).toFixed(2)}`,
+                                shippingAddress: {
+                                    line1: shipping?.address?.line1 || '',
+                                    city: shipping?.address?.city || '',
+                                    state: shipping?.address?.state || '',
+                                    postal_code: shipping?.address?.postal_code || '',
+                                    country: shipping?.address?.country || '',
+                                },
+                                items: [{
+                                    name: productName,
+                                    quantity: typedOrder.quantity,
+                                    price: `$${(unitPrice / 100).toFixed(2)}`,
+                                    image_url: undefined // We could fetch the design URL if we want
+                                }]
+                            })
+                        });
+                        console.log(`[Order] Sent confirmation email to ${userEmail}`);
+                    } else {
+                        console.log(`[Order] Skipping email: No email provided or no API key. Email: ${userEmail}`);
+                    }
+                } catch (emailErr) {
+                    console.error('[Order] Failed to send confirmation email:', emailErr);
+                    // Don't throw, we don't want to fail the webhook request just because email failed
+                }
 
             } catch (err: any) {
                 console.error('[Order] Failed to create Printful order', err);

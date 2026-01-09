@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { usePathname } from 'next/navigation';
+import { ModeToggle } from '@/components/mode-toggle';
 
 interface NavLink {
     href: string;
@@ -91,6 +92,11 @@ export function MobileMenu({ isOpen, onClose, links, isAdmin }: MobileMenuProps)
                                             </li>
                                         );
                                     })}
+
+                                    <li className="flex items-center justify-between rounded-md p-3 text-foreground/80 hover:bg-muted hover:text-foreground transition-colors">
+                                        <span>Appearance</span>
+                                        <ModeToggle className="h-8 w-8 p-0 bg-transparent hover:bg-transparent" />
+                                    </li>
 
                                     {isAdmin && (
                                         <>

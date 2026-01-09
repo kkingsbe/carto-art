@@ -10,6 +10,7 @@ import { PageViewTracker } from "@/components/analytics/PageViewTracker";
 import { ReferrerSaver } from "@/components/analytics/ReferrerSaver";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { Suspense } from "react";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -60,34 +61,41 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex flex-col overflow-hidden`}
       >
-        {process.env.NEXT_PUBLIC_GA_ID && (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
-              strategy="afterInteractive"
-            />
-            <Script id="google-analytics" strategy="afterInteractive">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-
-                gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
-              `}
-            </Script>
-          </>
-        )}
-        <StructuredData type="software" />
-        <BuyMeACoffeeWidget />
-        <Navbar />
-        <Suspense fallback={null}>
-          <PageViewTracker />
-          <ReferrerSaver />
-        </Suspense>
-        <main className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden">
-          {children}
-        </main>
-        <Toaster position="top-center" richColors />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {process.env.NEXT_PUBLIC_GA_ID && (
+            <>
+              <Script
+                src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
+                strategy="afterInteractive"
+              />
+              <Script id="google-analytics" strategy="afterInteractive">
+                {`
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  gtag('js', new Date());
+  
+                  gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
+                `}
+              </Script>
+            </>
+          )}
+          <StructuredData type="software" />
+          <BuyMeACoffeeWidget />
+          <Navbar />
+          <Suspense fallback={null}>
+            <PageViewTracker />
+            <ReferrerSaver />
+          </Suspense>
+          <main className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden">
+            {children}
+          </main>
+          <Toaster position="top-center" richColors />
+        </ThemeProvider>
       </body>
     </html>
   );

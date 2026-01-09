@@ -1,4 +1,4 @@
-import { Play, Square, Video, Orbit, Tornado, ZoomIn, ZoomOut, TrendingUp, TrendingDown, Plane } from 'lucide-react';
+import { Play, Square, Video, Orbit, Tornado, Rocket, PlaneLanding, TrendingUp, TrendingDown, Plane } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMapAnimation, type AnimationType } from '@/hooks/useMapAnimation';
 
@@ -238,30 +238,30 @@ export function AutomationControls({
                     </button>
                 </div>
 
-                {/* Zoom In Card */}
+                {/* Swoop In Card */}
                 <div className={cn(
                     "group relative flex flex-col items-center p-4 rounded-xl border transition-all duration-200 cursor-pointer overflow-hidden",
-                    activeAnimation === 'zoomIn'
+                    activeAnimation === 'swoopIn'
                         ? "bg-teal-50 border-teal-200 dark:bg-teal-900/20 dark:border-teal-800"
                         : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
                 )}
-                    onClick={() => isPlaying && activeAnimation === 'zoomIn' ? onAnimationStop() : onAnimationStart('zoomIn')}
+                    onClick={() => isPlaying && activeAnimation === 'swoopIn' ? onAnimationStop() : onAnimationStart('swoopIn')}
                 >
                     <div className="mb-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-full group-hover:scale-110 transition-transform duration-300">
-                        <ZoomIn className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+                        <PlaneLanding className="w-6 h-6 text-gray-700 dark:text-gray-300" />
                     </div>
-                    <h4 className="font-medium text-sm text-gray-900 dark:text-white mb-1">Zoom In</h4>
-                    <p className="text-xs text-center text-gray-500 dark:text-gray-400 mb-3">Closer Look</p>
+                    <h4 className="font-medium text-sm text-gray-900 dark:text-white mb-1">Swoop In</h4>
+                    <p className="text-xs text-center text-gray-500 dark:text-gray-400 mb-3">Dramatic Landing</p>
 
                     <button
                         className={cn(
                             "mt-auto flex items-center justify-center w-full py-1.5 rounded-lg text-xs font-medium transition-colors",
-                            activeAnimation === 'zoomIn'
+                            activeAnimation === 'swoopIn'
                                 ? "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 hover:bg-teal-200 dark:hover:bg-teal-900/60"
                                 : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                         )}
                     >
-                        {activeAnimation === 'zoomIn' ? (
+                        {activeAnimation === 'swoopIn' ? (
                             <>
                                 <Square className="w-3 h-3 mr-1.5 fill-current" /> Stop
                             </>
@@ -273,30 +273,30 @@ export function AutomationControls({
                     </button>
                 </div>
 
-                {/* Zoom Out Card */}
+                {/* Rocket Out Card */}
                 <div className={cn(
                     "group relative flex flex-col items-center p-4 rounded-xl border transition-all duration-200 cursor-pointer overflow-hidden",
-                    activeAnimation === 'zoomOut'
+                    activeAnimation === 'rocketOut'
                         ? "bg-rose-50 border-rose-200 dark:bg-rose-900/20 dark:border-rose-800"
                         : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
                 )}
-                    onClick={() => isPlaying && activeAnimation === 'zoomOut' ? onAnimationStop() : onAnimationStart('zoomOut')}
+                    onClick={() => isPlaying && activeAnimation === 'rocketOut' ? onAnimationStop() : onAnimationStart('rocketOut')}
                 >
                     <div className="mb-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-full group-hover:scale-110 transition-transform duration-300">
-                        <ZoomOut className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+                        <Rocket className="w-6 h-6 text-gray-700 dark:text-gray-300" />
                     </div>
-                    <h4 className="font-medium text-sm text-gray-900 dark:text-white mb-1">Zoom Out</h4>
-                    <p className="text-xs text-center text-gray-500 dark:text-gray-400 mb-3">Wide View</p>
+                    <h4 className="font-medium text-sm text-gray-900 dark:text-white mb-1">Rocket Out</h4>
+                    <p className="text-xs text-center text-gray-500 dark:text-gray-400 mb-3">Liftoff View</p>
 
                     <button
                         className={cn(
                             "mt-auto flex items-center justify-center w-full py-1.5 rounded-lg text-xs font-medium transition-colors",
-                            activeAnimation === 'zoomOut'
+                            activeAnimation === 'rocketOut'
                                 ? "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300 hover:bg-rose-200 dark:hover:bg-rose-900/60"
                                 : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                         )}
                     >
-                        {activeAnimation === 'zoomOut' ? (
+                        {activeAnimation === 'rocketOut' ? (
                             <>
                                 <Square className="w-3 h-3 mr-1.5 fill-current" /> Stop
                             </>
