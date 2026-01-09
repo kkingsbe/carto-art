@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { isAdmin } from '@/lib/admin-auth';
 import { NextResponse } from 'next/server';
 
@@ -13,7 +13,8 @@ export async function GET() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const supabase = await createClient();
+        // Use service role client to bypass RLS and see all user events for analytics
+        const supabase = createServiceRoleClient();
 
         // 30 day window
         const thirtyDaysAgo = new Date();
@@ -38,49 +39,63 @@ export async function GET() {
                 .select('session_id')
                 .eq('event_type', 'page_view')
                 .ilike('page_url', '%/')
-                .gte('created_at', startTime),
+                .gte('created_at', startTime)
+                .not('session_id', 'is', null)
+                .limit(50000),
 
             // Editor Opened
             supabase
                 .from('page_events')
                 .select('session_id')
                 .eq('event_type', 'editor_open')
-                .gte('created_at', startTime),
+                .gte('created_at', startTime)
+                .not('session_id', 'is', null)
+                .limit(50000),
 
             // Export Success
             supabase
                 .from('page_events')
                 .select('session_id')
                 .eq('event_type', 'poster_export')
-                .gte('created_at', startTime),
+                .gte('created_at', startTime)
+                .not('session_id', 'is', null)
+                .limit(50000),
 
             // Clicking "Purchase Print" from Export Modal
             supabase
                 .from('page_events')
                 .select('session_id')
                 .eq('event_type', 'shop_transition_start')
-                .gte('created_at', startTime),
+                .gte('created_at', startTime)
+                .not('session_id', 'is', null)
+                .limit(50000),
 
             // Store (Product Selection)
             supabase
                 .from('page_events')
                 .select('session_id')
                 .eq('event_type', 'store_view')
-                .gte('created_at', startTime),
+                .gte('created_at', startTime)
+                .not('session_id', 'is', null)
+                .limit(50000),
 
             // Product Detail View
             supabase
                 .from('page_events')
                 .select('session_id')
                 .eq('event_type', 'product_view')
-                .gte('created_at', startTime),
+                .gte('created_at', startTime)
+                .not('session_id', 'is', null)
+                .limit(50000),
 
             // Checkout Started
             supabase
                 .from('page_events')
                 .select('session_id')
                 .eq('event_type', 'checkout_start')
-                .gte('created_at', startTime),
+                .gte('created_at', startTime)
+                .not('session_id', 'is', null)
+                .limit(50000),
 
             // Purchase Complete
             supabase
@@ -88,6 +103,9 @@ export async function GET() {
                 .select('session_id')
                 .eq('event_type', 'purchase_complete')
                 .gte('created_at', startTime)
+                .not('session_id', 'is', null)
+                .order('created_at', { ascending: false })
+                .limit(1000)
         ]);
 
         // Helper to count unique sessions
