@@ -47,6 +47,7 @@ import { SubscriptionSuccessModal } from '@/components/controls/SubscriptionSucc
 import { publishMap, unpublishMap } from '@/lib/actions/maps';
 import { PublishModal } from '@/components/profile/PublishModal';
 import { LoginWall } from '@/components/auth/LoginWall';
+import { LoginWallModal } from '@/components/auth/LoginWallModal';
 import type { Step } from 'react-joyride';
 
 interface PosterEditorProps {
@@ -145,6 +146,9 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
   // Publishing State
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [showLoginWall, setShowLoginWall] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
+
 
   // Keep a reference to the map instance for thumbnail generation
   const mapInstanceRef = useRef<MapLibreGL.Map | null>(null);
@@ -677,6 +681,10 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
         onOpenCommandMenu={() => setIsCommandMenuOpen(true)}
         onStartWalkthrough={() => setRunTour(true)}
         onBuyPrint={isEcommerceEnabled ? async () => {
+          if (!isAuthenticated) {
+            setShowLoginModal(true);
+            return;
+          }
           setShowDonationModal(false);
 
           // Track shop transition start
@@ -946,7 +954,10 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
         />
       )}
 
-
+      <LoginWallModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+      />
 
       {/* Mobile Tab Bar - Above Action Bar */}
       <div className="fixed left-0 right-0 z-40 md:hidden" style={{ bottom: 'calc(72px + env(safe-area-inset-bottom, 0px))' }}>

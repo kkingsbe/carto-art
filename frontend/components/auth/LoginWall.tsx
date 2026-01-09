@@ -35,7 +35,7 @@ export function LoginWall({
 
     const handleSignUp = () => {
         const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
-        router.push(`/register?next=${returnUrl}`);
+        router.push(`/register?redirect=${returnUrl}`);
     };
 
     return (
