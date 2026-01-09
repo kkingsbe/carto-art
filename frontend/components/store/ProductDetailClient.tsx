@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { parseAspectRatio, variantMatchesAspectRatio, parseVariantDimensions } from '@/lib/utils/store';
 
 import { useEffect } from 'react';
-import { trackEvent } from '@/lib/events';
+import { trackEventAction } from '@/lib/actions/events';
 import { getSessionId } from '@/lib/utils';
 import { ProductGroup } from '@/lib/utils/store';
 
@@ -28,7 +28,7 @@ export function ProductDetailClient({ variants, product }: ProductDetailClientPr
 
     // Track product view on mount
     useEffect(() => {
-        trackEvent({
+        trackEventAction({
             eventType: 'product_view',
             eventName: 'product_detail_viewed',
             sessionId: getSessionId(),
