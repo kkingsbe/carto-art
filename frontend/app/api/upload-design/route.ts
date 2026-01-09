@@ -28,20 +28,9 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Failed to generate upload link' }, { status: 500 });
         }
 
-        // 2. Create Signed Read URL (valid for 24 hours) - Pre-generate this so frontend can use it immediately
-        const { data: readData, error: readError } = await supabase.storage
-            .from('print-files')
-            .createSignedUrl(fileName, 86400);
-
-        if (readError || !readData) {
-            console.error('Upload design: Failed to generate read URL:', readError);
-            // We don't fail the whole request since upload URL was generated, but frontend might need to fetch read URL separately if this fails
-        }
-
         return NextResponse.json({
             uploadUrl: uploadData.signedUrl,
             path: uploadData.path,
-            readUrl: readData?.signedUrl
         });
 
     } catch (error) {

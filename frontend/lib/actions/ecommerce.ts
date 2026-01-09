@@ -681,7 +681,7 @@ export async function getCancellationRequests() {
     if (userIds.length > 0) {
         const { data: users } = await supabase
             .from('profiles')
-            .select('id, display_name, email')
+            .select('id, display_name, username')
             .in('id', userIds);
 
         if (users) {

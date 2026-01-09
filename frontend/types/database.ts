@@ -758,6 +758,61 @@ export interface Database {
           updated_at?: string;
         };
       };
+      tickets: {
+        Row: {
+          id: string;
+          subject: string;
+          customer_email: string;
+          status: 'open' | 'closed';
+          last_message_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          subject: string;
+          customer_email: string;
+          status?: 'open' | 'closed';
+          last_message_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          subject?: string;
+          customer_email?: string;
+          status?: 'open' | 'closed';
+          last_message_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      ticket_messages: {
+        Row: {
+          id: string;
+          ticket_id: string;
+          content: string;
+          sender_role: 'customer' | 'agent';
+          message_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          ticket_id: string;
+          content: string;
+          sender_role: 'customer' | 'agent';
+          message_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          ticket_id?: string;
+          content?: string;
+          sender_role?: 'customer' | 'agent';
+          message_id?: string | null;
+          created_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;

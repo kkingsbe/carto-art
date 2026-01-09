@@ -96,8 +96,8 @@ export function CancellationRequestsTable({ requests: initialRequests }: { reque
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex flex-col">
-                                        <span className="text-sm">{req.user?.display_name || 'Unknown'}</span>
-                                        <span className="text-xs text-muted-foreground">{req.user?.email}</span>
+                                        <span className="text-sm">{req.user?.display_name || req.user?.username || 'Unknown User'}</span>
+                                        <span className="text-xs text-muted-foreground">{req.user?.username ? `@${req.user.username}` : req.user_id.slice(0, 8)}</span>
                                     </div>
                                 </TableCell>
                                 <TableCell>
@@ -136,7 +136,7 @@ export function CancellationRequestsTable({ requests: initialRequests }: { reque
                                 <TableCell className="text-right">
                                     {req.order?.printful_order_id && (
                                         <Button variant="ghost" size="sm" asChild>
-                                            <Link href={`https://www.printful.com/dashboard/default/orders/${req.order.printful_order_id}`} target="_blank">
+                                            <Link href={`https://www.printful.com/dashboard?order_id=${req.order.printful_order_id}`} target="_blank">
                                                 <ExternalLink className="w-4 h-4" />
                                             </Link>
                                         </Button>

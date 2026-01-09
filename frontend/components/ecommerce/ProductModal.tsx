@@ -264,21 +264,34 @@ export function ProductModal({ isOpen, onClose, imageUrl, designId, aspectRatio 
                         toast.info("Preparing print file...");
                         const response = await fetch(imageUrl);
                         const blob = await response.blob();
-                        const formData = new FormData();
-                        formData.append('file', blob, 'poster.png');
-
-                        // Use API route to upload file (Server Actions have issues with blob serialization)
-                        const uploadRes = await fetch('/api/upload-design', {
+                        // 1. Get Signed URL from API
+                        const signRes = await fetch('/api/upload-design', {
                             method: 'POST',
-                            body: formData,
                         });
 
-                        if (!uploadRes.ok) {
-                            const errorData = await uploadRes.json();
-                            throw new Error(errorData.error || 'Failed to upload print file');
+                        if (!signRes.ok) {
+                            const errorData = await signRes.json();
+                            throw new Error(errorData.error || 'Failed to initialize upload');
                         }
 
-                        const { readUrl } = await uploadRes.json();
+                        const { uploadUrl, path } = await signRes.json();
+
+                        // 2. Upload directly to Storage
+                        const uploadRes = await fetch(uploadUrl, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': blob.type || 'image/png',
+                            },
+                            body: blob,
+                        });
+
+                        if (!uploadRes.ok) throw new Error("Failed to upload image data");
+
+                        // 3. Get Read URL
+                        const readRes = await fetch(`/api/upload-design?path=${encodeURIComponent(path)}`);
+                        if (!readRes.ok) throw new Error("Failed to generate preview link");
+
+                        const { readUrl } = await readRes.json();
                         finalSignedUrl = readUrl;
                     }
 
