@@ -21,7 +21,7 @@ async function inspectExports() {
     const { data: events, error } = await supabase
         .from('page_events')
         .select('*')
-        .eq('event_type', 'poster_export')
+        .eq('event_type', 'export_modal_view')
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -30,12 +30,12 @@ async function inspectExports() {
         return;
     }
 
-    console.log(`Found ${events.length} events:`);
+    console.log(`Found ${events.length} modal view events:`);
     console.table(events.map(e => ({
         created_at: new Date(e.created_at).toLocaleString(),
         user_id: e.user_id ? `${e.user_id.substring(0, 8)}...` : 'NULL',
         session_id: e.session_id ? `${e.session_id.substring(0, 8)}...` : 'NULL',
-        source: e.metadata?.source || 'unknown',
+        metadata: JSON.stringify(e.metadata || {}).substring(0, 50),
         event_name: e.event_name
     })));
 

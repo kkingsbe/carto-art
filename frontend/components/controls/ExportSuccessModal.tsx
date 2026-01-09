@@ -1,6 +1,6 @@
-'use client';
-
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { trackEventAction } from '@/lib/actions/events';
+import { getSessionId } from '@/lib/utils';
 import { X, MessageCircle, Heart, ExternalLink, Share2, Save, ShoppingBag, Check, Twitter, Link as LinkIcon, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
@@ -60,12 +60,43 @@ export function ExportSuccessModal({
 
     const donationMessage = getDonationMessage();
 
+    // Track modal view
+    useEffect(() => {
+        if (isOpen) {
+            trackEventAction({
+                eventType: 'export_modal_view',
+                eventName: 'export_success_modal_viewed',
+                sessionId: getSessionId(),
+                metadata: {
+                    exportCount,
+                    hasUnsavedChanges
+                }
+            });
+        }
+    }, [isOpen, exportCount, hasUnsavedChanges]);
+
+    const handleClose = useCallback(() => {
+        trackEventAction({
+            eventType: 'export_modal_dismiss',
+            eventName: 'export_modal_closed',
+            sessionId: getSessionId(),
+            metadata: { method: 'button' }
+        });
+        onClose();
+    }, [onClose]);
+
     // Handle ESC key to close
     useEffect(() => {
         if (!isOpen) return;
 
         const handleEscape = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
+                trackEventAction({
+                    eventType: 'export_modal_dismiss',
+                    eventName: 'export_modal_closed',
+                    sessionId: getSessionId(),
+                    metadata: { method: 'escape_key' }
+                });
                 onClose();
             }
         };
@@ -84,6 +115,12 @@ export function ExportSuccessModal({
             await navigator.clipboard.writeText(window.location.href);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
+
+            trackEventAction({
+                eventType: 'export_modal_share_click',
+                eventName: 'share_link_copied',
+                sessionId: getSessionId()
+            });
         } catch (err) {
             console.error('Failed to copy link', err);
         }
@@ -92,12 +129,59 @@ export function ExportSuccessModal({
     const handleShareTwitter = () => {
         const text = "Check out this map poster I designed with CartoArt! 🗺️✨";
         const url = window.location.href;
+
+        trackEventAction({
+            eventType: 'export_modal_share_click',
+            eventName: 'share_twitter_clicked',
+            sessionId: getSessionId()
+        });
+
         window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
     };
 
     const handleSignUp = () => {
+        trackEventAction({
+            eventType: 'export_modal_save_click',
+            eventName: 'signup_to_save_clicked',
+            sessionId: getSessionId()
+        });
+
         const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
         router.push(`/register?next=${returnUrl}`);
+    };
+
+    const handleDonateClick = () => {
+        trackEventAction({
+            eventType: 'export_modal_donate_click',
+            eventName: 'donate_button_clicked',
+            sessionId: getSessionId(),
+            metadata: {
+                messageTitle: donationMessage.title
+            }
+        });
+    };
+
+    // Helper to wrap save with tracking
+    const handleSaveWithTracking = async (name: string) => {
+        trackEventAction({
+            eventType: 'export_modal_save_click',
+            eventName: 'save_project_clicked',
+            sessionId: getSessionId()
+        });
+        await onSave(name);
+    };
+
+    // Helper to wrap publish with tracking
+    const handlePublishWithTracking = () => {
+        if (onPublish) {
+            trackEventAction({
+                eventType: 'export_modal_publish_click',
+                eventName: 'publish_to_gallery_clicked',
+                sessionId: getSessionId()
+            });
+            onPublish();
+            onClose();
+        }
     };
 
     if (!isOpen) return null;
@@ -111,6 +195,12 @@ export function ExportSuccessModal({
             )}
             onClick={(e) => {
                 if (e.target === e.currentTarget) {
+                    trackEventAction({
+                        eventType: 'export_modal_dismiss',
+                        eventName: 'export_modal_closed',
+                        sessionId: getSessionId(),
+                        metadata: { method: 'backdrop_click' }
+                    });
                     onClose();
                 }
             }}
@@ -135,7 +225,7 @@ export function ExportSuccessModal({
                 {/* Header with Close Button */}
                 <div className="absolute top-4 right-4 z-20">
                     <button
-                        onClick={onClose}
+                        onClick={handleClose}
                         className="p-2 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
                     >
                         <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
@@ -218,12 +308,7 @@ export function ExportSuccessModal({
                                             <Button
                                                 variant="outline"
                                                 className="w-full gap-2 border-2 hover:bg-gray-50 dark:hover:bg-gray-800 font-bold"
-                                                onClick={() => {
-                                                    if (onPublish) {
-                                                        onPublish();
-                                                        onClose();
-                                                    }
-                                                }}
+                                                onClick={handlePublishWithTracking}
                                             >
                                                 <Upload className="w-4 h-4 text-blue-600" />
                                                 Publish to Gallery
@@ -262,6 +347,7 @@ export function ExportSuccessModal({
                                         href="https://buymeacoffee.com/kkingsbe"
                                         target="_blank"
                                         rel="noopener noreferrer"
+                                        onClick={handleDonateClick}
                                         className={cn(
                                             "inline-flex items-center gap-2 px-4 md:px-5 py-2 md:py-2.5 rounded-xl font-bold text-xs md:text-sm",
                                             "bg-gradient-to-r from-yellow-400 to-amber-500 text-gray-900",
@@ -297,7 +383,7 @@ export function ExportSuccessModal({
 
                             {isAuthenticated ? (
                                 <SaveButton
-                                    onSave={onSave}
+                                    onSave={handleSaveWithTracking}
                                     isAuthenticated={isAuthenticated}
                                     currentMapName={currentMapName}
                                     hasUnsavedChanges={hasUnsavedChanges}
@@ -382,3 +468,4 @@ export function ExportSuccessModal({
         </div>
     );
 }
+

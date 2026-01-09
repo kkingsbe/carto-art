@@ -41,7 +41,14 @@ export type EventType =
     | 'checkout_variant_select'
     | 'checkout_step_complete'
     | 'checkout_abandon'
-    | 'purchase_complete';
+    | 'purchase_complete'
+    // Export Modal Events
+    | 'export_modal_view'
+    | 'export_modal_dismiss'
+    | 'export_modal_donate_click'
+    | 'export_modal_share_click'
+    | 'export_modal_save_click'
+    | 'export_modal_publish_click';
 
 /**
  * Tracks a user event in the database for admin analytics.
