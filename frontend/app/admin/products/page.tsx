@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { getProducts, upsertProduct, upsertProductVariant, deleteProductVariant, deleteProductVariants } from "@/lib/actions/ecommerce";
+import { getProducts, upsertProduct, deleteProduct, upsertProductVariant, deleteProductVariant, deleteProductVariants } from "@/lib/actions/ecommerce";
 import { generateMockupTemplates, getMissingTemplateCount, regenerateVariantMockup } from "@/lib/actions/printful";
 import { getSiteConfig } from "@/lib/actions/usage";
 import { CONFIG_KEYS } from "@/lib/actions/usage.types";
@@ -94,7 +94,7 @@ export default function AdminProductsPage() {
         const features = featuresText.split('\n').map(f => f.trim()).filter(f => f.length > 0);
 
         const payload = {
-            id: Number(formData.get('id')),
+            id: editingProduct?.id || Number(formData.get('id')),
             title: formData.get('title') as string,
             description: formData.get('description') as string,
             features: features,
@@ -122,7 +122,7 @@ export default function AdminProductsPage() {
         const formData = new FormData(e.currentTarget);
 
         const payload = {
-            id: Number(formData.get('id')),
+            id: editingVariant?.id || Number(formData.get('id')),
             product_id: Number(formData.get('product_id')), // Hidden field
             name: formData.get('name') as string,
             price_cents: Math.round(Number(formData.get('price')) * 100),
@@ -140,6 +140,19 @@ export default function AdminProductsPage() {
             toast.error(error.message || "Failed to save variant");
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleDeleteProduct = async (product: any) => {
+        if (!confirm(`Are you sure you want to delete "${product.title}"? This will detach its variants.`)) return;
+
+        const toastId = toast.loading("Deleting product...");
+        try {
+            await deleteProduct(product.id);
+            toast.success("Product deleted", { id: toastId });
+            fetchData();
+        } catch (error: any) {
+            toast.error(error.message || "Failed to delete product", { id: toastId });
         }
     };
 
@@ -329,6 +342,13 @@ export default function AdminProductsPage() {
                                     }}>
                                         <Pencil className="w-4 h-4 mr-2" />
                                         Edit
+                                    </Button>
+                                    <Button size="sm" variant="destructive" onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteProduct(product);
+                                    }}>
+                                        <Trash2 className="w-4 h-4 mr-2" />
+                                        Delete
                                     </Button>
                                 </div>
                             </div>

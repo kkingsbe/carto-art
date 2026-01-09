@@ -236,6 +236,12 @@ export async function generateMockupTemplates(): Promise<{
     const variantsByProduct = new Map<number, number[]>();
 
     for (const v of variants) {
+        // Skip invalid variant IDs
+        if (v.id <= 0) {
+            console.warn(`Skipping invalid variant ID: ${v.id}`);
+            continue;
+        }
+
         let productId = v.product_id;
 
         // If product_id is missing, fetch it from Printful
@@ -246,10 +252,14 @@ export async function generateMockupTemplates(): Promise<{
 
                 // Also update the database so we don't have to look it up again
                 if (productId) {
-                    await (supabase as any)
-                        .from('product_variants')
-                        .update({ product_id: productId })
-                        .eq('id', v.id);
+                    try {
+                        await (supabase as any)
+                            .from('product_variants')
+                            .update({ product_id: productId })
+                            .eq('id', v.id);
+                    } catch (dbError) {
+                        console.warn(`Failed to update product_id for variant ${v.id}`, dbError);
+                    }
                 }
             } catch (e) {
                 console.warn(`Could not fetch product_id for variant ${v.id}:`, e);

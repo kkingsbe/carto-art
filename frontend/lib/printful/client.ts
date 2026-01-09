@@ -292,6 +292,17 @@ export const printful = {
                         // } else 
                         if (bestTemplate.placement) {
                             validPlacement = bestTemplate.placement;
+                        } else if (bestTemplate.is_template_on_front) {
+                            // If placement is missing but it's on front
+                            // AOP products usually require 'front', while others (Canvas, etc) require 'default'
+                            const fullName = targetVariant.variant.name || "";
+                            if (fullName.includes('All-Over Print')) {
+                                console.log(`[DEBUG] AOP Product detected. Using 'front' placement.`);
+                                validPlacement = 'front';
+                            } else {
+                                console.log(`[DEBUG] Standard Product detected. Using 'default' placement.`);
+                                validPlacement = 'default';
+                            }
                         }
 
                         printAreaWidth = bestTemplate.print_area_width;

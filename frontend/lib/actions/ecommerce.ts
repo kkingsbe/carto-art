@@ -313,6 +313,33 @@ export async function upsertProduct(product: {
     return data;
 }
 
+export async function deleteProduct(id: number) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) throw new Error('Unauthorized');
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single<{ is_admin: boolean }>();
+
+    if (!profile?.is_admin) throw new Error('Unauthorized - Admin only');
+
+    const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+
+    if (error) {
+        console.error('Delete product error:', error);
+        throw new Error(error.message);
+    }
+
+    return true;
+}
+
 /**
  * Get product variants with margin-adjusted display prices
  * Use this for displaying prices to customers
