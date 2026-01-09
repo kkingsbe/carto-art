@@ -786,6 +786,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       ticket_messages: {
         Row: {
@@ -812,6 +813,7 @@ export interface Database {
           message_id?: string | null;
           created_at?: string;
         };
+        Relationships: [];
       };
     };
     Views: {

@@ -10,7 +10,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
         }
 
-        const supabase = createAdminClient();
+        const supabase = createAdminClient() as any;
 
         // Extract sender email
         // Resend 'from' field is usually "Name <email>" or just "email"
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
                     subject: subject,
                     customer_email: customerEmail,
                     status: 'open', // Default
-                })
+                } as any)
                 .select('id')
                 .single();
 
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
                 content: text || 'No text content', // Prefer text for now, maybe store HTML later or in a separate column if needed
                 sender_role: 'customer',
                 message_id: payload.message_id || null // Store Resend/Email Message-ID if available
-            });
+            } as any);
 
         if (messageError) {
             console.error('Error adding message:', messageError);
