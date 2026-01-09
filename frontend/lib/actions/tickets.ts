@@ -24,9 +24,9 @@ export interface TicketMessage {
 }
 
 export async function getTickets(): Promise<Ticket[]> {
-    const supabase = createAdminClient();
+    const supabase = createAdminClient() as any;
     const { data, error } = await supabase
-        .from('tickets' as any)
+        .from('tickets')
         .select('*')
         .order('last_message_at', { ascending: false });
 
@@ -39,11 +39,11 @@ export async function getTickets(): Promise<Ticket[]> {
 }
 
 export async function getTicketDetails(id: string): Promise<{ ticket: Ticket, messages: TicketMessage[] }> {
-    const supabase = createAdminClient();
+    const supabase = createAdminClient() as any;
 
     // Fetch ticket
     const { data: ticket, error: ticketError } = await supabase
-        .from('tickets' as any)
+        .from('tickets')
         .select('*')
         .eq('id', id)
         .single();
@@ -52,7 +52,7 @@ export async function getTicketDetails(id: string): Promise<{ ticket: Ticket, me
 
     // Fetch messages
     const { data: messages, error: messagesError } = await supabase
-        .from('ticket_messages' as any)
+        .from('ticket_messages')
         .select('*')
         .eq('ticket_id', id)
         .order('created_at', { ascending: true });
@@ -63,11 +63,11 @@ export async function getTicketDetails(id: string): Promise<{ ticket: Ticket, me
 }
 
 export async function replyToTicket(ticketId: string, content: string) {
-    const supabase = createAdminClient();
+    const supabase = createAdminClient() as any;
 
     // 1. Get ticket info for email destination
     const { data: ticket, error: ticketError } = await supabase
-        .from('tickets' as any)
+        .from('tickets')
         .select('*')
         .eq('id', ticketId)
         .single();
@@ -76,7 +76,7 @@ export async function replyToTicket(ticketId: string, content: string) {
 
     // 2. Insert Agent Message
     const { error: insertError } = await supabase
-        .from('ticket_messages' as any)
+        .from('ticket_messages')
         .insert({
             ticket_id: ticketId,
             content,
@@ -112,7 +112,7 @@ export async function replyToTicket(ticketId: string, content: string) {
 
     // 4. Update ticket timestamp
     await supabase
-        .from('tickets' as any)
+        .from('tickets')
         .update({
             last_message_at: new Date().toISOString(),
             status: 'open' // ensure open
@@ -126,9 +126,9 @@ export async function replyToTicket(ticketId: string, content: string) {
 }
 
 export async function closeTicket(ticketId: string) {
-    const supabase = createAdminClient();
+    const supabase = createAdminClient() as any;
     await supabase
-        .from('tickets' as any)
+        .from('tickets')
         .update({ status: 'closed' })
         .eq('id', ticketId);
 

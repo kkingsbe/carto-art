@@ -37,7 +37,7 @@ export async function authenticateApiRequest(req: NextRequest): Promise<ApiAuthR
 
     if (apiKey === 'ca_live_demo_sandbox_key_2024') {
         try {
-            const supabase = createAdminClient();
+            const supabase = createAdminClient() as any;
 
             // Rate limit check: Max 60 requests per minute for sandbox
             const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
@@ -94,7 +94,7 @@ export async function authenticateApiRequest(req: NextRequest): Promise<ApiAuthR
 
     try {
         // Use admin client to bypass RLS - API key lookups don't have user session cookies
-        const supabase = createAdminClient();
+        const supabase = createAdminClient() as any;
 
         // 1. Find the key record by prefix (optimisation to avoid checking all keys)
         // Note: We check against key_prefix in DB. 
@@ -122,8 +122,8 @@ export async function authenticateApiRequest(req: NextRequest): Promise<ApiAuthR
         }
 
         // 3. Update last usage async (fire and forget)
-        (supabase
-            .from('api_keys') as any)
+        supabase
+            .from('api_keys')
             .update({ last_used_at: new Date().toISOString() })
             .eq('id', keyRecord.id)
             .then(({ error }: any) => {
@@ -136,8 +136,8 @@ export async function authenticateApiRequest(req: NextRequest): Promise<ApiAuthR
 
         if (virtualUserId) {
             // Check if the virtual user exists and is owned by this API key holder
-            const { data: virtualUser, error: virtualError } = await (supabase
-                .from('profiles') as any)
+            const { data: virtualUser, error: virtualError } = await supabase
+                .from('profiles')
                 .select('id, owner_id')
                 .eq('id', virtualUserId)
                 .eq('is_virtual', true)
