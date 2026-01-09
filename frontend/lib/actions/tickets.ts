@@ -48,7 +48,10 @@ export async function getTicketDetails(id: string): Promise<{ ticket: Ticket, me
         .eq('id', id)
         .single();
 
-    if (ticketError) throw new Error('Failed to fetch ticket');
+    if (ticketError) {
+        console.error('Error fetching ticket:', ticketError);
+        throw new Error(`Failed to fetch ticket: ${ticketError.message}`);
+    }
 
     // Fetch messages
     const { data: messages, error: messagesError } = await supabase
@@ -57,7 +60,10 @@ export async function getTicketDetails(id: string): Promise<{ ticket: Ticket, me
         .eq('ticket_id', id)
         .order('created_at', { ascending: true });
 
-    if (messagesError) throw new Error('Failed to fetch messages');
+    if (messagesError) {
+        console.error('Error fetching messages:', messagesError);
+        throw new Error(`Failed to fetch messages: ${messagesError.message}`);
+    }
 
     return { ticket: ticket as Ticket, messages: (messages || []) as TicketMessage[] };
 }

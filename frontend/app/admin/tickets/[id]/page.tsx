@@ -5,8 +5,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
-export default async function AdminTicketPage({ params }: { params: { id: string } }) {
-    const { ticket, messages } = await getTicketDetails(params.id);
+export default async function AdminTicketPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
+    const { ticket, messages } = await getTicketDetails(id);
 
     return (
         <div className="flex flex-col h-[calc(100vh-8rem)]">
