@@ -25,7 +25,8 @@ export function ProductPreviewGrid({
     const designImageRef = useRef<HTMLImageElement | null>(null);
 
     useEffect(() => {
-        if (!designUrl || variants.length === 0) return;
+        // Defensive check for "undefined" string which might be passed in URL
+        if (!designUrl || designUrl === 'undefined' || variants.length === 0) return;
 
         const generatePreviews = async () => {
             // Load design image once

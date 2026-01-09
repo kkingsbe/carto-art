@@ -144,7 +144,7 @@ export function ExportSuccessModal({
 
                 {/* Hero Header */}
                 <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-3 md:p-6 text-white text-center relative overflow-hidden shrink-0">
-                    <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
+
                     <div className="relative z-10">
                         <div className="mx-auto bg-white/20 w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center mb-2 md:mb-3 backdrop-blur-sm">
                             <Check className="w-5 h-5 md:w-6 md:h-6 text-white" />

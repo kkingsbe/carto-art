@@ -12,7 +12,7 @@ const config: Config = {
     coverageProvider: 'v8',
     testEnvironment: 'node', // Default to node for API routes. If testing components, use 'jsdom'
     // Add more setup options before each test is run
-    // setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+    setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
     moduleNameMapper: {
         '^@/(.*)$': '<rootDir>/$1',
         '^@/__tests__/(.*)$': '<rootDir>/__tests__/$1',

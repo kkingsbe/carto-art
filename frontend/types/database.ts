@@ -679,6 +679,41 @@ export interface Database {
           updated_at?: string;
         };
       };
+      products: {
+        Row: {
+          id: number;
+          title: string;
+          description: string | null;
+          features: string[] | null;
+          starting_price: number | null;
+          display_order: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: number;
+          title: string;
+          description?: string | null;
+          features?: string[] | null;
+          starting_price?: number | null;
+          display_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: number;
+          title?: string;
+          description?: string | null;
+          features?: string[] | null;
+          starting_price?: number | null;
+          display_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       product_variants: {
         Row: {
           id: number;

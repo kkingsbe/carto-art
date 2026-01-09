@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getPrintfulProductVariants } from '@/lib/actions/printful';
-import { upsertProductVariants } from '@/lib/actions/ecommerce';
+import { upsertProductVariants, upsertProduct } from '@/lib/actions/ecommerce';
 import { Button } from '@/components/ui/button';
 import {
     Table,
@@ -58,7 +58,18 @@ export function VariantImporter({ open, onOpenChange, product, onImportComplete 
         setIsImporting(true);
 
         try {
-            // Import all fetched variants
+            // 1. Ensure Product exists
+            await upsertProduct({
+                id: product.id,
+                title: product.title,
+                description: '', // Default empty, admin can fill
+                features: [],
+                starting_price: 0,
+                display_order: 0,
+                is_active: true
+            });
+
+            // 2. Import all fetched variants
             const variantsToImport = variants.map(v => ({
                 id: v.id,
                 name: v.name,
@@ -71,7 +82,7 @@ export function VariantImporter({ open, onOpenChange, product, onImportComplete 
 
             await upsertProductVariants(variantsToImport);
 
-            toast.success(`Imported ${variantsToImport.length} variants successfully`);
+            toast.success(`Imported Product & ${variantsToImport.length} variants successfully`);
             onImportComplete();
             onOpenChange(false);
 

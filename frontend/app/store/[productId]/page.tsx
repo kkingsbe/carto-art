@@ -1,5 +1,5 @@
 
-import { getMarginAdjustedVariants } from '@/lib/actions/ecommerce';
+import { getMarginAdjustedVariants, getProducts } from '@/lib/actions/ecommerce';
 import { ProductDetailClient } from '@/components/store/ProductDetailClient';
 import { groupVariantsByProduct } from '@/lib/utils/store';
 import { notFound } from 'next/navigation';
@@ -18,8 +18,11 @@ export const metadata = {
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
     // Navigate params is a Promise in Next.js 15
     const { productId } = await params;
-    const allVariants = await getMarginAdjustedVariants();
-    const products = groupVariantsByProduct(allVariants);
+    const [allVariants, productsData] = await Promise.all([
+        getMarginAdjustedVariants(),
+        getProducts()
+    ]);
+    const products = groupVariantsByProduct(allVariants, productsData);
 
     const productIdInt = parseInt(productId);
     if (isNaN(productIdInt)) {
@@ -35,7 +38,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     return (
         <ProductDetailClient
             variants={product.variants}
-            productTitle={product.title}
+            product={product}
         />
     );
 }

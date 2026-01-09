@@ -55,8 +55,9 @@ export function FrameMockupRenderer({
 
     useEffect(() => {
         // If no template, just show the raw design
-        if (!templateUrl || !printArea) {
-            setCompositeUrl(designUrl);
+        // Also check if designUrl is valid (not "undefined" string)
+        if (!templateUrl || !printArea || !designUrl || designUrl === 'undefined') {
+            setCompositeUrl(designUrl !== 'undefined' ? designUrl : null);
             setIsLoading(false);
             return;
         }
@@ -109,8 +110,17 @@ export function FrameMockupRenderer({
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                // Step 1: Draw the design on a separate canvas first
-                // We do this to have clean source pixels for the replacement
+                // Determine if we need to rotate the design to match print area orientation
+                const designIsPortrait = designImg.height > designImg.width;
+                const printAreaIsPortrait = printAreaPx.height > printAreaPx.width;
+                const needsRotation = designIsPortrait !== printAreaIsPortrait;
+
+                log(`Design orientation: ${designIsPortrait ? 'portrait' : 'landscape'}`);
+                log(`Print area orientation: ${printAreaIsPortrait ? 'portrait' : 'landscape'}`);
+                log(`Needs rotation: ${needsRotation}`);
+
+                // If orientations don't match, rotate the design first
+                // Step 1: Draw the design on a separate canvas first for chroma-key replacement
                 const designCanvas = document.createElement('canvas');
                 designCanvas.width = canvas.width;
                 designCanvas.height = canvas.height;
@@ -118,14 +128,46 @@ export function FrameMockupRenderer({
                 if (!designCtx) throw new Error('Could not create design context');
                 log('Step 1: Created design context');
 
-                drawImageCover(designCtx, designImg, printAreaPx);
+                let effectiveDesignImg = designImg;
+                if (needsRotation) {
+                    // Create a rotated version of the design
+                    const rotatedCanvas = document.createElement('canvas');
+                    // Swap dimensions for 90° rotation
+                    rotatedCanvas.width = designImg.height;
+                    rotatedCanvas.height = designImg.width;
+                    const rotatedCtx = rotatedCanvas.getContext('2d');
+                    if (rotatedCtx) {
+                        // Rotate 90° clockwise
+                        rotatedCtx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2);
+                        rotatedCtx.rotate(Math.PI / 2);
+                        rotatedCtx.drawImage(designImg, -designImg.width / 2, -designImg.height / 2);
+
+                        // Create a new image from the rotated canvas
+                        const rotatedImg = new Image();
+                        rotatedImg.src = rotatedCanvas.toDataURL();
+                        // We need to wait for it, but since it's a data URL it should be instant
+                        effectiveDesignImg = {
+                            width: rotatedCanvas.width,
+                            height: rotatedCanvas.height
+                        } as HTMLImageElement;
+
+                        // Draw the rotated design directly using the canvas
+                        drawImageCover(designCtx, rotatedCanvas, printAreaPx);
+                        log('Step 1b: Drew rotated design');
+                    }
+                } else {
+                    drawImageCover(designCtx, designImg, printAreaPx);
+                }
+
                 const designData = designCtx.getImageData(0, 0, canvas.width, canvas.height).data;
                 log('Step 2: Got design data');
 
                 stages.push({
                     name: '1. Resized Design',
                     url: designCanvas.toDataURL(),
-                    description: 'Design scaled and cropped to cover the print area'
+                    description: needsRotation
+                        ? 'Design rotated 90° and scaled to cover the print area'
+                        : 'Design scaled to cover the print area'
                 });
 
                 // Step 2: Draw the template on the main canvas
@@ -343,14 +385,39 @@ export function FrameMockupRenderer({
                 ctx.putImageData(imageData, 0, 0);
 
                 // Convert to data URL
-                // Use PNG to preserve transparency/avoid black background issues
-                const dataUrl = canvas.toDataURL('image/png');
-                setCompositeUrl(dataUrl);
+                // If we rotated the design, we need to rotate the final composite back
+                let finalDataUrl: string;
+
+                if (needsRotation) {
+                    // Rotate the final composite 90° counter-clockwise to restore original orientation
+                    const rotatedFinalCanvas = document.createElement('canvas');
+                    // Swap dimensions back
+                    rotatedFinalCanvas.width = canvas.height;
+                    rotatedFinalCanvas.height = canvas.width;
+                    const rotatedFinalCtx = rotatedFinalCanvas.getContext('2d');
+
+                    if (rotatedFinalCtx) {
+                        // Rotate 90° counter-clockwise
+                        rotatedFinalCtx.translate(0, rotatedFinalCanvas.height);
+                        rotatedFinalCtx.rotate(-Math.PI / 2);
+                        rotatedFinalCtx.drawImage(canvas, 0, 0);
+                        finalDataUrl = rotatedFinalCanvas.toDataURL('image/png');
+                        log('Step 6: Rotated final composite back 90° CCW');
+                    } else {
+                        finalDataUrl = canvas.toDataURL('image/png');
+                    }
+                } else {
+                    finalDataUrl = canvas.toDataURL('image/png');
+                }
+
+                setCompositeUrl(finalDataUrl);
 
                 stages.push({
                     name: '4. Final Result',
-                    url: dataUrl,
-                    description: 'Final composited output'
+                    url: finalDataUrl,
+                    description: needsRotation
+                        ? 'Final composited output (rotated back to original orientation)'
+                        : 'Final composited output'
                 });
 
                 if (onDebugStages) {
@@ -403,6 +470,7 @@ export function FrameMockupRenderer({
 
 function getProxiedUrl(src: string): string {
     try {
+        if (!src || src === 'undefined') return '';
         const url = new URL(src);
         const needsProxy =
             url.hostname.includes('s3') ||
@@ -429,9 +497,45 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     });
 }
 
-function drawImageCover(
+function drawImageContain(
     ctx: CanvasRenderingContext2D,
     img: HTMLImageElement,
+    targetArea: { x: number; y: number; width: number; height: number }
+) {
+    const { x, y, width, height } = targetArea;
+
+    // Calculate destination dimensions to maintain aspect ratio (contain mode)
+    // This fits the entire image within the target area, centering it
+    const imgRatio = img.width / img.height;
+    const targetRatio = width / height;
+
+    let destWidth: number, destHeight: number, destX: number, destY: number;
+
+    if (imgRatio > targetRatio) {
+        // Image is wider than target: fit to width, center vertically
+        destWidth = width;
+        destHeight = width / imgRatio;
+        destX = x;
+        destY = y + (height - destHeight) / 2;
+    } else {
+        // Image is taller than target: fit to height, center horizontally
+        destHeight = height;
+        destWidth = height * imgRatio;
+        destX = x + (width - destWidth) / 2;
+        destY = y;
+    }
+
+    // Draw the entire source image into the calculated destination rectangle
+    ctx.drawImage(img, 0, 0, img.width, img.height, destX, destY, destWidth, destHeight);
+}
+
+/**
+ * Draws an image or canvas to cover the target area completely (may crop).
+ * Used after rotation when design orientation matches print area orientation.
+ */
+function drawImageCover(
+    ctx: CanvasRenderingContext2D,
+    img: HTMLImageElement | HTMLCanvasElement,
     targetArea: { x: number; y: number; width: number; height: number }
 ) {
     const { x, y, width, height } = targetArea;

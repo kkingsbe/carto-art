@@ -8,15 +8,18 @@ import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { parseAspectRatio, variantMatchesAspectRatio, parseVariantDimensions } from '@/lib/utils/store';
 
+import { ProductGroup } from '@/lib/utils/store';
+
 interface ProductDetailClientProps {
     variants: any[];
-    productTitle: string;
+    product: ProductGroup;
 }
 
-export function ProductDetailClient({ variants, productTitle }: ProductDetailClientProps) {
+export function ProductDetailClient({ variants, product }: ProductDetailClientProps) {
     const searchParams = useSearchParams();
 
-    const designUrl = searchParams?.get('image');
+    const rawDesignUrl = searchParams?.get('image');
+    const designUrl = rawDesignUrl === 'undefined' ? null : rawDesignUrl;
     const aspectRatio = searchParams?.get('aspect') || '2:3';
     const orientation = (searchParams?.get('orientation') as 'portrait' | 'landscape') || 'portrait';
 
@@ -62,7 +65,7 @@ export function ProductDetailClient({ variants, productTitle }: ProductDetailCli
                         <Link href={`/store?${searchParams?.toString()}`} className="text-muted-foreground hover:text-foreground transition-colors">
                             <ChevronLeft className="w-5 h-5" />
                         </Link>
-                        <h1 className="text-lg font-bold">Order {productTitle}</h1>
+                        <h1 className="text-lg font-bold">Order {product.title}</h1>
                     </div>
                 </div>
             </div>
@@ -72,6 +75,10 @@ export function ProductDetailClient({ variants, productTitle }: ProductDetailCli
                 designUrl={designUrl}
                 aspectRatio={aspectRatio}
                 orientation={orientation}
+                product={{
+                    description: product.description,
+                    features: product.features
+                }}
             />
         </div>
     );

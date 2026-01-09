@@ -13,7 +13,9 @@
     "test:ecommerce": "jest --testPathPattern='(checkout|stripe|printful|ecommerce)'",
     "test:integration": "jest --testPathPattern='integration'",
     "lint": "eslint",
-    "pcli": "npx tsx cli_tools/pcli.ts"
+    "pcli": "npx tsx cli_tools/pcli.ts",
+    "test:pw": "playwright test -c playwright.config.ts",
+    "test:pw:ui": "playwright test -c playwright.config.ts --ui"
   },
   "dependencies": {
     "@deck.gl/core": "^9.2.5",
@@ -77,7 +79,12 @@
     "zod": "^4.3.4"
   },
   "devDependencies": {
+    "@playwright/experimental-ct-react": "^1.57.0",
+    "@playwright/test": "^1.57.0",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
     "@types/gif.js": "^0.2.5",
     "@types/jest": "^30.0.0",
     "@types/lz-string": "^1.3.34",
@@ -87,6 +94,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "jest": "^30.2.0",
+    "jest-environment-jsdom": "^30.2.0",
     "node-mocks-http": "^1.17.2",
     "tailwindcss": "^4",
     "ts-jest": "^29.4.6",

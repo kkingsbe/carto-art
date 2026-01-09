@@ -100,9 +100,13 @@ interface OrderStepsProps {
     designUrl: string;
     aspectRatio?: string;
     orientation?: 'portrait' | 'landscape';
+    product?: {
+        description?: string;
+        features?: string[];
+    };
 }
 
-export function OrderSteps({ variants, designUrl, aspectRatio, orientation }: OrderStepsProps) {
+export function OrderSteps({ variants, designUrl, aspectRatio, orientation, product }: OrderStepsProps) {
     const [step, setStep] = useState(1);
     const [selectedVariant, setSelectedVariant] = useState<any>(variants.length > 0 ? variants[0] : null);
     const [clientSecret, setClientSecret] = useState("");
@@ -250,9 +254,16 @@ export function OrderSteps({ variants, designUrl, aspectRatio, orientation }: Or
                                     <p className="text-3xl font-bold text-primary mt-2">
                                         ${((selectedVariant?.display_price_cents || 0) / 100).toFixed(2)}
                                     </p>
-                                    <p className="text-muted-foreground mt-4">
-                                        Museum-quality poster made on thick matte paper. Add a wonderful accent to your room and office with these posters that are sure to brighten any environment.
-                                    </p>
+                                    <div className="prose prose-sm dark:prose-invert mt-4 text-muted-foreground">
+                                        <p>{product?.description || "Museum-quality poster made on thick matte paper. Add a wonderful accent to your room and office with these posters that are sure to brighten any environment."}</p>
+                                        {product?.features && product.features.length > 0 && (
+                                            <ul className="mt-2 list-disc pl-4 space-y-1">
+                                                {product.features.map((feature: string, i: number) => (
+                                                    <li key={i}>{feature}</li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <Button

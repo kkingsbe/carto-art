@@ -1,5 +1,5 @@
 
-import { getMarginAdjustedVariants } from '@/lib/actions/ecommerce';
+import { getMarginAdjustedVariants, getProducts } from '@/lib/actions/ecommerce';
 import { groupVariantsByProduct } from '@/lib/utils/store';
 import { ProductCard } from '@/components/store/ProductCard';
 import Link from 'next/link';
@@ -15,11 +15,14 @@ interface StorePageProps {
 }
 
 export default async function StorePage({ searchParams }: StorePageProps) {
-    // 1. Fetch all variants
-    const allVariants = await getMarginAdjustedVariants();
+    // 1. Fetch data
+    const [allVariants, productsData] = await Promise.all([
+        getMarginAdjustedVariants(),
+        getProducts()
+    ]);
 
     // 2. Group into products
-    const products = groupVariantsByProduct(allVariants);
+    const products = groupVariantsByProduct(allVariants, productsData);
 
     // 3. Get design URL for preview
     const designUrl = typeof searchParams.image === 'string' ? searchParams.image : undefined;

@@ -248,6 +248,71 @@ export async function deleteProductVariants(ids: number[]) {
     return true;
 }
 
+export async function getProducts(includeInactive = false) {
+    const supabase = await createClient();
+
+    let query = supabase
+        .from('products')
+        .select(`
+            *,
+            variants:product_variants(*)
+        `)
+        .order('display_order', { ascending: true });
+
+    if (!includeInactive) {
+        query = query.eq('is_active', true);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+        console.error('Error fetching products:', error);
+        return [];
+    }
+
+    return data || [];
+}
+
+export async function upsertProduct(product: {
+    id: number;
+    title: string;
+    description?: string;
+    features?: string[];
+    starting_price?: number;
+    display_order?: number;
+    is_active?: boolean;
+}) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) throw new Error('Unauthorized');
+
+    // Check if user is admin
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single<{ is_admin: boolean }>();
+
+    if (!profile?.is_admin) throw new Error('Unauthorized - Admin only');
+
+    const { data, error } = await (supabase as any)
+        .from('products')
+        .upsert({
+            ...product,
+            updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Upsert product error:', error);
+        throw new Error(error.message);
+    }
+
+    return data;
+}
+
 /**
  * Get product variants with margin-adjusted display prices
  * Use this for displaying prices to customers
@@ -263,3 +328,4 @@ export async function getMarginAdjustedVariants() {
         display_price_cents: Math.round(v.price_cents * (1 + marginPercent / 100)),
     }));
 }
+

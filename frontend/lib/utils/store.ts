@@ -47,75 +47,112 @@ export function variantMatchesAspectRatio(
     return diff <= tolerance || rotatedDiff <= tolerance;
 }
 
+/**
+ * Strictly checks if a variant's print area matches the design orientation.
+ * Unlike variantMatchesAspectRatio, this does NOT allow rotated matches.
+ * Use this when selecting mockup templates where the visual orientation must match.
+ */
+export function variantMatchesOrientationStrict(
+    variant: { mockup_print_area?: any },
+    isPortrait: boolean,
+    tolerance: number = 0.05
+): boolean {
+    const area = variant.mockup_print_area;
+    if (!area) return false;
+
+    // Parse if it's a JSON string
+    let parsed = area;
+    if (typeof area === 'string') {
+        try { parsed = JSON.parse(area); } catch { return false; }
+    }
+
+    if (!parsed || typeof parsed.width !== 'number' || typeof parsed.height !== 'number') {
+        return false;
+    }
+
+    // Check if the print area's orientation matches
+    const printAreaIsPortrait = parsed.height > parsed.width;
+    const printAreaIsSquare = Math.abs(parsed.width - parsed.height) / Math.max(parsed.width, parsed.height) < tolerance;
+
+    // Square print areas match any orientation
+    if (printAreaIsSquare) return true;
+
+    // Otherwise, orientation must match
+    return printAreaIsPortrait === isPortrait;
+}
+
 export type ProductVariant = Database['public']['Tables']['product_variants']['Row'] & {
     display_price_cents: number;
+};
+
+export type ProductType = Database['public']['Tables']['products']['Row'] & {
+    variants: ProductVariant[];
 };
 
 export interface ProductGroup {
     id: number;
     title: string;
     description: string;
+    features: string[];
     minPrice: number;
     variants: ProductVariant[];
     thumbnailVariant: ProductVariant;
+    startingPrice: number;
 }
 
-export function groupVariantsByProduct(variants: ProductVariant[]): ProductGroup[] {
-    const groups = new Map<number, ProductVariant[]>();
+export function groupVariantsByProduct(variants: ProductVariant[], products: ProductType[]): ProductGroup[] {
+    const groups: ProductGroup[] = [];
 
-    // 1. Group by product_id
+    // Create a map of product definitions for easy lookup
+    const productMap = new Map(products.map(p => [p.id, p]));
+
+    // Group variants by product_id
+    const variantsByProduct = new Map<number, ProductVariant[]>();
     variants.forEach(v => {
         if (!v.is_active) return;
         const pid = v.product_id || 0;
-        if (!groups.has(pid)) groups.set(pid, []);
-        groups.get(pid)?.push(v);
+        if (!variantsByProduct.has(pid)) variantsByProduct.set(pid, []);
+        variantsByProduct.get(pid)?.push(v);
     });
 
-    const products: ProductGroup[] = [];
+    // Iterate through defined products to build groups
+    // This ensures we only show products that are defined and active in the products table
+    products.forEach(product => {
+        if (!product.is_active) return;
 
-    groups.forEach((groupVariants, pid) => {
-        if (groupVariants.length === 0) return;
+        const productVariants = variantsByProduct.get(product.id) || [];
+        if (productVariants.length === 0) return; // Don't show empty products
 
-        // 2. Sort variants
-        groupVariants.sort((a, b) => a.display_order - b.display_order);
+        // Sort variants by display order
+        productVariants.sort((a, b) => a.display_order - b.display_order);
 
-        // 3. Determine Product Info
-        // Heuristics to derive a clean product title from variant names
-        // Example Variant: "12×16 Enhanced Matte Paper Framed Poster (in Black Frame)"
-        const baseVariant = groupVariants[0];
-        let title = "Fine Art Print";
-        let description = "Museum-quality prints that bring your map to life.";
-
-        // Naive detection based on common Printful naming or known products
-        const nameLower = baseVariant.name.toLowerCase();
-
-        if (nameLower.includes("framed poster") || nameLower.includes("framed print")) {
-            title = "Framed Poster";
-            description = "Museum-quality matte paper, framed in semi-hardwood timber.";
-        } else if (nameLower.includes("canvas")) {
-            title = "Canvas Print";
-            description = "Textured, fade-resistant canvas mounting brackets included.";
-        } else if (nameLower.includes("poster") && !nameLower.includes("framed")) {
-            title = "Art Poster";
-            description = "Museum-quality posters made on thick and durable matte paper.";
-        }
-
-        // Calculate min price
-        const minPrice = Math.min(...groupVariants.map(v => v.display_price_cents));
+        // Calculate prices
+        const minVariantPrice = Math.min(...productVariants.map(v => v.display_price_cents));
+        // Use override price if set, otherwise min variant price
+        const startingPrice = product.starting_price || minVariantPrice;
 
         // Find best thumbnail (prefer medium size, e.g., around 12x16 or 18x24 if possible, or just first with mockup)
-        // We want a variant that has a `mockup_template_url`
-        const thumbnailVariant = groupVariants.find(v => v.mockup_template_url) || groupVariants[0];
+        const thumbnailVariant = productVariants.find(v => v.mockup_template_url) || productVariants[0];
 
-        products.push({
-            id: pid,
-            title,
-            description,
-            minPrice,
-            variants: groupVariants,
+        groups.push({
+            id: product.id,
+            title: product.title,
+            description: product.description || '',
+            features: product.features || [],
+            minPrice: minVariantPrice,
+            startingPrice: startingPrice,
+            variants: productVariants,
             thumbnailVariant
         });
     });
 
-    return products;
+    // Sort products by display_order
+    groups.sort((a, b) => {
+        const orderA = productMap.get(a.id)?.display_order ?? 0;
+        const orderB = productMap.get(b.id)?.display_order ?? 0;
+        return orderA - orderB;
+    });
+
+    return groups;
 }
+

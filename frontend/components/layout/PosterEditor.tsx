@@ -367,8 +367,9 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
     // Variables to hold generated location data
     let newCenter: [number, number] = [0, 20];
     let newZoom = 2;
+    let locationName = 'Random Exploration';
+    let locationCity = 'Somewhere on Earth';
     let locationSubtitle = '';
-    let locationData: any = null;
 
     // Randomize Pitch & Bearing
     const randomPitch = Math.floor(Math.random() * 61);
@@ -385,16 +386,17 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
       const res = await fetch('/api/random-location');
       if (res.ok) {
         const data = await res.json();
-        locationData = data;
+
         if (data.center) {
           newCenter = data.center;
           newZoom = data.zoom;
 
-          if (data.country) {
-            locationSubtitle = data.country;
-          } else {
-            locationSubtitle = `${newCenter[1].toFixed(4)}°, ${newCenter[0].toFixed(4)}°`;
-          }
+          // Use server-provided location details directly
+          if (data.name) locationName = data.name;
+          if (data.city) locationCity = data.city;
+          if (data.subtitle) locationSubtitle = data.subtitle;
+          else if (data.country) locationSubtitle = data.country;
+          else locationSubtitle = `${newCenter[1].toFixed(4)}°, ${newCenter[0].toFixed(4)}°`;
         }
       } else {
         throw new Error('API response not ok');
@@ -409,13 +411,13 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
       locationSubtitle = `${randomLat.toFixed(4)}°, ${randomLng.toFixed(4)}°`;
     }
 
-    // Initial random config (will update title/subtitle if geocoding succeeds)
+    // Apply config with all location data immediately
     const newConfig = {
       ...config,
       location: {
         ...config.location,
-        name: 'Random Exploration',
-        city: 'Somewhere on Earth',
+        name: locationName,
+        city: locationCity,
         subtitle: locationSubtitle,
         center: newCenter,
         zoom: newZoom,
@@ -436,52 +438,7 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
 
     setConfig(newConfig);
     trackEventAction({ eventType: 'interaction', eventName: 'randomize_pure', sessionId: getSessionId() });
-
-    // Attempt to reverse geocode and update title/subtitle
-    try {
-      const [lng, lat] = newCenter;
-      const location = await reverseGeocode(lat, lng);
-
-      if (location) {
-        // Update with geocoded info but keep our random style/rendering
-        setConfig({
-          ...newConfig,
-          location: {
-            ...newConfig.location,
-            name: location.name,
-            city: location.city,
-            subtitle: location.subtitle,
-            zoom: location.zoom || newConfig.location.zoom,
-            bounds: location.bounds || newConfig.location.bounds,
-          }
-        });
-      } else if (locationData && locationData.country) {
-        // Fallback: If precise geocoding failed (e.g. ocean) but we have a country from the randomizer
-        setConfig({
-          ...newConfig,
-          location: {
-            ...newConfig.location,
-            name: locationData.country,
-            city: '', // Clear "Somewhere on Earth"
-          }
-        });
-      }
-    } catch (error) {
-      // Silently fail and keep the "Random Exploration" title, OR use country if we have it
-      if (locationData && locationData.country) {
-        setConfig({
-          ...newConfig,
-          location: {
-            ...newConfig.location,
-            name: locationData.country,
-            city: '',
-          }
-        });
-      }
-      console.error('Failed to reverse geocode random location', error);
-    }
   }, [config, setConfig]);
-
   // Wrap exportToPNG to handle errors and track export count
   const handleExport = useCallback(async (resolution?: ExportResolution, gifOptions?: GifExportOptions, videoOptions?: VideoExportOptions, stlOptions?: StlExportOptions) => {
     try {
@@ -717,6 +674,7 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
         showDonationModal={showDonationModal}
         onDonationModalChange={setShowDonationModal}
         onOpenCommandMenu={() => setIsCommandMenuOpen(true)}
+        onStartWalkthrough={() => setRunTour(true)}
         onBuyPrint={isEcommerceEnabled ? async () => {
           setShowDonationModal(false);
 
@@ -727,26 +685,49 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
           const toastId = toast.loading("Preparing your design...");
 
           try {
-            // 1. Upload design to Supabase (via our API route for signed URL)
+            // 1. Get Signed URLs for Direct Upload (prevents server bottleneck)
             const response = await fetch(exportedImage);
             const blob = await response.blob();
-            const formData = new FormData();
-            formData.append('file', blob, 'poster.png');
 
-            const uploadRes = await fetch('/api/upload-design', {
+            // 2. Request upload credentials (and get path)
+            const signRes = await fetch('/api/upload-design', {
               method: 'POST',
-              body: formData,
             });
 
-            if (!uploadRes.ok) throw new Error("Failed to upload design");
+            if (!signRes.ok) {
+              const errorData = await signRes.json().catch(() => ({}));
+              throw new Error(errorData.error || "Failed to initialize upload");
+            }
 
-            const { signedUrl } = await uploadRes.json();
+            const { uploadUrl, path } = await signRes.json();
+
+            // 3. Upload directly to Storage
+            const uploadRes = await fetch(uploadUrl, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': blob.type || 'image/png',
+              },
+              body: blob,
+            });
+
+            if (!uploadRes.ok) throw new Error("Failed to upload image data");
+
+            // 4. NOW request the read URL (after upload is complete)
+            const readRes = await fetch(`/api/upload-design?path=${encodeURIComponent(path)}`);
+            if (!readRes.ok) {
+              throw new Error("Failed to generate preview link after upload");
+            }
+            const { readUrl } = await readRes.json();
+
+            if (!readUrl) {
+              throw new Error("No URL returned");
+            }
 
             toast.dismiss(toastId);
 
-            // 2. Navigate to order page
+            // 5. Navigate to order page
             const params = new URLSearchParams({
-              image: signedUrl,
+              image: readUrl,
               aspect: config.format.aspectRatio,
               orientation: config.format.orientation
             });
@@ -755,7 +736,7 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
 
           } catch (e) {
             console.error("Order navigation failed", e);
-            toast.error("Failed to prepare order. Please try again.", { id: toastId });
+            toast.error(e instanceof Error ? e.message : "Failed to prepare order. Please try again.", { id: toastId });
           }
         } : undefined}
         onFormatChange={updateFormat}

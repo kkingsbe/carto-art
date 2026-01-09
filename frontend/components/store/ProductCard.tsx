@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ProductGroup, parseAspectRatio, variantMatchesAspectRatio } from '@/lib/utils/store';
+import { ProductGroup, parseAspectRatio, variantMatchesAspectRatio, variantMatchesOrientationStrict } from '@/lib/utils/store';
 import { FrameMockupRenderer } from '@/components/ecommerce/FrameMockupRenderer';
 import { cn } from '@/lib/utils';
 import { ArrowRight } from 'lucide-react';
@@ -27,10 +27,21 @@ export function ProductCard({ product, designUrl: propDesignUrl }: ProductCardPr
     const searchParams = useSearchParams();
 
     // Use prop if available, otherwise try to get from URL (client navigation)
-    const designUrl = propDesignUrl || searchParams?.get('image') || undefined;
+    // Handle case where "undefined" string is passed in URL
+    const rawDesignUrl = searchParams?.get('image');
+    let designUrl = propDesignUrl;
+
+    if (!designUrl && rawDesignUrl && rawDesignUrl !== 'undefined') {
+        designUrl = rawDesignUrl;
+    }
 
     // Preserve all existing params (image, aspect, orientation, etc.)
     const query = new URLSearchParams(searchParams?.toString());
+
+    // Clean up "undefined" image param from the query used for links
+    if (query.get('image') === 'undefined') {
+        query.delete('image');
+    }
 
     // Construct link
     const href = `/store/${product.id}?${query.toString()}`;
@@ -42,7 +53,23 @@ export function ProductCard({ product, designUrl: propDesignUrl }: ProductCardPr
 
     let displayVariant = product.thumbnailVariant;
 
-    if (aspect) {
+    if (aspect && orientation) {
+        const isPortrait = orientation === 'portrait';
+        const targetRatio = parseAspectRatio(aspect, orientation);
+
+        // Use strict orientation matching to find a variant whose mockup print area
+        // matches the design's orientation (prevents flipped aspect ratios)
+        const bestVariant = product.variants.find(v =>
+            v.mockup_template_url &&
+            variantMatchesOrientationStrict(v, isPortrait) &&
+            variantMatchesAspectRatio(v, targetRatio)
+        );
+
+        if (bestVariant) {
+            displayVariant = bestVariant;
+        }
+    } else if (aspect) {
+        // Fallback: no orientation specified, use original logic
         const targetRatio = parseAspectRatio(aspect, orientation);
         const bestVariant = product.variants.find(v =>
             v.mockup_template_url && variantMatchesAspectRatio(v, targetRatio)
@@ -63,7 +90,7 @@ export function ProductCard({ product, designUrl: propDesignUrl }: ProductCardPr
                 "hover:shadow-2xl hover:shadow-blue-500/10 hover:-translate-y-1 hover:border-blue-500/20"
             )}>
                 {/* Image Container */}
-                <div className="relative aspect-[4/5] bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center p-6 overflow-hidden">
+                <div className="relative min-h-[280px] bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center p-6 overflow-hidden">
                     {/* Background Glow */}
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 

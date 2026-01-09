@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { getProductVariants, upsertProductVariant, upsertProductVariants, deleteProductVariant, deleteProductVariants } from "@/lib/actions/ecommerce";
+import { getProducts, upsertProduct, upsertProductVariant, deleteProductVariant, deleteProductVariants } from "@/lib/actions/ecommerce";
 import { generateMockupTemplates, getMissingTemplateCount, regenerateVariantMockup } from "@/lib/actions/printful";
 import { getSiteConfig } from "@/lib/actions/usage";
 import { CONFIG_KEYS } from "@/lib/actions/usage.types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea"; // Assuming this exists
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -24,40 +25,53 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Trash2, Loader2, ImageIcon, AlertTriangle, CheckCircle2, RefreshCcw, Eraser } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, ImageIcon, AlertTriangle, CheckCircle2, RefreshCcw, Eraser, ChevronDown, ChevronRight, Package } from "lucide-react";
 
 export default function AdminProductsPage() {
-    const [variants, setVariants] = useState<any[]>([]);
+    const [products, setProducts] = useState<any[]>([]);
     const [marginPercent, setMarginPercent] = useState<number>(25);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+
+    // Product Editing
+    const [editingProduct, setEditingProduct] = useState<any>(null);
+    const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
+
+    // Variant Editing
     const [editingVariant, setEditingVariant] = useState<any>(null);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isVariantDialogOpen, setIsVariantDialogOpen] = useState(false);
+
     const [selectedVariants, setSelectedVariants] = useState<number[]>([]);
     const [isGeneratingTemplates, setIsGeneratingTemplates] = useState(false);
     const [missingTemplateCount, setMissingTemplateCount] = useState<number>(0);
 
-    const fetchVariants = async () => {
+    const fetchData = async () => {
         setIsLoading(true);
         try {
-            const [data, margin] = await Promise.all([
-                getProductVariants(true), // include inactive
+            const [productsData, margin] = await Promise.all([
+                getProducts(true), // include inactive
                 getSiteConfig(CONFIG_KEYS.PRODUCT_MARGIN_PERCENT)
             ]);
-            setVariants(data);
+            setProducts(productsData);
             setMarginPercent(margin);
-            setSelectedVariants([]); // clear selection on excessive refresh
+            setSelectedVariants([]);
         } catch (error) {
-            toast.error("Failed to fetch variants");
+            toast.error("Failed to fetch products");
         } finally {
             setIsLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchVariants();
+        fetchData();
         fetchMissingCount();
     }, []);
 
@@ -70,33 +84,46 @@ export default function AdminProductsPage() {
         }
     };
 
-    const handleGenerateTemplates = async () => {
-        setIsGeneratingTemplates(true);
-        toast.info(`Generating templates for ${missingTemplateCount} variants. This will take ~${Math.ceil(missingTemplateCount * 10 / 60)} minutes...`);
+    const handleSaveProduct = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setIsSaving(true);
+        const formData = new FormData(e.currentTarget);
+
+        // Handle features list (comma separated or newline)
+        const featuresText = formData.get('features') as string;
+        const features = featuresText.split('\n').map(f => f.trim()).filter(f => f.length > 0);
+
+        const payload = {
+            id: Number(formData.get('id')),
+            title: formData.get('title') as string,
+            description: formData.get('description') as string,
+            features: features,
+            starting_price: Math.round(Number(formData.get('starting_price')) * 100),
+            display_order: Number(formData.get('display_order')) || 0,
+            is_active: formData.get('is_active') === 'on',
+        };
 
         try {
-            const result = await generateMockupTemplates();
-            if (result.errors.length > 0) {
-                toast.warning(`Generated ${result.processed} templates with ${result.errors.length} errors`);
-            } else {
-                toast.success(`Successfully generated ${result.processed} templates`);
-            }
-            fetchVariants();
-            fetchMissingCount();
+            await upsertProduct(payload);
+            toast.success("Product saved");
+            setIsProductDialogOpen(false);
+            setEditingProduct(null);
+            fetchData();
         } catch (error: any) {
-            toast.error(error.message || 'Failed to generate templates');
+            toast.error(error.message || "Failed to save product");
         } finally {
-            setIsGeneratingTemplates(false);
+            setIsSaving(false);
         }
     };
 
-    const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSaveVariant = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setIsSaving(true);
         const formData = new FormData(e.currentTarget);
 
         const payload = {
             id: Number(formData.get('id')),
+            product_id: Number(formData.get('product_id')), // Hidden field
             name: formData.get('name') as string,
             price_cents: Math.round(Number(formData.get('price')) * 100),
             is_active: formData.get('is_active') === 'on',
@@ -106,9 +133,9 @@ export default function AdminProductsPage() {
         try {
             await upsertProductVariant(payload);
             toast.success("Variant saved");
-            setIsDialogOpen(false);
+            setIsVariantDialogOpen(false);
             setEditingVariant(null);
-            fetchVariants();
+            fetchData();
         } catch (error: any) {
             toast.error(error.message || "Failed to save variant");
         } finally {
@@ -116,51 +143,23 @@ export default function AdminProductsPage() {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm("Are you sure you want to delete this variant?")) return;
+    const handleGenerateTemplates = async () => {
+        setIsGeneratingTemplates(true);
+        toast.info(`Generating templates for ${missingTemplateCount} variants...`);
 
         try {
-            await deleteProductVariant(id);
-            toast.success("Variant deleted");
-            fetchVariants();
-        } catch (error: any) {
-            toast.error(error.message || "Failed to delete variant");
-        }
-    };
-
-    const handleBulkDelete = async () => {
-        if (!confirm(`Are you sure you want to delete ${selectedVariants.length} variants?`)) return;
-
-        try {
-            await deleteProductVariants(selectedVariants);
-            toast.success("Variants deleted");
-            fetchVariants();
-        } catch (error: any) {
-            toast.error(error.message || "Failed to delete variants");
-        }
-    };
-
-    const handleBulkClearTemplates = async () => {
-        if (!confirm(`Are you sure you want to remove templates for ${selectedVariants.length} variants?`)) return;
-
-        try {
-            const variantsToUpdate = variants
-                .filter(v => selectedVariants.includes(v.id))
-                .map(v => ({
-                    id: v.id,
-                    name: v.name,
-                    price_cents: v.price_cents,
-                    product_id: v.product_id,
-                    mockup_template_url: null,
-                    mockup_print_area: null
-                }));
-
-            await upsertProductVariants(variantsToUpdate);
-            toast.success("Templates removed");
-            fetchVariants();
+            const result = await generateMockupTemplates();
+            if (result.errors.length > 0) {
+                toast.warning(`Generated ${result.processed} templates with ${result.errors.length} errors`);
+            } else {
+                toast.success(`Successfully generated ${result.processed} templates`);
+            }
+            fetchData();
             fetchMissingCount();
         } catch (error: any) {
-            toast.error(error.message || "Failed to remove templates");
+            toast.error(error.message || 'Failed to generate templates');
+        } finally {
+            setIsGeneratingTemplates(false);
         }
     };
 
@@ -169,7 +168,7 @@ export default function AdminProductsPage() {
         try {
             await regenerateVariantMockup(variant.id);
             toast.success("Template regenerated", { id: toastId });
-            fetchVariants();
+            fetchData();
             fetchMissingCount();
         } catch (error: any) {
             toast.error(error.message || "Failed to regenerate", { id: toastId });
@@ -186,26 +185,10 @@ export default function AdminProductsPage() {
                 mockup_print_area: null
             });
             toast.success("Template removed");
-            fetchVariants();
+            fetchData();
             fetchMissingCount();
         } catch (error: any) {
             toast.error(error.message || "Failed to remove template");
-        }
-    };
-
-    const toggleSelectAll = () => {
-        if (selectedVariants.length === variants.length) {
-            setSelectedVariants([]);
-        } else {
-            setSelectedVariants(variants.map(v => v.id));
-        }
-    };
-
-    const toggleSelectVariant = (id: number) => {
-        if (selectedVariants.includes(id)) {
-            setSelectedVariants(selectedVariants.filter(vId => vId !== id));
-        } else {
-            setSelectedVariants([...selectedVariants, id]);
         }
     };
 
@@ -213,8 +196,8 @@ export default function AdminProductsPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold">Product Variants</h1>
-                    <p className="text-muted-foreground">Manage Printful variants and pricing.</p>
+                    <h1 className="text-2xl font-bold">Product Catalog</h1>
+                    <p className="text-muted-foreground">Manage Products, Pricing, and Variants.</p>
                 </div>
                 <div className="flex items-center gap-2">
                     {missingTemplateCount > 0 && (
@@ -231,71 +214,80 @@ export default function AdminProductsPage() {
                             Generate Templates ({missingTemplateCount})
                         </Button>
                     )}
-                    {selectedVariants.length > 0 && (
-                        <>
-                            <Button variant="outline" onClick={handleBulkClearTemplates}>
-                                <Eraser className="w-4 h-4 mr-2" />
-                                Clear Templates
-                            </Button>
-                            <Button variant="destructive" onClick={handleBulkDelete}>
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete Selected ({selectedVariants.length})
-                            </Button>
-                        </>
-                    )}
-                    <Dialog open={isDialogOpen} onOpenChange={(open) => {
-                        setIsDialogOpen(open);
-                        if (!open) setEditingVariant(null);
+
+                    <Dialog open={isProductDialogOpen} onOpenChange={(open) => {
+                        setIsProductDialogOpen(open);
+                        if (!open) setEditingProduct(null);
                     }}>
                         <DialogTrigger asChild>
-                            <Button onClick={() => setEditingVariant(null)}>
+                            <Button onClick={() => setEditingProduct(null)}>
                                 <Plus className="w-4 h-4 mr-2" />
-                                Add Variant
+                                Add Product
                             </Button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent className="max-w-2xl">
                             <DialogHeader>
-                                <DialogTitle>{editingVariant ? 'Edit Variant' : 'Add New Variant'}</DialogTitle>
+                                <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
                             </DialogHeader>
-                            <form onSubmit={handleSave} className="space-y-4 pt-4">
+                            <form onSubmit={handleSaveProduct} className="space-y-4 pt-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="id">Product ID (Printful ID)</Label>
+                                        <Input
+                                            id="id"
+                                            name="id"
+                                            type="number"
+                                            defaultValue={editingProduct?.id}
+                                            required
+                                            disabled={!!editingProduct}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="starting_price">Starting Price (USD)</Label>
+                                        <Input
+                                            id="starting_price"
+                                            name="starting_price"
+                                            type="number"
+                                            step="0.01"
+                                            defaultValue={editingProduct ? editingProduct.starting_price / 100 : ''}
+                                        />
+                                    </div>
+                                </div>
+
                                 <div className="space-y-2">
-                                    <Label htmlFor="id">Printful Variant ID</Label>
-                                    <Input
-                                        id="id"
-                                        name="id"
-                                        type="number"
-                                        defaultValue={editingVariant?.id}
-                                        required
-                                        disabled={!!editingVariant}
+                                    <Label htmlFor="title">Display Title</Label>
+                                    <Input id="title" name="title" defaultValue={editingProduct?.title} required />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="description">Description</Label>
+                                    <Textarea id="description" name="description" defaultValue={editingProduct?.description} />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="features">Features (One per line)</Label>
+                                    <Textarea
+                                        id="features"
+                                        name="features"
+                                        defaultValue={editingProduct?.features?.join('\n')}
+                                        rows={5}
                                     />
-                                    <p className="text-xs text-muted-foreground">Once set, the ID cannot be changed.</p>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="name">Display Name</Label>
-                                    <Input id="name" name="name" defaultValue={editingVariant?.name} required />
+
+                                <div className="flex items-center gap-4">
+                                    <div className="space-y-2 w-24">
+                                        <Label htmlFor="display_order">Order</Label>
+                                        <Input id="display_order" name="display_order" type="number" defaultValue={editingProduct?.display_order || 0} />
+                                    </div>
+                                    <div className="flex items-center gap-2 pt-6">
+                                        <Switch id="is_active" name="is_active" defaultChecked={editingProduct ? editingProduct.is_active : true} />
+                                        <Label htmlFor="is_active">Active</Label>
+                                    </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="price">Price (USD)</Label>
-                                    <Input
-                                        id="price"
-                                        name="price"
-                                        type="number"
-                                        step="0.01"
-                                        defaultValue={editingVariant ? editingVariant.price_cents / 100 : ''}
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="display_order">Display Order</Label>
-                                    <Input id="display_order" name="display_order" type="number" defaultValue={editingVariant?.display_order || 0} />
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Switch id="is_active" name="is_active" defaultChecked={editingVariant ? editingVariant.is_active : true} />
-                                    <Label htmlFor="is_active">Active</Label>
-                                </div>
+
                                 <Button type="submit" className="w-full" disabled={isSaving}>
                                     {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                                    {editingVariant ? 'Update' : 'Create'} Variant
+                                    {editingProduct ? 'Update' : 'Create'} Product
                                 </Button>
                             </form>
                         </DialogContent>
@@ -303,100 +295,203 @@ export default function AdminProductsPage() {
                 </div>
             </div>
 
-            <div className="border rounded-md">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-[50px]">
-                                <Checkbox
-                                    checked={variants.length > 0 && selectedVariants.length === variants.length}
-                                    onCheckedChange={toggleSelectAll}
-                                    aria-label="Select all"
-                                />
-                            </TableHead>
-                            <TableHead>ID</TableHead>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Internal Price</TableHead>
-                            <TableHead>External Price</TableHead>
-                            <TableHead>Order</TableHead>
-                            <TableHead>Mockup</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            <TableRow>
-                                <TableCell colSpan={9} className="text-center py-8">
-                                    <Loader2 className="w-6 h-6 animate-spin mx-auto" />
-                                </TableCell>
-                            </TableRow>
-                        ) : variants.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                                    No variants found.
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            variants.map((v) => (
-                                <TableRow key={v.id}>
-                                    <TableCell>
-                                        <Checkbox
-                                            checked={selectedVariants.includes(v.id)}
-                                            onCheckedChange={() => toggleSelectVariant(v.id)}
-                                            aria-label={`Select ${v.name}`}
-                                        />
-                                    </TableCell>
-                                    <TableCell className="font-mono text-xs">{v.id}</TableCell>
-                                    <TableCell className="font-medium">{v.name}</TableCell>
-                                    <TableCell className="text-muted-foreground">${(v.price_cents / 100).toFixed(2)}</TableCell>
-                                    <TableCell className="font-medium">${(Math.round(v.price_cents * (1 + marginPercent / 100)) / 100).toFixed(2)}</TableCell>
-                                    <TableCell>{v.display_order}</TableCell>
-                                    <TableCell>
-                                        {v.mockup_template_url ? (
-                                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">
-                                                <CheckCircle2 className="w-3 h-3" />
-                                                Ready
-                                            </span>
-                                        ) : (
-                                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700">
-                                                <AlertTriangle className="w-3 h-3" />
-                                                Missing
-                                            </span>
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        <span className={`px-2 py-1 rounded-full text-xs ${v.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                            {v.is_active ? 'Active' : 'Inactive'}
-                                        </span>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <Button variant="ghost" size="icon" onClick={() => handleRegenerate(v)} title="Regenerate Template">
-                                                <RefreshCcw className="w-4 h-4 text-blue-500" />
-                                            </Button>
-                                            {v.mockup_template_url && (
-                                                <Button variant="ghost" size="icon" onClick={() => handleClearTemplate(v)} title="Clear Template">
-                                                    <Eraser className="w-4 h-4 text-orange-500" />
-                                                </Button>
-                                            )}
-                                            <Button variant="ghost" size="icon" onClick={() => {
-                                                setEditingVariant(v);
-                                                setIsDialogOpen(true);
-                                            }}>
-                                                <Pencil className="w-4 h-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" onClick={() => handleDelete(v.id)}>
-                                                <Trash2 className="w-4 h-4 text-destructive" />
-                                            </Button>
+            {isLoading ? (
+                <div className="flex justify-center p-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                </div>
+            ) : (
+                <Accordion type="multiple" className="space-y-4">
+                    {products.map((product) => (
+                        <AccordionItem key={product.id} value={String(product.id)} className="border rounded-lg px-4 bg-card">
+                            <div className="flex items-center justify-between py-4">
+                                <AccordionTrigger className="hover:no-underline py-0 flex-1">
+                                    <div className="flex items-center gap-4 text-left">
+                                        <Package className="w-5 h-5 text-muted-foreground" />
+                                        <div>
+                                            <div className="font-semibold">{product.title}</div>
+                                            <div className="text-sm text-muted-foreground flex gap-2">
+                                                <span>ID: {product.id}</span>
+                                                <span>•</span>
+                                                <span>{product.variants?.length || 0} Variants</span>
+                                                <span>•</span>
+                                                <span className={product.is_active ? "text-green-600" : "text-yellow-600"}>
+                                                    {product.is_active ? "Active" : "Inactive"}
+                                                </span>
+                                            </div>
                                         </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+                                    </div>
+                                </AccordionTrigger>
+                                <div className="flex items-center gap-2 ml-4">
+                                    <Button size="sm" variant="outline" onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingProduct(product);
+                                        setIsProductDialogOpen(true);
+                                    }}>
+                                        <Pencil className="w-4 h-4 mr-2" />
+                                        Edit
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <AccordionContent>
+                                <div className="pt-2 pb-6">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Variants</h3>
+                                        <Button size="sm" variant="secondary" onClick={() => {
+                                            setEditingVariant({ product_id: product.id }); // Pre-fill product ID
+                                            setIsVariantDialogOpen(true);
+                                        }}>
+                                            <Plus className="w-3 h-3 mr-1" />
+                                            Add Variant
+                                        </Button>
+                                    </div>
+
+                                    <div className="border rounded-md">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="w-[80px]">ID</TableHead>
+                                                    <TableHead>Variant Name</TableHead>
+                                                    <TableHead>Cost</TableHead>
+                                                    <TableHead>Price (+{marginPercent}%)</TableHead>
+                                                    <TableHead>Mockup</TableHead>
+                                                    <TableHead>Status</TableHead>
+                                                    <TableHead className="text-right">Actions</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {product.variants?.sort((a: any, b: any) => a.display_order - b.display_order).map((v: any) => (
+                                                    <TableRow key={v.id}>
+                                                        <TableCell className="font-mono text-xs">{v.id}</TableCell>
+                                                        <TableCell className="font-medium">{v.name}</TableCell>
+                                                        <TableCell className="text-muted-foreground">${(v.price_cents / 100).toFixed(2)}</TableCell>
+                                                        <TableCell className="font-medium">
+                                                            ${(Math.round(v.price_cents * (1 + marginPercent / 100)) / 100).toFixed(2)}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {v.mockup_template_url ? (
+                                                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">
+                                                                    <CheckCircle2 className="w-3 h-3" />
+                                                                    Ready
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700">
+                                                                    <AlertTriangle className="w-3 h-3" />
+                                                                    Missing
+                                                                </span>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <span className={`px-2 py-1 rounded-full text-xs ${v.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                                {v.is_active ? 'Active' : 'Inactive'}
+                                                            </span>
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            <div className="flex justify-end gap-1">
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRegenerate(v)} title="Regenerate Template">
+                                                                    <RefreshCcw className="w-3 h-3 text-blue-500" />
+                                                                </Button>
+                                                                {v.mockup_template_url && (
+                                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleClearTemplate(v)} title="Clear Template">
+                                                                        <Eraser className="w-3 h-3 text-orange-500" />
+                                                                    </Button>
+                                                                )}
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+                                                                    setEditingVariant(v);
+                                                                    setIsVariantDialogOpen(true);
+                                                                }}>
+                                                                    <Pencil className="w-3 h-3" />
+                                                                </Button>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                                {(!product.variants || product.variants.length === 0) && (
+                                                    <TableRow>
+                                                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                                                            No variants imported for this product.
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    ))}
+
+                    {products.length === 0 && (
+                        <div className="text-center py-12 border rounded-lg bg-gray-50 dark:bg-gray-900/10">
+                            <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                            <h3 className="text-lg font-medium">No Products Found</h3>
+                            <p className="text-muted-foreground mb-6">Get started by adding a product type.</p>
+                            <Button onClick={() => {
+                                setEditingProduct(null);
+                                setIsProductDialogOpen(true);
+                            }}>
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add First Product
+                            </Button>
+                        </div>
+                    )}
+                </Accordion>
+            )}
+
+            {/* Variant Edit Dialog */}
+            <Dialog open={isVariantDialogOpen} onOpenChange={(open) => {
+                setIsVariantDialogOpen(open);
+                if (!open) setEditingVariant(null);
+            }}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{editingVariant?.id ? 'Edit Variant' : 'Add New Variant'}</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleSaveVariant} className="space-y-4 pt-4">
+                        <input type="hidden" name="product_id" value={editingVariant?.product_id} />
+
+                        <div className="space-y-2">
+                            <Label htmlFor="variant_id">Printful Variant ID</Label>
+                            <Input
+                                id="variant_id"
+                                name="id"
+                                type="number"
+                                defaultValue={editingVariant?.id}
+                                required
+                                disabled={!!editingVariant?.id} // Only allow setting ID on create? Actually Printful ID is external so maybe allow create only.
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="variant_name">Display Name</Label>
+                            <Input id="variant_name" name="name" defaultValue={editingVariant?.name} required />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="variant_price">Cost Price (USD)</Label>
+                            <Input
+                                id="variant_price"
+                                name="price"
+                                type="number"
+                                step="0.01"
+                                defaultValue={editingVariant ? editingVariant.price_cents / 100 : ''}
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="variant_order">Display Order</Label>
+                            <Input id="variant_order" name="display_order" type="number" defaultValue={editingVariant?.display_order || 0} />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Switch id="variant_active" name="is_active" defaultChecked={editingVariant ? editingVariant.is_active : true} />
+                            <Label htmlFor="variant_active">Active</Label>
+                        </div>
+                        <Button type="submit" className="w-full" disabled={isSaving}>
+                            {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                            {editingVariant?.id ? 'Update' : 'Create'} Variant
+                        </Button>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
+

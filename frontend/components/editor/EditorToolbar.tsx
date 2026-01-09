@@ -14,7 +14,8 @@ import {
     Loader2,
     Check,
     MoreHorizontal,
-    Upload
+    Upload,
+    HelpCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -50,6 +51,7 @@ interface EditorToolbarProps {
     showDonationModal: boolean;
     onDonationModalChange: (show: boolean) => void;
     onOpenCommandMenu: () => void;
+    onStartWalkthrough: () => void;
     onBuyPrint?: () => void;
     onFormatChange: (format: Partial<PosterConfig['format']>) => void;
     onCopyState?: () => void;
@@ -92,6 +94,7 @@ export function EditorToolbar({
     showDonationModal,
     onDonationModalChange,
     onOpenCommandMenu,
+    onStartWalkthrough,
     onBuyPrint,
     onFormatChange,
     onCopyState,
@@ -285,6 +288,16 @@ export function EditorToolbar({
                                 </kbd>
                             </button>
                         </Tooltip>
+
+                        {/* Help / Replay Guide */}
+                        <Tooltip content="Replay Onboarding Guide" side="bottom">
+                            <button
+                                onClick={onStartWalkthrough}
+                                className={cn(iconButtonBase, iconButtonEnabled)}
+                            >
+                                <HelpCircle className="w-[18px] h-[18px]" />
+                            </button>
+                        </Tooltip>
                     </div>
 
                     {/* Mobile Menu Trigger */}
@@ -326,6 +339,13 @@ export function EditorToolbar({
                                     >
                                         <Search className="w-4 h-4" />
                                         Search Commands
+                                    </button>
+                                    <button
+                                        onClick={() => { onStartWalkthrough(); setShowMobileMenu(false); }}
+                                        className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left"
+                                    >
+                                        <HelpCircle className="w-4 h-4 text-blue-500" />
+                                        Show Guide
                                     </button>
 
                                     {showCopyStateButton && onCopyState && (
