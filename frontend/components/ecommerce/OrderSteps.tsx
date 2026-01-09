@@ -13,6 +13,8 @@ import { ChevronLeft, Loader2, Package, Truck, CreditCard, Check } from 'lucide-
 import { cn } from '@/lib/utils';
 import { ProductPreviewGrid } from './ProductPreviewGrid';
 import { FrameMockupRenderer } from './FrameMockupRenderer';
+import { trackEventAction } from '@/lib/actions/events';
+import { getSessionId } from '@/lib/utils';
 
 // Replace with your actual Publishable Key from environment
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -130,6 +132,18 @@ export function OrderSteps({ variants, designUrl, aspectRatio, orientation, prod
             setIsCheckingAuth(false);
         };
         checkUser();
+
+        // Track checkout start
+        trackEventAction({
+            eventType: 'checkout_start',
+            eventName: 'checkout_page_loaded',
+            sessionId: getSessionId(),
+            metadata: {
+                design_url: designUrl,
+                aspect_ratio: aspectRatio,
+                orientation: orientation
+            }
+        });
     }, []);
 
     const handleLogin = () => {

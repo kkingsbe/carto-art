@@ -25,6 +25,10 @@ export async function GET() {
         const [
             { data: landingEvents },
             { data: editorEvents },
+            { data: exportEvents },
+            { data: clickPurchaseEvents },
+            { data: storeEvents },
+            { data: productEvents },
             { data: checkoutEvents },
             { data: purchaseEvents }
         ] = await Promise.all([
@@ -33,7 +37,7 @@ export async function GET() {
                 .from('page_events')
                 .select('session_id')
                 .eq('event_type', 'page_view')
-                .ilike('page_url', '%/') // Simple heuristic for home page: ends in /
+                .ilike('page_url', '%/')
                 .gte('created_at', startTime),
 
             // Editor Opened
@@ -41,6 +45,34 @@ export async function GET() {
                 .from('page_events')
                 .select('session_id')
                 .eq('event_type', 'editor_open')
+                .gte('created_at', startTime),
+
+            // Export Success
+            supabase
+                .from('page_events')
+                .select('session_id')
+                .eq('event_type', 'poster_export')
+                .gte('created_at', startTime),
+
+            // Clicking "Purchase Print" from Export Modal
+            supabase
+                .from('page_events')
+                .select('session_id')
+                .eq('event_type', 'shop_transition_start')
+                .gte('created_at', startTime),
+
+            // Store (Product Selection)
+            supabase
+                .from('page_events')
+                .select('session_id')
+                .eq('event_type', 'store_view')
+                .gte('created_at', startTime),
+
+            // Product Detail View
+            supabase
+                .from('page_events')
+                .select('session_id')
+                .eq('event_type', 'product_view')
                 .gte('created_at', startTime),
 
             // Checkout Started
@@ -67,14 +99,12 @@ export async function GET() {
 
         const landingCount = countUnique(landingEvents);
         const editorCount = countUnique(editorEvents);
+        const exportCount = countUnique(exportEvents);
+        const clickPurchaseCount = countUnique(clickPurchaseEvents);
+        const storeCount = countUnique(storeEvents);
+        const productCount = countUnique(productEvents);
         const checkoutCount = countUnique(checkoutEvents);
         const purchaseCount = countUnique(purchaseEvents);
-
-        // Ensure strictly decreasing funnel for visualization sanity? 
-        // Real data might be messy (e.g. session started checkout without editor open if using deep link),
-        // but generally we display the raw unique counts for each stage.
-        // Funnel charts usually handle varying sizes, but visually it's nice if they shrink. 
-        // We will trust the data.
 
         const safeTotal = landingCount || 1;
 
@@ -84,21 +114,48 @@ export async function GET() {
                 count: landingCount,
                 percentage: 100,
                 dropOff: 0,
-                // Avg time not easily calculated with this aggregation method without more complex queries
                 avgTimeNext: 0
             },
             {
                 step: 'Editor',
                 count: editorCount,
                 percentage: Math.round((editorCount / safeTotal) * 100),
-                dropOff: Math.round(((landingCount - editorCount) / landingCount) * 100),
+                dropOff: Math.round(((landingCount - editorCount) / safeTotal) * 100),
+                avgTimeNext: 0
+            },
+            {
+                step: 'Exported',
+                count: exportCount,
+                percentage: Math.round((exportCount / safeTotal) * 100),
+                dropOff: Math.round((editorCount > 0 ? ((editorCount - exportCount) / editorCount) : 0) * 100),
+                avgTimeNext: 0
+            },
+            {
+                step: 'Click Purchase',
+                count: clickPurchaseCount,
+                percentage: Math.round((clickPurchaseCount / safeTotal) * 100),
+                dropOff: Math.round((exportCount > 0 ? ((exportCount - clickPurchaseCount) / exportCount) : 0) * 100),
+                avgTimeNext: 0
+            },
+            {
+                step: 'View Store',
+                count: storeCount,
+                percentage: Math.round((storeCount / safeTotal) * 100),
+                dropOff: Math.round((clickPurchaseCount > 0 ? ((clickPurchaseCount - storeCount) / clickPurchaseCount) : 0) * 100),
+                avgTimeNext: 0
+            },
+            {
+                step: 'View Product',
+                count: productCount,
+                percentage: Math.round((productCount / safeTotal) * 100),
+                dropOff: Math.round((storeCount > 0 ? ((storeCount - productCount) / storeCount) : 0) * 100),
                 avgTimeNext: 0
             },
             {
                 step: 'Checkout',
                 count: checkoutCount,
                 percentage: Math.round((checkoutCount / safeTotal) * 100),
-                dropOff: Math.round((editorCount > 0 ? ((editorCount - checkoutCount) / editorCount) : 0) * 100),
+                dropOff: Math.round((productCount > 0 ? ((productCount - checkoutCount) / productCount) : 0) * 100),
                 avgTimeNext: 0
             },
             {

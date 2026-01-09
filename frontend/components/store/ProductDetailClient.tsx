@@ -8,6 +8,9 @@ import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { parseAspectRatio, variantMatchesAspectRatio, parseVariantDimensions } from '@/lib/utils/store';
 
+import { useEffect } from 'react';
+import { trackEvent } from '@/lib/events';
+import { getSessionId } from '@/lib/utils';
 import { ProductGroup } from '@/lib/utils/store';
 
 interface ProductDetailClientProps {
@@ -22,6 +25,21 @@ export function ProductDetailClient({ variants, product }: ProductDetailClientPr
     const designUrl = rawDesignUrl === 'undefined' ? null : rawDesignUrl;
     const aspectRatio = searchParams?.get('aspect') || '2:3';
     const orientation = (searchParams?.get('orientation') as 'portrait' | 'landscape') || 'portrait';
+
+    // Track product view on mount
+    useEffect(() => {
+        trackEvent({
+            eventType: 'product_view',
+            eventName: 'product_detail_viewed',
+            sessionId: getSessionId(),
+            metadata: {
+                product_id: product.id,
+                product_title: product.title,
+                aspect_ratio: aspectRatio,
+                orientation: orientation
+            }
+        });
+    }, [product.id, product.title, aspectRatio, orientation]);
 
     if (!designUrl) {
         return (

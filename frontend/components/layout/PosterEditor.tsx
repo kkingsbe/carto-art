@@ -679,6 +679,17 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
         onBuyPrint={isEcommerceEnabled ? async () => {
           setShowDonationModal(false);
 
+          // Track shop transition start
+          trackEventAction({
+            eventType: 'shop_transition_start',
+            eventName: 'order_print_clicked',
+            sessionId: getSessionId(),
+            metadata: {
+              source: 'export_success_modal',
+              mapId: currentMapId
+            }
+          });
+
           if (!exportedImage) return;
 
           // Show loading state implicitly via button or just proceed? 
