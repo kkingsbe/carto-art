@@ -31,7 +31,8 @@ export async function getFeed(
   sort: 'fresh' | 'top' = 'fresh',
   page: number = 0,
   limit: number = FEED_PAGE_SIZE,
-  filter: 'all' | 'following' = 'all'
+  filter: 'all' | 'following' = 'all',
+  styleIds?: string[]
 ): Promise<FeedMap[]> {
   const supabase = await createClient();
 
@@ -77,6 +78,11 @@ export async function getFeed(
       .eq('is_published', true)
       .not('published_at', 'is', null);
 
+    // Apply style filter
+    if (styleIds && styleIds.length > 0) {
+      query = query.filter('config->style->>id', 'in', `(${styleIds.join(',')})`);
+    }
+
     // Apply 'following' filter
     if (filter === 'following') {
       if (userId === 'anonymous') {
@@ -117,7 +123,7 @@ export async function getFeed(
       // Check if error is due to missing foreign key
       if (error.message?.includes('foreign key') || error.code === 'PGRST116' || error.message?.includes('relation')) {
         logger.warn('JOIN query failed, falling back to two-query approach', { error, sort, page, limit, filter });
-        return getFeedFallback(supabase, sort, page, limit, filter);
+        return getFeedFallback(supabase, sort, page, limit, filter, styleIds);
       }
       logger.error('Failed to fetch feed:', { error, sort, page, limit, filter });
       throw createError.databaseError(`Failed to fetch feed: ${error.message}`);
@@ -154,7 +160,7 @@ export async function getFeed(
     // If it's a foreign key error, try fallback
     if (error.message?.includes('foreign key') || error.code === 'PGRST116') {
       logger.warn('JOIN query failed, falling back to two-query approach', { error, sort, page, limit, filter });
-      return getFeedFallback(supabase, sort, page, limit, filter);
+      return getFeedFallback(supabase, sort, page, limit, filter, styleIds);
     }
     throw error;
   }
@@ -169,7 +175,8 @@ async function getFeedFallback(
   sort: 'fresh' | 'top',
   page: number,
   limit: number,
-  filter: 'all' | 'following' = 'all'
+  filter: 'all' | 'following' = 'all',
+  styleIds?: string[]
 ): Promise<FeedMap[]> {
   // First, fetch the maps
   let query = supabase
@@ -177,6 +184,11 @@ async function getFeedFallback(
     .select('id, title, subtitle, thumbnail_url, vote_score, view_count, published_at, created_at, user_id')
     .eq('is_published', true)
     .not('published_at', 'is', null);
+
+  // Apply style filter
+  if (styleIds && styleIds.length > 0) {
+    query = query.filter('config->style->>id', 'in', `(${styleIds.join(',')})`);
+  }
 
   if (filter === 'following') {
     const { data: { user } } = await supabase.auth.getUser();

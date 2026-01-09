@@ -7,7 +7,7 @@ import type { FeedMap } from '@/lib/actions/feed';
 const INITIAL_PAGE = 0;
 const PAGE_SIZE = 24;
 
-export function useInfiniteFeed(sortParameter: 'fresh' | 'top' | 'following') {
+export function useInfiniteFeed(sortParameter: 'fresh' | 'top' | 'following', styleIds?: string[]) {
   const [maps, setMaps] = useState<FeedMap[]>([]);
   const [page, setPage] = useState(INITIAL_PAGE);
   const [hasMore, setHasMore] = useState(true);
@@ -16,11 +16,16 @@ export function useInfiniteFeed(sortParameter: 'fresh' | 'top' | 'following') {
   const [error, setError] = useState<string | null>(null);
   const pageRef = useRef(INITIAL_PAGE);
   const sortRef = useRef(sortParameter);
+  const styleIdsRef = useRef(styleIds);
 
   // Update refs when values change
   useEffect(() => {
     sortRef.current = sortParameter;
   }, [sortParameter]);
+
+  useEffect(() => {
+    styleIdsRef.current = styleIds;
+  }, [styleIds]);
 
   const loadMore = useCallback(async () => {
     if (loading || !hasMore) return;
@@ -31,6 +36,7 @@ export function useInfiniteFeed(sortParameter: 'fresh' | 'top' | 'following') {
     try {
       const currentPage = pageRef.current;
       const currentSortParam = sortRef.current;
+      const currentStyleIds = styleIdsRef.current;
 
       // Map the UI sort parameter to API args
       let apiSort: 'fresh' | 'top' = 'fresh';
@@ -43,7 +49,7 @@ export function useInfiniteFeed(sortParameter: 'fresh' | 'top' | 'following') {
         apiSort = currentSortParam;
       }
 
-      const newMaps = await getFeed(apiSort, currentPage, PAGE_SIZE, apiFilter);
+      const newMaps = await getFeed(apiSort, currentPage, PAGE_SIZE, apiFilter, currentStyleIds);
 
       if (newMaps.length === 0) {
         setHasMore(false);
@@ -81,7 +87,7 @@ export function useInfiniteFeed(sortParameter: 'fresh' | 'top' | 'following') {
     setInitialLoading(true);
   }, []);
 
-  // Reset when sort changes
+  // Reset when sort or styleIds change
   useEffect(() => {
     setMaps([]);
     pageRef.current = INITIAL_PAGE;
@@ -89,10 +95,7 @@ export function useInfiniteFeed(sortParameter: 'fresh' | 'top' | 'following') {
     setHasMore(true);
     setError(null);
     setInitialLoading(true);
-    setHasMore(true);
-    setError(null);
-    setInitialLoading(true);
-  }, [sortParameter]);
+  }, [sortParameter, styleIds]);
 
   // Load initial page
   useEffect(() => {

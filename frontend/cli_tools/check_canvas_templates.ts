@@ -1,4 +1,4 @@
-import { printful } from './lib/printful/client';
+import { printful } from '../lib/printful/client';
 import dotenv from 'dotenv';
 import path from 'path';
 

@@ -14,12 +14,16 @@ export const metadata = {
 };
 
 interface GalleryPageProps {
-  searchParams: Promise<{ sort?: 'fresh' | 'top' | 'following' }>;
+  searchParams: Promise<{
+    sort?: 'fresh' | 'top' | 'following';
+    styles?: string;
+  }>;
 }
 
 export default async function GalleryPage({ searchParams }: GalleryPageProps) {
   const params = await searchParams;
   const sort = (params.sort || 'fresh') as 'fresh' | 'top' | 'following';
+  const initialStyles = params.styles ? params.styles.split(',') : [];
   const stats = await getSiteStats();
 
   return (
@@ -29,7 +33,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
 
       {/* Filter Bar + Content - Full height dark background */}
       <div className="flex-1 bg-[#0a0f1a]">
-        <FeedClient initialSort={sort} />
+        <FeedClient initialSort={sort} initialStyles={initialStyles} />
       </div>
 
       {/* Bottom spacer to ensure dark background extends */}

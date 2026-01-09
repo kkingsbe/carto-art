@@ -5,13 +5,15 @@ import { FeedFilters } from './FeedFilters';
 import { MapGrid } from './MapGrid';
 import { useInfiniteFeed } from '@/hooks/useInfiniteFeed';
 import { Loader2 } from 'lucide-react';
+import { GalleryOnboarding } from '../gallery/GalleryOnboarding';
 
 interface FeedClientProps {
   initialSort: 'fresh' | 'top' | 'following';
+  initialStyles: string[];
 }
 
-export function FeedClient({ initialSort }: FeedClientProps) {
-  const { maps, loadMore, hasMore, loading, initialLoading, error } = useInfiniteFeed(initialSort);
+export function FeedClient({ initialSort, initialStyles }: FeedClientProps) {
+  const { maps, loadMore, hasMore, loading, initialLoading, error } = useInfiniteFeed(initialSort, initialStyles);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Intersection Observer for infinite scroll
@@ -40,6 +42,8 @@ export function FeedClient({ initialSort }: FeedClientProps) {
   return (
     <div className="bg-[#0a0f1a]">
       <FeedFilters currentSort={initialSort} />
+
+      <GalleryOnboarding />
 
       {error && (
         <div className="mx-4 sm:mx-6 lg:mx-10 mb-6 p-4 bg-red-900/20 border border-red-800 rounded-lg">

@@ -15,7 +15,8 @@ import {
     Check,
     MoreHorizontal,
     Upload,
-    HelpCircle
+    HelpCircle,
+    LayoutGrid
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -302,6 +303,21 @@ export function EditorToolbar({
 
                         <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1.5" />
 
+                        {/* Gallery / Inspiration */}
+                        <Tooltip content="Community Gallery (Get Inspired)" side="bottom">
+                            <button
+                                onClick={() => router.push('/gallery')}
+                                className={cn(
+                                    iconButtonBase,
+                                    "text-gray-600 hover:text-[#c9a962] hover:bg-[#c9a962]/10 dark:text-gray-400 dark:hover:text-[#c9a962] dark:hover:bg-[#c9a962]/20"
+                                )}
+                            >
+                                <LayoutGrid className="w-[18px] h-[18px]" />
+                            </button>
+                        </Tooltip>
+
+                        <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1.5" />
+
                         <ModeToggle />
                     </div>
 
@@ -351,6 +367,14 @@ export function EditorToolbar({
                                     >
                                         <HelpCircle className="w-4 h-4 text-blue-500" />
                                         Show Guide
+                                    </button>
+
+                                    <button
+                                        onClick={() => { router.push('/gallery'); setShowMobileMenu(false); }}
+                                        className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left"
+                                    >
+                                        <LayoutGrid className="w-4 h-4 text-[#c9a962]" />
+                                        Community Gallery
                                     </button>
 
                                     <div className="px-4 py-3 flex items-center justify-between text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
