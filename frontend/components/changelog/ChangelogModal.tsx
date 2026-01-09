@@ -94,7 +94,7 @@ export function ChangelogModal({ trigger, showFloatingButton = false }: Changelo
                     variant="ghost"
                     size="sm"
                     onClick={handleOpen}
-                    className="fixed bottom-4 right-4 z-40 bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 hover:text-white shadow-lg group"
+                    className="fixed bottom-4 md:bottom-20 right-4 z-40 bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 hover:text-white shadow-lg group"
                 >
                     <Bell className="w-4 h-4 mr-2" />
                     What's New

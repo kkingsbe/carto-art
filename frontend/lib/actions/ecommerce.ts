@@ -6,6 +6,20 @@ import { getSiteConfig } from './usage';
 import { CONFIG_KEYS } from './usage.types';
 import { printful } from '@/lib/printful/client';
 import type { Database } from '@/types/database';
+import { revalidatePath } from 'next/cache';
+
+// Types for cancellation requests
+export interface CancellationRequest {
+    id: string;
+    created_at: string;
+    order_id: string;
+    user_id: string;
+    status: 'pending' | 'approved' | 'rejected';
+    refund_issued: boolean;
+    printful_cancelled: boolean;
+    order?: any;
+    user?: any;
+}
 
 export async function uploadDesignFile(formData: FormData) {
     const supabase = await createClient();
@@ -152,11 +166,62 @@ export async function getUserOrders() {
             ...order,
             product_title: productTitle,
             variant_name: variantName,
-            thumbnail_url: thumbnailUrl || fallbackUrl
+            thumbnail_url: order.mockup_url || thumbnailUrl || fallbackUrl
         };
     }));
 
     return processedOrders;
+}
+
+export async function requestOrderCancellation(orderId: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) throw new Error('Unauthorized');
+
+    // 1. Fetch Order
+    const { data: order, error } = await (supabase as any)
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .eq('user_id', user.id)
+        .single();
+
+    if (error || !order) {
+        throw new Error('Order not found');
+    }
+
+    if (order.status === 'fulfilled' || order.status === 'failed') {
+        throw new Error('Order cannot be cancelled in its current state');
+    }
+
+    // 2. Check if already requested
+    const { data: existingRequest } = await (supabase as any)
+        .from('order_cancellations')
+        .select('*')
+        .eq('order_id', orderId)
+        .single();
+
+    if (existingRequest) {
+        throw new Error('Cancellation already requested for this order');
+    }
+
+    // 3. Create Cancellation Request
+    const { error: insertError } = await (supabase as any)
+        .from('order_cancellations')
+        .insert({
+            order_id: orderId,
+            user_id: user.id,
+            status: 'pending'
+        });
+
+    if (insertError) {
+        console.error('Cancellation request error:', insertError);
+        throw new Error('Failed to submit cancellation request');
+    }
+
+    revalidatePath('/profile/orders');
+    return { success: true };
 }
 
 export async function getProductVariants(includeInactive = false) {
@@ -499,24 +564,11 @@ export async function getAdminOrders() {
 }
 
 /**
- * Admin: Sync order statuses from Printful
+ * Internal: Core sync logic shared between Admin Action and Cron Job
  */
-export async function syncOrderStatuses() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) throw new Error('Unauthorized');
-
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', user.id)
-        .single<{ is_admin: boolean }>();
-
-    if (!profile?.is_admin) throw new Error('Unauthorized - Admin only');
-
+export async function internalSyncOrderStatuses(supabase: any) {
     // Get active orders
-    const { data: orders, error } = await (supabase as any)
+    const { data: orders, error } = await supabase
         .from('orders')
         .select('id, printful_order_id, status, tracking_url, tracking_number')
         .not('status', 'in', '("fulfilled","failed")')
@@ -556,7 +608,7 @@ export async function syncOrderStatuses() {
             }
 
             if (mappedStatus !== order.status || trackingUrl !== order.tracking_url) {
-                await (supabase as any)
+                await supabase
                     .from('orders')
                     .update({
                         status: mappedStatus,
@@ -575,3 +627,108 @@ export async function syncOrderStatuses() {
     return { synced: syncedCount };
 }
 
+/**
+ * Admin: Sync order statuses from Printful
+ */
+export async function syncOrderStatuses() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) throw new Error('Unauthorized');
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single<{ is_admin: boolean }>();
+
+    if (!profile?.is_admin) throw new Error('Unauthorized - Admin only');
+
+    return internalSyncOrderStatuses(supabase);
+}
+
+/**
+ * Admin: Get all cancellation requests
+ */
+export async function getCancellationRequests() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) throw new Error('Unauthorized');
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single<{ is_admin: boolean }>();
+
+    if (!profile?.is_admin) throw new Error('Unauthorized - Admin only');
+
+    const { data: requests, error } = await (supabase as any)
+        .from('order_cancellations')
+        .select(`
+            *,
+            order:orders (*)
+        `)
+        .order('created_at', { ascending: false });
+
+    if (error) throw new Error(error.message);
+
+    // Fetch user details manually to populate the UI nicely
+    const userIds = Array.from(new Set(requests.map((r: any) => r.user_id)));
+    let usersMap = new Map();
+
+    if (userIds.length > 0) {
+        const { data: users } = await supabase
+            .from('profiles')
+            .select('id, display_name, email')
+            .in('id', userIds);
+
+        if (users) {
+            usersMap = new Map(users.map((u: any) => [u.id, u]));
+        }
+    }
+
+    return requests.map((r: any) => ({
+        ...r,
+        user: usersMap.get(r.user_id)
+    }));
+}
+
+/**
+ * Admin: Update cancellation request status
+ */
+export async function updateCancellationRequest(
+    requestId: string,
+    updates: {
+        refund_issued?: boolean;
+        printful_cancelled?: boolean;
+        status?: string;
+    }
+) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) throw new Error('Unauthorized');
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single<{ is_admin: boolean }>();
+
+    if (!profile?.is_admin) throw new Error('Unauthorized - Admin only');
+
+    const { error } = await (supabase as any)
+        .from('order_cancellations')
+        .update({
+            ...updates,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', requestId);
+
+    if (error) throw new Error(error.message);
+
+    revalidatePath('/admin/orders'); // Refresh the page
+    return { success: true };
+}

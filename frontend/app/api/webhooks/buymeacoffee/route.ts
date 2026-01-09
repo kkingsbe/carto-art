@@ -25,13 +25,19 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        const { type, response } = payload;
+        const { type, response: rawResponse, data: rawData } = payload;
 
-        // Map BMAC types to our schema
-        // response object varies by type, but common fields:
-        // subscription_id or donation_id, payer_email, payer_name, coffee_amount, etc.
+        // Support both old 'response' and new 'data' envelopes
+        const response = rawData || rawResponse || {};
 
-        const externalId = response.subscription_id || response.donation_id || response.item_id || response.order_id;
+        // Log payload for debugging
+        console.log('BMAC Webhook received:', JSON.stringify(payload));
+
+        const externalId = response.id ||
+            response.subscription_id ||
+            response.donation_id ||
+            response.item_id ||
+            response.order_id;
 
         if (!externalId) {
             console.warn('No external ID found in BMAC payload:', payload);
@@ -39,21 +45,41 @@ export async function POST(req: NextRequest) {
         }
 
         // Calculate amount
-        // For donations: coffee_price * coffee_num
-        // For subscriptions: subscription_coffee_price * subscription_coffee_num
-        const amount = parseFloat(response.subscription_coffee_price || response.coffee_price || '0') *
-            (response.subscription_coffee_num || response.coffee_num || 0);
+        let amount = 0;
+        if (response.amount) {
+            amount = parseFloat(response.amount);
+        } else if (response.total_amount_charged) {
+            amount = parseFloat(response.total_amount_charged);
+        } else {
+            const price = parseFloat(response.subscription_coffee_price || response.coffee_price || '0');
+            const countStr = response.subscription_coffee_num || response.coffee_num;
+            const count = countStr ? parseFloat(countStr) : 1;
+            amount = price * count;
+        }
+
+        // Parse date - handle Unix timestamp in seconds (BMAC default) or ISO string
+        let createdAt = new Date().toISOString();
+        if (response.created_at) {
+            // If it's a number (Unix timestamp in seconds), convert to ms
+            if (typeof response.created_at === 'number') {
+                createdAt = new Date(response.created_at * 1000).toISOString();
+            } else {
+                createdAt = response.created_at;
+            }
+        } else if (response.subscription_created_on) {
+            createdAt = response.subscription_created_on;
+        }
 
         const donationData = {
             id: externalId.toString(),
             amount: amount,
-            currency: response.subscription_currency || response.currency || 'USD',
-            sender_name: response.payer_name || response.name || 'Anonymous',
-            sender_email: response.payer_email || response.email || null,
-            message: response.subscription_message || response.message || '',
+            currency: response.currency || response.subscription_currency || 'USD',
+            sender_name: response.supporter_name || response.payer_name || response.name || 'Anonymous',
+            sender_email: response.supporter_email || response.payer_email || response.email || null,
+            message: response.support_note || response.subscription_message || response.message || response.supporter_message || '',
             type: type?.includes('subscription') ? 'subscription' : 'donation',
-            status: 'success', // We usually receive success events
-            created_at: response.subscription_created_on || response.created_at || new Date().toISOString(),
+            status: 'success',
+            created_at: createdAt,
         };
 
         const { error } = await supabaseAdmin

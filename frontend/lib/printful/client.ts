@@ -160,6 +160,25 @@ export const printful = {
     },
 
     /**
+     * Cancel an order in Printful
+     * Only works if status is 'draft' or 'pending'
+     */
+    async cancelOrder(orderId: number | string): Promise<PrintfulOrder> {
+        const response = await fetch(`${PRINTFUL_API_URL}/orders/${orderId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${API_KEY}` }
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.result || error.error || `Failed to cancel order ${orderId}`);
+        }
+
+        const data = await response.json();
+        return data.result;
+    },
+
+    /**
      * Get list of products from Printful Catalog
      */
     async getCatalogProducts(search: string = '', type: string = ''): Promise<any[]> {

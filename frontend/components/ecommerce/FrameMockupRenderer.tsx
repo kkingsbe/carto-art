@@ -19,6 +19,7 @@ interface FrameMockupRendererProps {
     alt?: string;
     onDebug?: (msg: string) => void;
     onDebugStages?: (stages: { name: string; url: string; description?: string }[]) => void;
+    onRendered?: (url: string) => void;
 }
 
 /**
@@ -33,7 +34,8 @@ export function FrameMockupRenderer({
     imageClassName = '',
     alt = 'Product preview',
     onDebug,
-    onDebugStages
+    onDebugStages,
+    onRendered
 }: FrameMockupRendererProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [compositeUrl, setCompositeUrl] = useState<string | null>(null);
@@ -422,6 +424,10 @@ export function FrameMockupRenderer({
 
                 if (onDebugStages) {
                     onDebugStages(stages);
+                }
+
+                if (onRendered) {
+                    onRendered(finalDataUrl);
                 }
             } catch (err: any) {
                 console.error('Failed to composite mockup:', err);

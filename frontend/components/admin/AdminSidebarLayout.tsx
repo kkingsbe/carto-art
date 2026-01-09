@@ -19,7 +19,8 @@ import {
     MapPin,
     Megaphone,
     ShoppingCart,
-    Package
+    Package,
+    XCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -43,9 +44,11 @@ export function AdminSidebarLayout({ children }: AdminSidebarLayoutProps) {
         { label: 'Retention', href: '/admin/analytics/retention', icon: LineChart },
         { label: 'Activity', href: '/admin/activity', icon: Activity },
         { label: 'Feedback', href: '/admin/feedback', icon: MessageSquare },
+        { label: 'Tickets', href: '/admin/tickets', icon: MessageSquare }, // Using MessageSquare for now or Ticket if available
         { label: 'Changelog', href: '/admin/changelog', icon: Megaphone },
         { label: 'Products', href: '/admin/products', icon: ShoppingCart },
         { label: 'Orders', href: '/admin/orders', icon: Package },
+        { label: 'Cancellations', href: '/admin/cancellations', icon: XCircle },
         { label: 'Catalog', href: '/admin/catalog', icon: ShoppingCart },
     ];
 

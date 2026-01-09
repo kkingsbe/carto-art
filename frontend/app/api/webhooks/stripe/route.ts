@@ -233,7 +233,7 @@ export async function POST(request: Request) {
                             ]
                         }
                     ],
-                    confirm: false
+                    confirm: process.env.PRINTFUL_LIVE_MODE === 'true'
                 });
 
                 await (supabase as any)
@@ -269,7 +269,7 @@ export async function POST(request: Request) {
                     // 1. Fetch details for email
                     const { data: variantData } = await (supabase as any)
                         .from('product_variants')
-                        .select('name, price_cents, display_price_cents, product:products(title)')
+                        .select('name, price_cents, product:products(title)')
                         .eq('id', typedOrder.variant_id)
                         .single();
 
@@ -277,7 +277,14 @@ export async function POST(request: Request) {
                         ? `${variantData.product?.title || 'Map'} - ${variantData.name}`
                         : 'Custom Map Print';
 
-                    const unitPrice = variantData?.display_price_cents || variantData?.price_cents || 0;
+                    // Calculate display price (margin adjusted)
+                    // We need to fetch the margin config
+                    const { getSiteConfig } = await import('@/lib/actions/usage');
+                    const { CONFIG_KEYS } = await import('@/lib/actions/usage.types');
+                    const marginPercent = await getSiteConfig(CONFIG_KEYS.PRODUCT_MARGIN_PERCENT);
+
+                    const basePrice = variantData?.price_cents || 0;
+                    const unitPrice = Math.round(basePrice * (1 + marginPercent / 100));
 
                     // 2. Determine Recipient Email
                     let userEmail: string | null | undefined = paymentIntent.receipt_email;
@@ -307,7 +314,7 @@ export async function POST(request: Request) {
                                     name: productName,
                                     quantity: typedOrder.quantity,
                                     price: `$${(unitPrice / 100).toFixed(2)}`,
-                                    image_url: undefined // We could fetch the design URL if we want
+                                    image_url: typedOrder.mockup_url as string | undefined
                                 }]
                             })
                         });

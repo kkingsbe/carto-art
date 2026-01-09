@@ -25,7 +25,8 @@ const checkoutSchema = z.object({
             postal_code: z.string(),
             country: z.string().length(2),
         })
-    })
+    }),
+    mockup_data_url: z.string().optional().nullish()
 });
 
 export async function POST(request: Request) {
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const { variant_id, design_file_id, quantity, shipping } = checkoutSchema.parse(body);
+        const { variant_id, design_file_id, quantity, shipping, mockup_data_url } = checkoutSchema.parse(body);
 
         // Calculate Amount from DB
         const { data: variant, error: variantError } = await supabase
@@ -98,6 +99,34 @@ export async function POST(request: Request) {
         }
 
         const amount = productAmount + shippingCost;
+        let finalMockupUrl: string | null = null;
+
+        // Upload mockup if provided
+        if (mockup_data_url && mockup_data_url.startsWith('data:image/')) {
+            try {
+                const base64Data = mockup_data_url.split(',')[1];
+                const buffer = Buffer.from(base64Data, 'base64');
+                const path = `${user.id}/mockups/${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
+
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('mockups')
+                    .upload(path, buffer, {
+                        contentType: 'image/png',
+                        upsert: true
+                    });
+
+                if (uploadError) {
+                    console.error("Mockup upload failed", uploadError);
+                } else {
+                    const { data: { publicUrl } } = supabase.storage
+                        .from('mockups')
+                        .getPublicUrl(path);
+                    finalMockupUrl = publicUrl;
+                }
+            } catch (e) {
+                console.error("Failed to process mockup data URL", e);
+            }
+        }
 
         // Create PaymentIntent
         const paymentIntent = await stripe.paymentIntents.create({
@@ -144,6 +173,7 @@ export async function POST(request: Request) {
             shipping_state: shipping.address.state,
             shipping_zip: shipping.address.postal_code,
             shipping_country: shipping.address.country,
+            mockup_url: finalMockupUrl as any, // Cast as any because TS types might not be updated yet
         };
         const { error: dbError } = await (supabase as any)
             .from('orders')
@@ -154,7 +184,15 @@ export async function POST(request: Request) {
             throw new Error('Failed to create order record');
         }
 
-        return NextResponse.json({ clientSecret: paymentIntent.client_secret });
+        return NextResponse.json({
+            clientSecret: paymentIntent.client_secret,
+            breakdown: {
+                subtotal: productAmount,
+                shipping: shippingCost,
+                tax: 0, // Tax handling to be added specifically if needed, currently 0
+                total: amount
+            }
+        });
 
     } catch (error: any) {
         console.error('Checkout Error:', error);

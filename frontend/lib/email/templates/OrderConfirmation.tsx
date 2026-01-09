@@ -65,20 +65,29 @@ export const OrderConfirmationEmail = ({
 
                 <Section style={itemsContainer}>
                     {items.map((item, i) => (
-                        <Row key={i} style={itemRow}>
-                            <Column style={{ width: '60px' }}>
-                                {item.image_url && (
-                                    <Img src={item.image_url} width="50" height="50" style={itemImage} alt={item.name} />
-                                )}
-                            </Column>
-                            <Column>
-                                <Text style={itemTitle}>{item.name}</Text>
-                                <Text style={itemSub}>Qty: {item.quantity}</Text>
-                            </Column>
-                            <Column style={{ textAlign: 'right' as const }}>
-                                <Text style={itemPrice}>{item.price}</Text>
-                            </Column>
-                        </Row>
+                        <Section key={i} style={{ marginBottom: '40px' }}>
+                            {item.image_url && (
+                                <Row style={{ marginBottom: '20px' }}>
+                                    <Column align="center">
+                                        <Img
+                                            src={item.image_url}
+                                            width="500"
+                                            style={itemImage}
+                                            alt={item.name}
+                                        />
+                                    </Column>
+                                </Row>
+                            )}
+                            <Row>
+                                <Column>
+                                    <Text style={itemTitle}>{item.name}</Text>
+                                    <Text style={itemSub}>Qty: {item.quantity}</Text>
+                                </Column>
+                                <Column style={{ textAlign: 'right' as const, verticalAlign: 'top' }}>
+                                    <Text style={itemPrice}>{item.price}</Text>
+                                </Column>
+                            </Row>
+                        </Section>
                     ))}
                 </Section>
 
@@ -184,9 +193,7 @@ const itemsContainer = {
     margin: '20px 0',
 };
 
-const itemRow = {
-    marginBottom: '10px',
-};
+
 
 const itemImage = {
     borderRadius: '4px',

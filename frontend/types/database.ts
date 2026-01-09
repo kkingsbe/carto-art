@@ -505,6 +505,7 @@ export interface Database {
           shipping_state: string | null;
           shipping_zip: string | null;
           shipping_country: string | null;
+          mockup_url: string | null;
         };
         Insert: {
           id?: string;
@@ -526,6 +527,7 @@ export interface Database {
           shipping_state?: string | null;
           shipping_zip?: string | null;
           shipping_country?: string | null;
+          mockup_url?: string | null;
         };
         Update: {
           id?: string;
@@ -547,6 +549,7 @@ export interface Database {
           shipping_state?: string | null;
           shipping_zip?: string | null;
           shipping_country?: string | null;
+          mockup_url?: string | null;
         };
       };
       vistas: {

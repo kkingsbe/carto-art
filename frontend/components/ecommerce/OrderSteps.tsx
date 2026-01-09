@@ -114,6 +114,13 @@ export function OrderSteps({ variants, designUrl, aspectRatio, orientation, prod
     const [isProcessing, setIsProcessing] = useState(false);
     const [user, setUser] = useState<any>(null);
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+    const [mockupDataUrl, setMockupDataUrl] = useState<string | null>(null);
+    const [priceBreakdown, setPriceBreakdown] = useState<{
+        subtotal: number;
+        shipping: number;
+        tax: number;
+        total: number;
+    } | null>(null);
 
     useEffect(() => {
         const supabase = createClient();
@@ -186,7 +193,8 @@ export function OrderSteps({ variants, designUrl, aspectRatio, orientation, prod
                         variant_id: selectedVariant.id,
                         design_file_id: currentDesignId,
                         quantity: 1,
-                        shipping: shippingData
+                        shipping: shippingData,
+                        mockup_data_url: mockupDataUrl
                     })
                 });
 
@@ -196,6 +204,9 @@ export function OrderSteps({ variants, designUrl, aspectRatio, orientation, prod
                 }
                 const data = await res.json();
                 setClientSecret(data.clientSecret);
+                if (data.breakdown) {
+                    setPriceBreakdown(data.breakdown);
+                }
                 setStep(3);
 
             } catch (error: any) {
@@ -224,6 +235,7 @@ export function OrderSteps({ variants, designUrl, aspectRatio, orientation, prod
                                         designUrl={designUrl}
                                         className="max-w-full max-h-full object-contain rounded-lg shadow-2xl m-auto"
                                         alt="Product preview"
+                                        onRendered={setMockupDataUrl}
                                     />
                                 ) : (
                                     <img
@@ -367,11 +379,12 @@ export function OrderSteps({ variants, designUrl, aspectRatio, orientation, prod
 
                                 <Elements stripe={stripePromise} options={{ clientSecret }}>
                                     <CheckoutForm
-                                        amount={selectedVariant.display_price_cents}
+                                        amount={priceBreakdown?.total || selectedVariant.display_price_cents}
                                         onSuccess={() => window.location.href = '/profile?order_success=true'}
                                         templateUrl={selectedVariant.mockup_template_url}
                                         printArea={getSafePrintArea(selectedVariant.mockup_print_area)}
                                         designUrl={designUrl}
+                                        breakdown={priceBreakdown}
                                     />
                                 </Elements>
                                 <Button

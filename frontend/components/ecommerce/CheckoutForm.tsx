@@ -17,13 +17,20 @@ export default function CheckoutForm({
     onSuccess,
     templateUrl,
     printArea,
-    designUrl
+    designUrl,
+    breakdown
 }: {
     amount: number;
     onSuccess: () => void;
     templateUrl?: string | null;
     printArea?: PrintArea | null;
     designUrl?: string | null;
+    breakdown?: {
+        subtotal: number;
+        shipping: number;
+        tax: number;
+        total: number;
+    } | null;
 }) {
     const stripe = useStripe();
     const elements = useElements();
@@ -58,6 +65,12 @@ export default function CheckoutForm({
         }
     };
 
+    // Use breakdown if available, otherwise just show amount as total (fallback)
+    const subtotal = breakdown ? breakdown.subtotal : amount;
+    const shipping = breakdown ? breakdown.shipping : 0;
+    const tax = breakdown ? breakdown.tax : 0;
+    const total = breakdown ? breakdown.total : amount;
+
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
             <div className="bg-muted p-4 rounded-md mb-4">
@@ -77,15 +90,21 @@ export default function CheckoutForm({
 
                 <div className="flex justify-between">
                     <span>Framed Print</span>
-                    <span>${(amount / 100).toFixed(2)}</span>
+                    <span>${(subtotal / 100).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm text-gray-500 mt-1">
                     <span>Shipping</span>
-                    <span>Calculated at next step (Included)</span>
+                    <span>{breakdown ? `$${(shipping / 100).toFixed(2)}` : "Calculated at next step"}</span>
                 </div>
+                {breakdown && (
+                    <div className="flex justify-between text-sm text-gray-500 mt-1">
+                        <span>Tax</span>
+                        <span>${(tax / 100).toFixed(2)}</span>
+                    </div>
+                )}
                 <div className="border-t border-gray-300 my-2 pt-2 flex justify-between font-bold">
                     <span>Total</span>
-                    <span>${(amount / 100).toFixed(2)}</span>
+                    <span>${(total / 100).toFixed(2)}</span>
                 </div>
             </div>
 
@@ -94,7 +113,7 @@ export default function CheckoutForm({
             {errorMessage && <div className="text-red-500 text-sm mt-2">{errorMessage}</div>}
 
             <Button disabled={!stripe || loading} className="w-full mt-4" size="lg">
-                {loading ? "Processing..." : `Pay $${(amount / 100).toFixed(2)}`}
+                {loading ? "Processing..." : `Pay $${(total / 100).toFixed(2)}`}
             </Button>
 
             <p className="text-xs text-center text-muted-foreground mt-4">

@@ -1,0 +1,65 @@
+{
+  "count": 8,
+  "sample": [
+    {
+      "id": "manual_1767581290781_tledvnc2d",
+      "amount": 25,
+      "currency": "USD",
+      "sender_name": "Alex",
+      "sender_email": "",
+      "message": "",
+      "status": "success",
+      "type": "donation",
+      "created_at": "2026-01-05T00:00:00+00:00",
+      "updated_at": "2026-01-05T02:48:12.450512+00:00"
+    },
+    {
+      "id": "manual_1767581319413_8u91olhsj",
+      "amount": 5,
+      "currency": "USD",
+      "sender_name": "Zach Kirsch",
+      "sender_email": "",
+      "message": "",
+      "status": "success",
+      "type": "donation",
+      "created_at": "2026-01-04T00:00:00+00:00",
+      "updated_at": "2026-01-05T02:48:41.061811+00:00"
+    },
+    {
+      "id": "manual_1767581415862_aqsgpi8nz",
+      "amount": 5,
+      "currency": "USD",
+      "sender_name": "Colton S",
+      "sender_email": "",
+      "message": "",
+      "status": "success",
+      "type": "donation",
+      "created_at": "2026-01-01T00:00:00+00:00",
+      "updated_at": "2026-01-05T02:50:17.524012+00:00"
+    },
+    {
+      "id": "manual_1767581465436_lsygz6m0l",
+      "amount": 10,
+      "currency": "USD",
+      "sender_name": "Marion",
+      "sender_email": "",
+      "message": "Love this, thanks for making this and making it public, very inspiring! Kind regards from the Netherlands, Marion",
+      "status": "success",
+      "type": "donation",
+      "created_at": "2026-01-01T00:00:00+00:00",
+      "updated_at": "2026-01-05T02:51:07.028686+00:00"
+    },
+    {
+      "id": "manual_1767581493490_n9lr8m09e",
+      "amount": 10,
+      "currency": "USD",
+      "sender_name": "chuqtas",
+      "sender_email": "",
+      "message": "",
+      "status": "success",
+      "type": "donation",
+      "created_at": "2026-01-02T00:00:00+00:00",
+      "updated_at": "2026-01-05T02:51:35.12638+00:00"
+    }
+  ]
+}
