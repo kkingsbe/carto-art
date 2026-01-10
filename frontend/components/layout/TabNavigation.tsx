@@ -67,7 +67,7 @@ export function TabNavigation({
         {/* Core Workflow */}
         <TabButton id="essentials" icon={Compass} label="Start" />
         <TabButton id="customize" icon={Sliders} label="Edit" />
-        <TabButton id="annotate" icon={Type} label="Text" />
+        <TabButton id="annotate" icon={Type} label="Annotations" />
         <TabButton id="frame" icon={Layout} label="Frame" />
         <TabButton id="animate" icon={Film} label="Animate" />
 

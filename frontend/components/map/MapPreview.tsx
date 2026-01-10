@@ -1,12 +1,13 @@
 'use client';
 
 import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
-import Map, { type MapRef, Source, Layer } from 'react-map-gl/maplibre';
+import Map, { type MapRef, Source, Layer, Marker } from 'react-map-gl/maplibre';
 import maplibregl from 'maplibre-gl';
 import { Loader2 } from 'lucide-react';
-import type { PosterLocation, LayerToggle, PosterConfig } from '@/types/poster';
+import type { PosterLocation, LayerToggle, PosterConfig, CustomMarker } from '@/types/poster';
 import { cn } from '@/lib/utils';
 import { MarkerIcon } from './MarkerIcon';
+import { MapContextMenu } from './MapContextMenu';
 import { DeckTerrainLayer, TERRAIN_QUALITY_PRESETS } from './DeckTerrainLayer';
 import { getAwsTerrariumTileUrl } from '@/lib/styles/tileUrl';
 import { MAP, TIMEOUTS, TEXTURE } from '@/lib/constants';
@@ -38,6 +39,8 @@ interface MapPreviewProps {
   locked?: boolean;
   thumbnailUrl?: string | null;
   is3DMode?: boolean;
+  markers?: CustomMarker[];
+  onAddMarker?: (lat: number, lng: number) => void;
 }
 
 export function MapPreview({
@@ -56,7 +59,9 @@ export function MapPreview({
   onInteraction,
   locked = false,
   thumbnailUrl,
-  is3DMode = false
+  is3DMode = false,
+  markers,
+  onAddMarker
 }: MapPreviewProps) {
   const mapRef = useRef<MapRef>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -107,6 +112,8 @@ export function MapPreview({
       zoom: location.zoom + overzoomBoost,
     }));
   }, [location.center[0], location.center[1], location.zoom, rendering?.overzoom, isMoving, locked]);
+
+  // ... (previous code)
 
   // Sync pitch/bearing
   useEffect(() => {
@@ -282,6 +289,32 @@ export function MapPreview({
 
   const isEdgeCase = location.center[1] < -60 || Math.abs(location.center[0]) > 170;
 
+  // Context Menu Handling
+  const [contextMenuInfo, setContextMenuInfo] = useState<{
+    x: number;
+    y: number;
+    lat: number;
+    lng: number;
+  } | null>(null);
+
+  const handleContextMenu = useCallback((evt: any) => {
+    if (onInteraction) onInteraction();
+
+    // Only allow context menu if onAddMarker is provided and we are not moving/rotating
+    if (!onAddMarker || isMoving) return;
+
+    evt.originalEvent.preventDefault();
+
+    setContextMenuInfo({
+      x: evt.originalEvent.clientX,
+      y: evt.originalEvent.clientY,
+      lat: evt.lngLat.lat,
+      lng: evt.lngLat.lng,
+    });
+  }, [onAddMarker, onInteraction, isMoving]);
+
+  const closeContextMenu = useCallback(() => setContextMenuInfo(null), []);
+
   return (
     <div id="walkthrough-map" className="relative w-full h-full overflow-hidden">
       {/* Initial Loading Skeleton */}
@@ -362,7 +395,7 @@ export function MapPreview({
         onMouseDown={onInteraction}
         onTouchStart={onInteraction}
         onWheel={onInteraction}
-        onContextMenu={onInteraction}
+        onContextMenu={handleContextMenu}
         antialias={true}
         pixelRatio={MAP.PIXEL_RATIO}
         maxZoom={MAP.MAX_ZOOM}
@@ -375,6 +408,26 @@ export function MapPreview({
             <MarkerIcon type={layers?.markerType || 'crosshair'} color={markerColor} size={40} />
           </div>
         )}
+
+        {/* Render Custom Markers */}
+        {markers?.map(marker => (
+          <Marker
+            key={marker.id}
+            longitude={marker.lng}
+            latitude={marker.lat}
+            anchor="center"
+          >
+            <MarkerIcon
+              type={marker.type}
+              color={marker.color}
+              size={marker.size}
+              label={marker.label}
+              labelStyle={marker.labelStyle}
+              labelColor={marker.labelColor}
+              labelSize={marker.labelSize}
+            />
+          </Marker>
+        ))}
 
         {layers?.graticules && graticuleData && (
           <Source id="graticules" type="geojson" data={graticuleData}>
@@ -427,6 +480,19 @@ export function MapPreview({
           />
         )}
       </Map>
+
+      {/* Context Menu */}
+      {contextMenuInfo && onAddMarker && (
+        <MapContextMenu
+          x={contextMenuInfo.x}
+          y={contextMenuInfo.y}
+          onClose={closeContextMenu}
+          onAddMarker={() => {
+            onAddMarker(contextMenuInfo.lat, contextMenuInfo.lng);
+            closeContextMenu();
+          }}
+        />
+      )}
 
       {/* Tile Loading Indicator */}
       <div className={cn(

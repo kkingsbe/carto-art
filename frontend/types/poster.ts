@@ -82,6 +82,20 @@ export interface PosterStyle {
   layerToggles: LayerToggle[];
 }
 
+
+export interface CustomMarker {
+  id: string;
+  lat: number;
+  lng: number;
+  label?: string;
+  type: 'pin' | 'crosshair' | 'dot' | 'ring' | 'heart' | 'home';
+  color: string;
+  size: number;
+  labelStyle?: 'standard' | 'elevated' | 'glass' | 'vintage';
+  labelColor?: string;
+  labelSize?: number;
+}
+
 export interface PosterConfig {
   location: PosterLocation;
   style: PosterStyle;
@@ -184,6 +198,7 @@ export interface PosterConfig {
     graticuleLabelSize?: number;    // New: control graticule label size
     graticuleDensity?: number;      // New: control graticule line density (degrees)
   };
+  markers?: CustomMarker[]; // New: Custom markers list
   // Rendering quality settings
   rendering?: {
     /**

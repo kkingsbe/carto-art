@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
 
 export interface AnalyticsReport {
@@ -18,7 +18,7 @@ export interface RealtimeAnalyticsReport {
  */
 export async function getCoreTrafficStats(): Promise<AnalyticsReport> {
     try {
-        const supabase = await createClient();
+        const supabase = createServiceRoleClient();
 
         const { data, error } = await supabase.rpc('get_analytics_summary', {
             interval_days: 30
@@ -53,10 +53,11 @@ export async function getCoreTrafficStats(): Promise<AnalyticsReport> {
  */
 export async function getRealtimeActiveUsers(): Promise<RealtimeAnalyticsReport> {
     try {
-        const supabase = await createClient();
+        const supabase = createServiceRoleClient();
 
         const { data, error } = await supabase.rpc('get_realtime_analytics', {
             minutes: 5
+
         } as any) as any;
 
         if (error) {

@@ -133,6 +133,7 @@ export function ControlDrawer({
               updateTypography={updateTypography}
               updateLocation={updateLocation}
               updateLayers={updateLayers}
+              setConfig={setConfig}
             />
           )}
 

@@ -29,6 +29,18 @@ const commands: Record<string, (args: string[]) => Promise<void>> = {
     'verify-templates': async () => {
         await verifyTemplates();
     },
+    'check-site-config': async () => {
+        const { checkSiteConfig } = await import('./check-config');
+        await checkSiteConfig();
+    },
+    'check-variants-schema': async () => {
+        const { checkProductVariantsSchema } = await import('./check-variants-schema');
+        await checkProductVariantsSchema();
+    },
+    'check-feature-flags': async () => {
+        const { checkFeatureFlagsSchema } = await import('./check-feature-flags');
+        await checkFeatureFlagsSchema();
+    },
     'help': async () => {
         printHelp();
     }
@@ -71,6 +83,7 @@ Usage:
 Commands:
   inspect <variantId>    Fetch and display DB vs Printful API data for a variant.
   verify-templates       Scan DB for products with missing/incorrect templates.
+  check-site-config      Check the site_config table in Supabase.
   help                   Show this help message.
 `);
 }

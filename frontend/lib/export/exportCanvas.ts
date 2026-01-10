@@ -3,7 +3,7 @@ import type { Map } from 'maplibre-gl';
 import type { PosterConfig } from '@/types/poster';
 import { DEFAULT_EXPORT_RESOLUTION } from './constants';
 import { calculateTargetResolution } from './resolution';
-import { drawMarker, applyTexture, drawCompassRose } from './drawing';
+import { drawMarker, applyTexture, drawCompassRose, drawTextWithHalo } from './drawing';
 import { drawTextOverlay } from './text-overlay';
 import { renderDeckTerrain } from './deck-render';
 import { logger } from '@/lib/logger';
@@ -464,6 +464,41 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
       const markerSize = 40 * mapExportScale;
       const markerColor = config.layers.markerColor || config.palette.primary || config.palette.accent || config.palette.text;
       drawMarker(exportCtx, markerX, markerY, markerSize, markerColor, config.layers.markerType || 'crosshair');
+    }
+
+    // 9.1 DRAW CUSTOM MARKERS
+    if (config.markers && config.markers.length > 0 && exportMap) {
+      config.markers.forEach(marker => {
+        const { x, y } = exportMap!.project([marker.lng, marker.lat]);
+        const markerX = marginPx + (x * mapExportScale);
+        const markerY = marginPx + (y * mapExportScale);
+        const markerSize = (marker.size || 30) * mapExportScale;
+
+        drawMarker(exportCtx, markerX, markerY, markerSize, marker.color, marker.type);
+
+        if (marker.label) {
+          const fontSize = (marker.labelSize || 14) * mapExportScale;
+          const labelY = markerY + (markerSize / 2) + (fontSize / 2) + (4 * mapExportScale); // Offset below marker
+
+          let haloColor = 'rgba(255,255,255,0.8)';
+          let textColor = marker.labelColor || config.palette.text;
+
+          if (marker.labelStyle === 'elevated') {
+            // Draw pill background? For now, stick to text with halo/shadow or just use drawTextWithHalo
+            // drawTextWithHalo doesn't do background pills.
+            // We'll simulate standard text with strong halo for now
+          }
+
+          drawTextWithHalo(exportCtx, marker.label, markerX, labelY, fontSize, {
+            fontFamily: config.typography.subtitleFont, // Use subtitle font for consistency
+            weight: 500,
+            textColor: textColor,
+            haloColor: haloColor,
+            showHalo: true,
+            opacity: 1
+          });
+        }
+      });
     }
 
     // 10. WATERMARK

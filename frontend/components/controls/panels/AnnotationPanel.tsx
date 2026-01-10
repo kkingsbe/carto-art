@@ -6,23 +6,51 @@ import { TypographySection } from '../typography/TypographySection';
 import { BackdropSection } from '../typography/BackdropSection';
 import { DisplayOptionsSection } from '../typography/DisplayOptionsSection';
 import { MapLabelsSection } from '../typography/MapLabelsSection';
-import { Accordion } from '@/components/ui/accordion';
-import type { PosterConfig } from '@/types/poster';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
+import { MarkersList } from '../markers/MarkersList';
+import { useUserSubscription } from '@/hooks/useUserSubscription';
+import type { PosterConfig, CustomMarker } from '@/types/poster';
 
 interface AnnotationPanelProps {
     config: PosterConfig;
     updateTypography: (typography: Partial<PosterConfig['typography']>) => void;
     updateLocation: (location: Partial<PosterConfig['location']>) => void;
     updateLayers: (layers: Partial<PosterConfig['layers']>) => void;
+    setConfig?: (config: PosterConfig) => void;
 }
 
 export function AnnotationPanel({
     config,
     updateTypography,
     updateLocation,
-    updateLayers
+    updateLayers,
+    setConfig
 }: AnnotationPanelProps) {
-    const { typography, style, layers, location } = config;
+    const { typography, style, layers, location, markers = [] } = config;
+    const { subscriptionTier } = useUserSubscription();
+    const isPlusEnabled = subscriptionTier === 'carto_plus';
+
+    const handleMarkersUpdate = (newMarkers: CustomMarker[]) => {
+        if (setConfig) {
+            setConfig({ ...config, markers: newMarkers });
+        }
+    };
+
+    const handleAddCenterMarker = () => {
+        if (!isPlusEnabled || !setConfig) return;
+
+        const newMarker: CustomMarker = {
+            id: crypto.randomUUID(),
+            lat: location.center[1], // Latitude
+            lng: location.center[0], // Longitude
+            type: 'pin',
+            color: '#ef4444', // Tailwind red-500
+            size: 30,
+            label: 'New Marker'
+        };
+
+        setConfig({ ...config, markers: [...markers, newMarker] });
+    };
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
@@ -35,6 +63,25 @@ export function AnnotationPanel({
                 location={location}
                 onLocationChange={updateLocation}
             />
+
+            {/* Custom Markers (Plus Feature) */}
+            <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
+                <Accordion type="single" collapsible>
+                    <AccordionItem value="markers" className="border-none">
+                        <AccordionTrigger className="py-2 hover:no-underline">
+                            <span className="text-sm font-semibold text-gray-900 dark:text-white">Custom Markers</span>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                            <MarkersList
+                                markers={markers}
+                                onMarkersChange={handleMarkersUpdate}
+                                onCenterAdd={handleAddCenterMarker}
+                                isPlusEnabled={isPlusEnabled}
+                            />
+                        </AccordionContent>
+                    </AccordionItem>
+                </Accordion>
+            </div>
 
             {/* 2. Map Labels - Prominent */}
             <div className="border-t border-gray-100 dark:border-gray-800 pt-4">

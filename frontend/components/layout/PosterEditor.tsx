@@ -17,6 +17,7 @@ import { Maximize, Plus, Minus, X, Map as MapIcon, Type, Layout, Sparkles, Palet
 import { toast } from 'sonner';
 import { styles } from '@/lib/styles';
 import { MapPreview } from '@/components/map/MapPreview';
+import { MarkerNameDialog } from '@/components/map/MarkerNameDialog';
 import { PosterCanvas } from '@/components/map/PosterCanvas';
 import { EditorToolbar } from '@/components/editor/EditorToolbar';
 import { applyPaletteToStyle } from '@/lib/styles/applyPalette';
@@ -147,6 +148,9 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [showLoginWall, setShowLoginWall] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+
+  // Marker Dialog State
+  const [pendingMarkerLocation, setPendingMarkerLocation] = useState<{ lat: number; lng: number } | null>(null);
 
 
 
@@ -602,6 +606,37 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
       config.style.layerToggles
     );
   }, [config.style.mapStyle, config.palette, config.layers, config.style.layerToggles]);
+  // Handle adding a marker from the context menu
+  const handleAddMarker = useCallback((lat: number, lng: number) => {
+    setPendingMarkerLocation({ lat, lng });
+  }, []);
+
+  const handleConfirmAddMarker = useCallback((name: string) => {
+    if (!pendingMarkerLocation) return;
+
+    const newMarker: any = {
+      id: crypto.randomUUID(),
+      lat: pendingMarkerLocation.lat,
+      lng: pendingMarkerLocation.lng,
+      type: 'pin',
+      color: '#ef4444',
+      size: 30,
+      label: name
+    };
+
+    setConfig({
+      ...config,
+      markers: [...(config.markers || []), newMarker]
+    });
+
+    setPendingMarkerLocation(null);
+
+    trackEventAction({
+      eventType: 'interaction',
+      eventName: 'add_marker_context_menu',
+      sessionId: getSessionId()
+    });
+  }, [config, setConfig, pendingMarkerLocation]);
 
   const handleMapLoad = (map: MapLibreGL.Map) => {
     setMapRef(map);
@@ -633,8 +668,8 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
 
     // Calculate bounds from current viewport to ensure headless exports match live preview
     let bounds: [[number, number], [number, number]] | undefined;
-    if (mapRef.current) {
-      const mapBounds = mapRef.current.getBounds();
+    if (mapInstanceRef.current) {
+      const mapBounds = mapInstanceRef.current.getBounds();
       bounds = [
         [mapBounds.getWest(), mapBounds.getSouth()], // SW corner
         [mapBounds.getEast(), mapBounds.getNorth()]  // NE corner
@@ -651,6 +686,16 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
   return (
     <div className="relative h-full bg-gray-50 dark:bg-gray-950 overflow-hidden selection:bg-blue-500/30">
       <ErrorToastContainer errors={errors} onDismiss={clearError} />
+
+      {pendingMarkerLocation && (
+        <MarkerNameDialog
+          isOpen={true}
+          onClose={() => setPendingMarkerLocation(null)}
+          onConfirm={handleConfirmAddMarker}
+          initialLat={pendingMarkerLocation.lat}
+          initialLng={pendingMarkerLocation.lng}
+        />
+      )}
 
       {/* Top Toolbar - Floating */}
       <EditorToolbar
@@ -902,6 +947,8 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
               onInteraction={handleMapInteraction}
               locked={isGeneratingGif || isExportingVideo || isAnimationPlaying}
               is3DMode={config.is3DMode}
+              markers={config.markers}
+              onAddMarker={handleAddMarker}
             />
 
             {/* Map Interaction Helpers Overlay */}
