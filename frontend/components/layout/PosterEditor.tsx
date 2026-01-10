@@ -631,7 +631,17 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
   const handleMapMoveEnd = useCallback((center: [number, number], zoom: number, pitch: number, bearing: number) => {
     if (isExportingRef.current || isGeneratingGifRef.current || isExportingVideoRef.current) return;
 
-    updateLocation({ center, zoom });
+    // Calculate bounds from current viewport to ensure headless exports match live preview
+    let bounds: [[number, number], [number, number]] | undefined;
+    if (mapRef.current) {
+      const mapBounds = mapRef.current.getBounds();
+      bounds = [
+        [mapBounds.getWest(), mapBounds.getSouth()], // SW corner
+        [mapBounds.getEast(), mapBounds.getNorth()]  // NE corner
+      ];
+    }
+
+    updateLocation({ center, zoom, bounds });
     updateLayers({
       buildings3DPitch: pitch,
       buildings3DBearing: bearing

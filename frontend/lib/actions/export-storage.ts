@@ -4,6 +4,46 @@ import { createServiceRoleClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
 import { createError } from '@/lib/errors/ServerActionError';
 
+// ... keep existing imports ...
+
+/**
+ * Get a signed upload URL for a thumbnail.
+ * allowing the client to upload directly to Storage
+ * (bypassing Next.js server body limits).
+ */
+export async function getThumbnailUploadUrl(contentType: string = 'image/png'): Promise<{ signedUrl: string; path: string; publicUrl: string }> {
+    const supabase = createServiceRoleClient();
+
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 7);
+    const extension = contentType === 'image/jpeg' ? 'jpg' : 'png';
+    const fileName = `thumbnails/${timestamp}-${random}.${extension}`;
+
+    // Create a signed URL that allows uploading to this specific path
+    // Note: Supabase has a 50MB limit on free tier, 5GB on pro tier
+    const { data, error } = await supabase.storage
+        .from('posters')
+        .createSignedUploadUrl(fileName, {
+            upsert: true
+        });
+
+    if (error) {
+        logger.error('Failed to create signed upload URL:', error);
+        throw createError.storageError(`Failed to create upload URL: ${error.message}`);
+    }
+
+    // Pre-calculate the public URL since we know the path
+    const { data: urlData } = supabase.storage
+        .from('posters')
+        .getPublicUrl(fileName);
+
+    return {
+        signedUrl: data.signedUrl,
+        path: fileName,
+        publicUrl: urlData.publicUrl
+    };
+}
+
 /**
  * Upload an export thumbnail to Supabase Storage.
  * This is used for the admin dashboard feed.

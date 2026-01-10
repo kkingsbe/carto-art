@@ -20,7 +20,8 @@ import {
     Megaphone,
     ShoppingCart,
     Package,
-    XCircle
+    XCircle,
+    Star
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -49,6 +50,7 @@ export function AdminSidebarLayout({ children }: AdminSidebarLayoutProps) {
         { label: 'Products', href: '/admin/products', icon: ShoppingCart },
         { label: 'Orders', href: '/admin/orders', icon: Package },
         { label: 'Cancellations', href: '/admin/cancellations', icon: XCircle },
+        { label: 'Featured Maps', href: '/admin/featured', icon: Star },
         { label: 'Catalog', href: '/admin/catalog', icon: ShoppingCart },
     ];
 

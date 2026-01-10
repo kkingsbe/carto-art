@@ -38,6 +38,7 @@ export type EventType =
     | 'gallery_remix_click'
     | 'store_view'
     | 'product_view'
+    | 'product_view_error'
     | 'checkout_start'
     | 'checkout_variant_select'
     | 'checkout_step_complete'

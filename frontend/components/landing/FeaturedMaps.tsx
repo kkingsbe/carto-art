@@ -32,59 +32,70 @@ export async function FeaturedMaps() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {maps.map((map, index) => (
-            <Link
+            <div
               key={map.id}
-              href={map.link_url}
               className="group relative block h-full"
             >
-              <div className="relative h-full bg-[#111827] rounded-2xl overflow-hidden border border-gray-800 transition-all duration-300 hover:border-amber-500/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.15)] ring-offset-2 focus-visible:ring-2 flex flex-col">
+              <div className="relative h-full bg-[#111827] rounded-2xl overflow-hidden border border-gray-800 transition-all duration-300 hover:border-amber-500/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.15)] ring-offset-2 focus-within:ring-2 flex flex-col">
                 {/* Image Container */}
                 <div className="aspect-[4/5] w-full overflow-hidden relative">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={map.image_url}
-                    alt={map.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    loading={index < 3 ? "eager" : "lazy"}
-                  />
+                  <Link href={map.link_url} className="block w-full h-full">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={map.image_url}
+                      alt={map.title}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      loading={index < 3 ? "eager" : "lazy"}
+                    />
 
-                  {/* Overlay Gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1a] via-transparent to-transparent opacity-60 transition-opacity duration-300" />
+                    {/* Overlay Gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1a] via-transparent to-transparent opacity-60 transition-opacity duration-300" />
+                  </Link>
 
-                  {/* Floating Action Button (Desktop Hover) */}
-                  <div className="absolute bottom-4 right-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 hidden md:block">
-                    <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-500 text-black shadow-lg hover:bg-amber-400 hover:scale-110 transition-all">
+                  {/* Floating Action Button (Desktop Hover) - Links to Store */}
+                  <div className="absolute bottom-4 right-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 hidden md:block z-10">
+                    <Link
+                      href={`/store?image=${encodeURIComponent(map.image_url)}`}
+                      className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-500 text-black shadow-lg hover:bg-amber-400 hover:scale-110 transition-all"
+                    >
                       <ShoppingBag className="w-5 h-5" />
-                    </span>
+                    </Link>
                   </div>
                 </div>
 
                 {/* Content */}
                 <div className="p-6 flex flex-col flex-grow">
-                  <div className="flex items-start justify-between gap-4 mb-2">
-                    <h3 className="text-xl font-bold text-white group-hover:text-amber-200 transition-colors">
-                      {map.title}
-                    </h3>
-                  </div>
+                  <Link href={map.link_url} className="block mb-2 group-hover:text-amber-200 transition-colors">
+                    <div className="flex items-start justify-between gap-4">
+                      <h3 className="text-xl font-bold text-white">
+                        {map.title}
+                      </h3>
+                    </div>
+                  </Link>
 
-                  {map.description && (
-                    <p className="text-sm text-gray-400 line-clamp-2 mb-6 flex-grow">
-                      {map.description}
-                    </p>
-                  )}
+                  <Link href={map.link_url} className="flex-grow block mb-6">
+                    {map.description && (
+                      <p className="text-sm text-gray-400 line-clamp-2">
+                        {map.description}
+                      </p>
+                    )}
+                  </Link>
 
-                  {/* CTA Button */}
+                  {/* CTA Button - Links to Store */}
                   <div className="mt-auto pt-2">
-                    <div className="w-full py-3 rounded-lg bg-gray-800 group-hover:bg-amber-500 group-hover:text-black text-white font-medium text-center transition-all duration-300 flex items-center justify-center gap-2">
+                    <Link
+                      href={`/store?image=${encodeURIComponent(map.image_url)}`}
+                      className="w-full py-3 rounded-lg bg-gray-800 group-hover:bg-amber-500 group-hover:text-black text-white font-medium text-center transition-all duration-300 flex items-center justify-center gap-2"
+                    >
                       <span className="group-hover:hidden">View Details</span>
                       <span className="hidden group-hover:inline-flex items-center gap-2">
                         Buy Print <ArrowRight className="w-4 h-4" />
                       </span>
-                    </div>
+                    </Link>
                   </div>
                 </div>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
 

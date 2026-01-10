@@ -169,7 +169,21 @@ export function OrderSteps({ variants, designUrl, aspectRatio, orientation, prod
 
     const handleNext = async () => {
         if (step === 1) {
-            if (selectedVariant) setStep(2);
+            if (selectedVariant) {
+                // Track Size Selected
+                trackEventAction({
+                    eventType: 'checkout_step_complete',
+                    eventName: 'size_selected',
+                    sessionId: getSessionId(),
+                    metadata: {
+                        step: 1,
+                        variant_id: selectedVariant.id,
+                        variant_name: selectedVariant.name,
+                        price: selectedVariant.display_price_cents
+                    }
+                });
+                setStep(2);
+            }
         } else if (step === 2) {
             const isValid = await methods.trigger();
             if (!isValid) return;
@@ -231,6 +245,21 @@ export function OrderSteps({ variants, designUrl, aspectRatio, orientation, prod
             }
         }
     };
+
+    // Handle Shipping Success (implicit in handleNext logic but we can track right before step 3)
+    useEffect(() => {
+        if (step === 3) {
+            trackEventAction({
+                eventType: 'checkout_step_complete',
+                eventName: 'shipping_entered',
+                sessionId: getSessionId(),
+                metadata: {
+                    step: 2,
+                    shipping_country: methods.getValues().shipping.address.country
+                }
+            });
+        }
+    }, [step]);
 
     return (
         <div className="max-w-5xl mx-auto px-4 py-8">

@@ -8,9 +8,17 @@ import { drawTextOverlay } from './text-overlay';
 import { renderDeckTerrain } from './deck-render';
 import { logger } from '@/lib/logger';
 import { createError } from '@/lib/errors/ServerActionError';
+import { getStyleById } from '@/lib/styles';
+import { applyPaletteToStyle } from '@/lib/styles/applyPalette';
+import { setupMapLibreContour } from '@/lib/map/setup';
+
+// Ensure protocols are registered for headless exports
+if (typeof window !== 'undefined') {
+  setupMapLibreContour(maplibregl);
+}
 
 interface ExportOptions {
-  map: maplibregl.Map;
+  map?: maplibregl.Map;
   config: PosterConfig;
   resolution?: {
     width: number;
@@ -54,21 +62,55 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
   // Instead of resizing the live map (which React fights against), we spawn a hidden map
   // with the exact export dimensions.
 
-  // Capture state from live map, but prefer config values for camera orientation
-  const originalStyle = previewMap.getStyle();
-  // Use config as primary source of truth for camera, fallback to map state
-  const originalPitch = config.layers.buildings3DPitch ?? previewMap.getPitch();
-  const originalBearing = config.layers.buildings3DBearing ?? previewMap.getBearing();
-  const originalCenter = previewMap.getCenter();
-  const originalZoom = previewMap.getZoom();
+  let originalStyle: any;
+  let originalPitch = 0;
+  let originalBearing = 0;
+  let originalCenter: maplibregl.LngLatLike;
+  let originalZoom = 12;
+  let containerWidth = 1000; // Default reference width for scaling
+
+  if (previewMap) {
+    // Capture state from live map, but prefer config values for camera orientation
+    originalStyle = previewMap.getStyle();
+    // Use config as primary source of truth for camera, fallback to map state
+    originalPitch = config.layers.buildings3DPitch ?? previewMap.getPitch();
+    originalBearing = config.layers.buildings3DBearing ?? previewMap.getBearing();
+    originalCenter = previewMap.getCenter();
+    originalZoom = previewMap.getZoom();
+
+    const cw = previewMap.getContainer().clientWidth;
+    if (cw) containerWidth = cw;
+  } else {
+    // Reconstruct state from config for headless export
+    logger.info('Running headless export - reconstructing map state from config');
+
+    // Get base style
+    const baseStyle = getStyleById(config.style.id as string);
+    if (!baseStyle) {
+      throw createError.validationError(`Style not found: ${config.style.id}`);
+    }
+
+    // Apply palette and layers
+    originalStyle = applyPaletteToStyle(
+      baseStyle.mapStyle,
+      config.palette,
+      config.layers,
+      baseStyle.layerToggles
+    );
+
+    originalPitch = config.layers.buildings3DPitch ?? 0;
+    originalBearing = config.layers.buildings3DBearing ?? 0;
+    originalCenter = config.location.center;
+    originalZoom = config.location.zoom;
+  }
 
   logger.info('Export Camera Capture', {
     originalPitch,
     originalBearing,
     configPitch: config.layers.buildings3DPitch,
-    mapPitch: previewMap.getPitch(),
     originalCenter,
-    originalZoom
+    originalZoom,
+    isHeadless: !previewMap
   });
 
   // Calculate margins first to determine draw size
@@ -95,12 +137,6 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
   try {
     // Initialize export map
     // Calculate the scale factor by comparing the export inner width to the preview inner width
-    const containerWidth = previewMap.getContainer().clientWidth;
-
-    if (!containerWidth) {
-      throw new Error('Could not determine map container width');
-    }
-
     const mapExportScale = drawWidth / containerWidth;
 
     logger.info('Initializing High-Res Export', {
@@ -145,14 +181,25 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
       bearing: config.layers.volumetricTerrain ? 0 : (originalBearing || 0)
     });
 
-    // Apply explicit state without zoom offset
-    // Redundant but harmless safeguard - map is already initialized with these values
-    exportMap.jumpTo({
-      center: originalCenter,
-      zoom: originalZoom || 0,
-      pitch: config.layers.volumetricTerrain ? 0 : (originalPitch || 0),
-      bearing: config.layers.volumetricTerrain ? 0 : (originalBearing || 0)
-    });
+    // For headless exports, use bounds to ensure consistent framing
+    // This is critical because the export canvas size differs from preview size
+    if (!previewMap && config.location.bounds) {
+      logger.info('Applying bounds for headless export', { bounds: config.location.bounds });
+      exportMap.fitBounds(config.location.bounds, {
+        padding: 0,
+        duration: 0,
+        pitch: config.layers.volumetricTerrain ? 0 : (originalPitch || 0),
+        bearing: config.layers.volumetricTerrain ? 0 : (originalBearing || 0)
+      });
+    } else {
+      // For live map exports or when bounds unavailable, use center+zoom
+      exportMap.jumpTo({
+        center: originalCenter,
+        zoom: originalZoom || 0,
+        pitch: config.layers.volumetricTerrain ? 0 : (originalPitch || 0),
+        bearing: config.layers.volumetricTerrain ? 0 : (originalBearing || 0)
+      });
+    }
 
     // Force a resize to ensure the map respects the pixelRatio and container dimensions
     // This addresses issues where the initial canvas size might default to 1x scale

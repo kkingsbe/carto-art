@@ -1,6 +1,7 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
+import { isAdmin } from '@/lib/admin-auth';
 import { revalidatePath } from 'next/cache';
 
 export interface FeaturedMap {
@@ -20,7 +21,8 @@ export type FeaturedMapInput = Omit<FeaturedMap, 'id' | 'created_at'>;
  * Fetches all featured maps (for admin).
  */
 export async function getAllFeaturedMaps() {
-    const supabase = await createClient();
+    if (!(await isAdmin())) throw new Error('Unauthorized');
+    const supabase = createServiceRoleClient();
     // Cast to any to bypass missing type definition for new table
     const { data, error } = await (supabase.from('featured_maps') as any)
         .select('*')
@@ -48,7 +50,8 @@ export async function getActiveFeaturedMaps() {
  * Creates a new featured map.
  */
 export async function createFeaturedMap(map: FeaturedMapInput) {
-    const supabase = await createClient();
+    if (!(await isAdmin())) throw new Error('Unauthorized');
+    const supabase = createServiceRoleClient();
     const { data, error } = await (supabase.from('featured_maps') as any)
         .insert([map])
         .select()
@@ -67,7 +70,8 @@ export async function createFeaturedMap(map: FeaturedMapInput) {
  * Updates an existing featured map.
  */
 export async function updateFeaturedMap(id: string, updates: Partial<FeaturedMapInput>) {
-    const supabase = await createClient();
+    if (!(await isAdmin())) throw new Error('Unauthorized');
+    const supabase = createServiceRoleClient();
     const { data, error } = await (supabase.from('featured_maps') as any)
         .update(updates)
         .eq('id', id)
@@ -84,7 +88,8 @@ export async function updateFeaturedMap(id: string, updates: Partial<FeaturedMap
  * Deletes a featured map.
  */
 export async function deleteFeaturedMap(id: string) {
-    const supabase = await createClient();
+    if (!(await isAdmin())) throw new Error('Unauthorized');
+    const supabase = createServiceRoleClient();
     const { error } = await (supabase.from('featured_maps') as any)
         .delete()
         .eq('id', id);
@@ -98,7 +103,8 @@ export async function deleteFeaturedMap(id: string) {
  * Reorders featured maps.
  */
 export async function reorderFeaturedMaps(items: { id: string; display_order: number }[]) {
-    const supabase = await createClient();
+    if (!(await isAdmin())) throw new Error('Unauthorized');
+    const supabase = createServiceRoleClient();
 
     // Cast to any to bypass missing type definition for new table
     const updates = items.map(item =>
@@ -110,4 +116,63 @@ export async function reorderFeaturedMaps(items: { id: string; display_order: nu
     await Promise.all(updates);
     revalidatePath('/');
     revalidatePath('/admin/featured');
+}
+
+/**
+ * Searches published maps for the admin selector.
+ */
+export async function searchPublishedMaps(query: string) {
+    const supabase = await createClient();
+
+    let dbQuery = supabase
+        .from('maps')
+        .select(`
+            id,
+            title,
+            subtitle,
+            thumbnail_url,
+            vote_score,
+            view_count,
+            published_at,
+            created_at,
+            profiles!left (
+                username,
+                display_name,
+                avatar_url
+            )
+        `)
+        .eq('is_published', true)
+        .not('published_at', 'is', null)
+        .order('published_at', { ascending: false })
+        .limit(20);
+
+    if (query.trim()) {
+        dbQuery = dbQuery.ilike('title', `%${query}%`);
+    }
+
+    const { data, error } = await dbQuery;
+
+    if (error) throw new Error(error.message);
+
+    // Transform to FeedMap shape generally used by MapCard
+    // Note: We're doing a simplified transform here matching FeedMap interface
+    return data.map((map: any) => ({
+        id: map.id,
+        title: map.title,
+        subtitle: map.subtitle,
+        thumbnail_url: map.thumbnail_url,
+        vote_score: map.vote_score,
+        view_count: map.view_count,
+        published_at: map.published_at,
+        created_at: map.created_at,
+        author: map.profiles ? {
+            username: map.profiles.username,
+            display_name: map.profiles.display_name,
+            avatar_url: map.profiles.avatar_url
+        } : {
+            username: 'unknown',
+            display_name: null,
+            avatar_url: null
+        }
+    }));
 }

@@ -863,6 +863,16 @@ export interface Database {
         };
         Returns: void;
       };
+      get_period_analytics: {
+        Args: {
+          start_time: string;
+          end_time?: string;
+        };
+        Returns: {
+          landing_count: number;
+          event_counts: { event_type: string; event_name: string | null; count: number }[];
+        };
+      };
     },
     Enums: {
       notification_type: 'FOLLOW' | 'MAP_POST' | 'COMMENT' | 'LIKE' | 'PROFILE_VIEW';

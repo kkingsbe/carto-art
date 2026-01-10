@@ -21,146 +21,54 @@ export async function GET() {
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const startTime = thirtyDaysAgo.toISOString();
 
-        // Fetch session_ids for each step to calculate unique sessions
-        // using separate queries for parallelism
-        const [
-            { data: landingEvents },
-            { data: editorEvents },
-            { data: exportEvents },
-            // New granular events
-            { data: exportModalViewEvents },
-            { data: exportModalDonateEvents },
-            { data: exportModalShareEvents },
-            { data: clickPurchaseEvents },
-            { data: storeEvents },
-            { data: productEvents },
+        // RPC Call: Fetch all analytics in one generic pass
+        const { data, error } = await supabase.rpc('get_period_analytics', {
+            start_time: startTime
+        });
 
-            { data: checkoutEvents },
-            { data: purchaseEvents }
-        ] = await Promise.all([
-            // Landing: any page view on the root path
-            supabase
-                .from('page_events')
-                .select('session_id')
-                .eq('event_type', 'page_view')
-                .ilike('page_url', '%/')
-                .gte('created_at', startTime)
-                .not('session_id', 'is', null)
-                .limit(50000),
+        if (error) {
+            console.error('Funnel RPC error:', error);
+            throw error;
+        }
 
-            // Editor Opened
-            supabase
-                .from('page_events')
-                .select('session_id')
-                .eq('event_type', 'editor_open')
-                .gte('created_at', startTime)
-                .not('session_id', 'is', null)
-                .limit(50000),
-
-            // Export Success (Generated Image)
-            supabase
-                .from('page_events')
-                .select('session_id')
-                .eq('event_type', 'poster_export')
-                .gte('created_at', startTime)
-                .not('session_id', 'is', null)
-                .limit(50000),
-
-            // 1. Export Modal View (Saw the popup)
-            supabase
-                .from('page_events')
-                .select('session_id')
-                .eq('event_type', 'export_modal_view')
-                .gte('created_at', startTime)
-                .not('session_id', 'is', null)
-                .limit(50000),
-
-            // 2. Clicked Donate
-            supabase
-                .from('page_events')
-                .select('session_id')
-                .eq('event_type', 'export_modal_donate_click')
-                .gte('created_at', startTime)
-                .not('session_id', 'is', null)
-                .limit(50000),
-
-            // 3. Clicked Share
-            supabase
-                .from('page_events')
-                .select('session_id')
-                .eq('event_type', 'export_modal_share_click')
-                .gte('created_at', startTime)
-                .not('session_id', 'is', null)
-                .limit(50000),
-
-            // 4. Clicked "Order Print" (Purchase Intent)
-            supabase
-                .from('page_events')
-                .select('session_id')
-                .eq('event_type', 'shop_transition_start')
-                .gte('created_at', startTime)
-                .not('session_id', 'is', null)
-                .limit(50000),
-
-            // Store (Product Selection)
-            supabase
-                .from('page_events')
-                .select('session_id')
-                .eq('event_type', 'store_view')
-                .gte('created_at', startTime)
-                .not('session_id', 'is', null)
-                .limit(50000),
-
-            // Product Detail View
-            supabase
-                .from('page_events')
-                .select('session_id')
-                .eq('event_type', 'product_view')
-                .gte('created_at', startTime)
-                .not('session_id', 'is', null)
-                .limit(50000),
-
-            // Checkout Started
-            supabase
-                .from('page_events')
-                .select('session_id')
-                .eq('event_type', 'checkout_start')
-                .gte('created_at', startTime)
-                .not('session_id', 'is', null)
-                .limit(50000),
-
-            // Purchase Complete
-            supabase
-                .from('page_events')
-                .select('session_id')
-                .eq('event_type', 'purchase_complete')
-                .gte('created_at', startTime)
-                .not('session_id', 'is', null)
-                .order('created_at', { ascending: false })
-                .limit(1000)
-        ]);
-
-        // Helper to count unique sessions
-        const countUnique = (data: { session_id: string | null }[] | null) => {
-            if (!data) return 0;
-            const unique = new Set(data.map(d => d.session_id).filter(Boolean));
-            return unique.size;
+        const analytics = data as {
+            landing_count: number;
+            event_counts: { event_type: string; event_name: string | null; count: number }[];
         };
 
-        const landingCount = countUnique(landingEvents);
-        const editorCount = countUnique(editorEvents);
-        const exportCount = countUnique(exportEvents);
+        const landingCount = analytics.landing_count || 0;
+
+        // Helper to find count for specific event parameters
+        const getCount = (type: string, name?: string) => {
+            const match = analytics.event_counts.find(e =>
+                e.event_type === type && (name ? e.event_name === name : true)
+            );
+            return match ? match.count : 0;
+        };
+
+        // Extract counts using the helper
+        const editorCount = getCount('editor_open');
+        const exportCount = getCount('poster_export');
 
         // Granular export metrics
-        const modalViewCount = countUnique(exportModalViewEvents);
-        const donateCount = countUnique(exportModalDonateEvents);
-        const shareCount = countUnique(exportModalShareEvents);
+        const modalViewCount = getCount('export_modal_view');
+        const donateCount = getCount('export_modal_donate_click');
+        const shareCount = getCount('export_modal_share_click');
 
-        const clickPurchaseCount = countUnique(clickPurchaseEvents);
-        const storeCount = countUnique(storeEvents);
-        const productCount = countUnique(productEvents);
-        const checkoutCount = countUnique(checkoutEvents);
-        const purchaseCount = countUnique(purchaseEvents);
+        const clickPurchaseCount = getCount('shop_transition_start');
+        const storeCount = getCount('store_view');
+        const productCount = getCount('product_view');
+        const productErrorCount = getCount('product_view_error');
+
+        // Checkout steps
+        const sizeSelectedCount = getCount('checkout_step_complete', 'size_selected');
+        const shippingEnteredCount = getCount('checkout_step_complete', 'shipping_entered');
+
+        const checkoutCount = getCount('checkout_start');
+        const purchaseCount = getCount('purchase_complete');
+
+        const transitionSuccessCount = getCount('shop_transition_success');
+        const transitionErrorCount = getCount('shop_transition_error');
 
         const safeTotal = landingCount || 1;
 
@@ -222,10 +130,24 @@ export async function GET() {
                 avgTimeNext: 0
             },
             {
+                step: 'Transition Success',
+                count: transitionSuccessCount,
+                percentage: Math.round((transitionSuccessCount / safeTotal) * 100),
+                dropOff: Math.round((clickPurchaseCount > 0 ? ((clickPurchaseCount - transitionSuccessCount) / clickPurchaseCount) : 0) * 100),
+                avgTimeNext: 0
+            },
+            {
+                step: 'Transition Error',
+                count: transitionErrorCount,
+                percentage: Math.round((transitionErrorCount / safeTotal) * 100),
+                dropOff: 0,
+                avgTimeNext: 0
+            },
+            {
                 step: 'View Store',
                 count: storeCount,
                 percentage: Math.round((storeCount / safeTotal) * 100),
-                dropOff: Math.round((clickPurchaseCount > 0 ? ((clickPurchaseCount - storeCount) / clickPurchaseCount) : 0) * 100),
+                dropOff: Math.round((transitionSuccessCount > 0 ? ((transitionSuccessCount - storeCount) / transitionSuccessCount) : 0) * 100),
                 avgTimeNext: 0
             },
             {
@@ -235,11 +157,26 @@ export async function GET() {
                 dropOff: Math.round((storeCount > 0 ? ((storeCount - productCount) / storeCount) : 0) * 100),
                 avgTimeNext: 0
             },
+
+            {
+                step: 'Size Selected',
+                count: sizeSelectedCount,
+                percentage: Math.round((sizeSelectedCount / safeTotal) * 100),
+                dropOff: Math.round((productCount > 0 ? ((productCount - sizeSelectedCount) / productCount) : 0) * 100),
+                avgTimeNext: 0
+            },
+            {
+                step: 'Shipping Ent.',
+                count: shippingEnteredCount,
+                percentage: Math.round((shippingEnteredCount / safeTotal) * 100),
+                dropOff: Math.round((sizeSelectedCount > 0 ? ((sizeSelectedCount - shippingEnteredCount) / sizeSelectedCount) : 0) * 100),
+                avgTimeNext: 0
+            },
             {
                 step: 'Checkout',
                 count: checkoutCount,
                 percentage: Math.round((checkoutCount / safeTotal) * 100),
-                dropOff: Math.round((productCount > 0 ? ((productCount - checkoutCount) / productCount) : 0) * 100),
+                dropOff: Math.round((shippingEnteredCount > 0 ? ((shippingEnteredCount - checkoutCount) / shippingEnteredCount) : 0) * 100),
                 avgTimeNext: 0
             },
             {
@@ -247,6 +184,13 @@ export async function GET() {
                 count: purchaseCount,
                 percentage: Math.round((purchaseCount / safeTotal) * 100),
                 dropOff: Math.round((checkoutCount > 0 ? ((checkoutCount - purchaseCount) / checkoutCount) : 0) * 100),
+                avgTimeNext: 0
+            },
+            {
+                step: 'No Design Error',
+                count: productErrorCount,
+                percentage: Math.round((productErrorCount / safeTotal) * 100),
+                dropOff: 0,
                 avgTimeNext: 0
             }
         ];

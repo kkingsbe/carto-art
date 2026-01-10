@@ -42,6 +42,19 @@ export function ProductDetailClient({ variants, product }: ProductDetailClientPr
     }, [product.id, product.title, aspectRatio, orientation]);
 
     if (!designUrl) {
+        // Track error view
+        useEffect(() => {
+            trackEventAction({
+                eventType: 'product_view_error',
+                eventName: 'product_view_no_design',
+                sessionId: getSessionId(),
+                metadata: {
+                    product_id: product.id,
+                    error: 'missing_design_url'
+                }
+            });
+        }, []);
+
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-4">
                 <h1 className="text-2xl font-bold mb-4">No Design Selected</h1>

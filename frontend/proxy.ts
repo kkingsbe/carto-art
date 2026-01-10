@@ -13,8 +13,9 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
+     * - /admin/featured (exclude high-res upload from middleware limit)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|admin/featured|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
 

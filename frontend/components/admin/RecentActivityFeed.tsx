@@ -112,45 +112,35 @@ export function RecentActivityFeed({ initialEvents }: RecentActivityFeedProps) {
         return name?.substring(0, 2).toUpperCase() || 'AN';
     };
 
+    const fetchActivity = async () => {
+        const { data } = await supabase
+            .from('page_events')
+            .select(`
+                *,
+                profiles:user_id (
+                    username,
+                    display_name,
+                    avatar_url
+                )
+            `)
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+        if (data) {
+            setEvents(data);
+        }
+    };
+
     useEffect(() => {
-        const channel = supabase
-            .channel('recent_activity')
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'page_events'
-                },
-                async (payload) => {
-                    // Fetch the full event data with profile
-                    const { data } = await supabase
-                        .from('page_events')
-                        .select(`
-                            *,
-                            profiles:user_id (
-                                username,
-                                display_name,
-                                avatar_url
-                            )
-                        `)
-                        .eq('id', payload.new.id)
-                        .single();
+        // Initial fetch not strictly needed if we pass initialEvents, 
+        // but good to ensure client-side hydration matches latest if there was a delay.
+        // We'll rely on polling for updates.
 
-                    if (data) {
-                        setEvents(current => [data, ...current].slice(0, 20)); // Keep mostly 20
-                    }
-                }
-            )
-            .subscribe((status) => {
-                if (status === 'SUBSCRIBED') {
-                    console.log('RecentActivityFeed: Subscribed to page_events');
-                }
-            });
+        const intervalId = setInterval(() => {
+            fetchActivity();
+        }, 30000); // Poll every 30 seconds
 
-        return () => {
-            supabase.removeChannel(channel);
-        };
+        return () => clearInterval(intervalId);
     }, [supabase]);
 
     return (

@@ -20,11 +20,16 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  serverActions: {
+    bodySizeLimit: '100mb',
+  },
   experimental: {
     serverActions: {
-      bodySizeLimit: '50mb',
+      bodySizeLimit: '100mb',
     },
   },
+  // Next.js 15+ middleware body limit
+  ...({ middlewareClientMaxBodySize: 100 * 1024 * 1024 } as any),
   async headers() {
     return [
       {

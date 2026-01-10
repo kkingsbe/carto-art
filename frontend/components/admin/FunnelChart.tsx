@@ -65,7 +65,12 @@ export function FunnelChart() {
                         <div className="relative group">
                             <div className="h-8 flex bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden relative">
                                 <div
-                                    className="bg-indigo-500 dark:bg-indigo-600 h-full transition-all duration-500 ease-out"
+                                    className={`${step.step.includes('Error')
+                                            ? 'bg-red-500 dark:bg-red-600'
+                                            : step.step.includes('Success')
+                                                ? 'bg-emerald-500 dark:bg-emerald-600'
+                                                : 'bg-indigo-500 dark:bg-indigo-600'
+                                        } h-full transition-all duration-500 ease-out`}
                                     style={{ width: `${(step.count / getMaxCount()) * 100}%` }}
                                 />
                                 <div className="absolute inset-0 flex items-center px-3">
