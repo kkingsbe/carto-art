@@ -37,7 +37,7 @@ export async function FeaturedMaps() {
               href={map.link_url}
               className="group relative block h-full"
             >
-              <div className="relative h-full bg-[#111827] rounded-2xl overflow-hidden border border-gray-800 transition-all duration-300 hover:border-amber-500/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.15)] ring-offset-2 focus-visible:ring-2">
+              <div className="relative h-full bg-[#111827] rounded-2xl overflow-hidden border border-gray-800 transition-all duration-300 hover:border-amber-500/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.15)] ring-offset-2 focus-visible:ring-2 flex flex-col">
                 {/* Image Container */}
                 <div className="aspect-[4/5] w-full overflow-hidden relative">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -49,29 +49,38 @@ export async function FeaturedMaps() {
                   />
 
                   {/* Overlay Gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1a] via-transparent to-transparent opacity-60 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1a] via-transparent to-transparent opacity-60 transition-opacity duration-300" />
+
+                  {/* Floating Action Button (Desktop Hover) */}
+                  <div className="absolute bottom-4 right-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 hidden md:block">
+                    <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-500 text-black shadow-lg hover:bg-amber-400 hover:scale-110 transition-all">
+                      <ShoppingBag className="w-5 h-5" />
+                    </span>
+                  </div>
                 </div>
 
                 {/* Content */}
-                <div className="absolute bottom-0 left-0 right-0 p-6 md:translate-y-2 md:group-hover:translate-y-0 transition-transform duration-300">
-                  <div className="flex items-center justify-between mb-2">
+                <div className="p-6 flex flex-col flex-grow">
+                  <div className="flex items-start justify-between gap-4 mb-2">
                     <h3 className="text-xl font-bold text-white group-hover:text-amber-200 transition-colors">
                       {map.title}
                     </h3>
-                    <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
-                      <ArrowRight className="w-4 h-4 text-amber-500" />
-                    </div>
                   </div>
 
                   {map.description && (
-                    <p className="text-sm text-gray-300 line-clamp-2 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 delay-75">
+                    <p className="text-sm text-gray-400 line-clamp-2 mb-6 flex-grow">
                       {map.description}
                     </p>
                   )}
 
-                  {/* Mobile Only CTA - Visible by default on mobile, implied on desktop via interactions */}
-                  <div className="mt-4 md:hidden flex items-center text-sm font-medium text-amber-500">
-                    Shop Now <ArrowRight className="w-4 h-4 ml-1" />
+                  {/* CTA Button */}
+                  <div className="mt-auto pt-2">
+                    <div className="w-full py-3 rounded-lg bg-gray-800 group-hover:bg-amber-500 group-hover:text-black text-white font-medium text-center transition-all duration-300 flex items-center justify-center gap-2">
+                      <span className="group-hover:hidden">View Details</span>
+                      <span className="hidden group-hover:inline-flex items-center gap-2">
+                        Buy Print <ArrowRight className="w-4 h-4" />
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>

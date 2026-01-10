@@ -27,9 +27,14 @@ export async function GET() {
             { data: landingEvents },
             { data: editorEvents },
             { data: exportEvents },
+            // New granular events
+            { data: exportModalViewEvents },
+            { data: exportModalDonateEvents },
+            { data: exportModalShareEvents },
             { data: clickPurchaseEvents },
             { data: storeEvents },
             { data: productEvents },
+
             { data: checkoutEvents },
             { data: purchaseEvents }
         ] = await Promise.all([
@@ -52,7 +57,7 @@ export async function GET() {
                 .not('session_id', 'is', null)
                 .limit(50000),
 
-            // Export Success
+            // Export Success (Generated Image)
             supabase
                 .from('page_events')
                 .select('session_id')
@@ -61,7 +66,34 @@ export async function GET() {
                 .not('session_id', 'is', null)
                 .limit(50000),
 
-            // Clicking "Purchase Print" from Export Modal
+            // 1. Export Modal View (Saw the popup)
+            supabase
+                .from('page_events')
+                .select('session_id')
+                .eq('event_type', 'export_modal_view')
+                .gte('created_at', startTime)
+                .not('session_id', 'is', null)
+                .limit(50000),
+
+            // 2. Clicked Donate
+            supabase
+                .from('page_events')
+                .select('session_id')
+                .eq('event_type', 'export_modal_donate_click')
+                .gte('created_at', startTime)
+                .not('session_id', 'is', null)
+                .limit(50000),
+
+            // 3. Clicked Share
+            supabase
+                .from('page_events')
+                .select('session_id')
+                .eq('event_type', 'export_modal_share_click')
+                .gte('created_at', startTime)
+                .not('session_id', 'is', null)
+                .limit(50000),
+
+            // 4. Clicked "Order Print" (Purchase Intent)
             supabase
                 .from('page_events')
                 .select('session_id')
@@ -118,6 +150,12 @@ export async function GET() {
         const landingCount = countUnique(landingEvents);
         const editorCount = countUnique(editorEvents);
         const exportCount = countUnique(exportEvents);
+
+        // Granular export metrics
+        const modalViewCount = countUnique(exportModalViewEvents);
+        const donateCount = countUnique(exportModalDonateEvents);
+        const shareCount = countUnique(exportModalShareEvents);
+
         const clickPurchaseCount = countUnique(clickPurchaseEvents);
         const storeCount = countUnique(storeEvents);
         const productCount = countUnique(productEvents);
@@ -125,6 +163,11 @@ export async function GET() {
         const purchaseCount = countUnique(purchaseEvents);
 
         const safeTotal = landingCount || 1;
+
+        // Base funnel logic: We want to see flow through the export modal.
+        // Flow: Export -> Modal View -> (Split: Donate, Share, Purchase)
+        // Since Donate/Share/Purchase are parallel options, drop-off is tricky.
+        // We will treat "Modal View" as the parent of "Click Purchase" for calculations.
 
         const funnelData = [
             {
@@ -149,10 +192,33 @@ export async function GET() {
                 avgTimeNext: 0
             },
             {
+                step: 'Viewed Modal',
+                count: modalViewCount,
+                percentage: Math.round((modalViewCount / safeTotal) * 100),
+                dropOff: Math.round((exportCount > 0 ? ((exportCount - modalViewCount) / exportCount) : 0) * 100),
+                avgTimeNext: 0
+            },
+            // Parallel Actions (Not linear) - we can list them to see counts
+            {
+                step: 'Clicked Donate',
+                count: donateCount,
+                percentage: Math.round((donateCount / safeTotal) * 100),
+                dropOff: 0, // Parallel, irrelevant
+                avgTimeNext: 0
+            },
+            {
+                step: 'Clicked Share',
+                count: shareCount,
+                percentage: Math.round((shareCount / safeTotal) * 100),
+                dropOff: 0, // Parallel, irrelevant
+                avgTimeNext: 0
+            },
+            {
                 step: 'Click Purchase',
                 count: clickPurchaseCount,
                 percentage: Math.round((clickPurchaseCount / safeTotal) * 100),
-                dropOff: Math.round((exportCount > 0 ? ((exportCount - clickPurchaseCount) / exportCount) : 0) * 100),
+                // Drop-off relative to Modal View is the key metric
+                dropOff: Math.round((modalViewCount > 0 ? ((modalViewCount - clickPurchaseCount) / modalViewCount) : 0) * 100),
                 avgTimeNext: 0
             },
             {

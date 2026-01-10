@@ -52,7 +52,7 @@ export function ExportSuccessModal({
         } else {
             return {
                 title: "Keep CartoArt Free & Ad-Free",
-                description: "You just created something awesome for free! This tool took 100+ hours to build and costs money to run.",
+                description: "You just created something awesome for free. Help us keep it that way!",
                 cta: "Buy Me a Coffee"
             };
         }
@@ -232,36 +232,41 @@ export function ExportSuccessModal({
                     </button>
                 </div>
 
-                {/* Hero Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-3 md:p-6 text-white text-center relative overflow-hidden shrink-0">
-
+                {/* Hero Header - UPDATED COPY */}
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 md:p-6 text-white text-center relative overflow-hidden shrink-0">
                     <div className="relative z-10">
                         <div className="mx-auto bg-white/20 w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center mb-2 md:mb-3 backdrop-blur-sm">
                             <Check className="w-5 h-5 md:w-6 md:h-6 text-white" />
                         </div>
-                        <h2 className="text-lg md:text-xl font-bold mb-0.5 md:mb-1">Export Complete!</h2>
-                        <p className="text-xs md:text-sm text-blue-100">Your high-resolution poster is downloading...</p>
+                        <h2 className="text-xl md:text-2xl font-bold mb-1">Your Design is Saved!</h2>
+                        <p className="text-sm md:text-base text-blue-100 font-medium">Your high-resolution poster is downloading...</p>
                     </div>
                 </div>
 
                 {/* Content Grid */}
-                <div className="p-3 md:p-4 grid gap-3 md:gap-4 md:grid-cols-2 flex-1 overflow-y-auto overscroll-contain">
+                <div className="p-3 md:p-5 grid gap-4 flex-1 overflow-y-auto overscroll-contain">
 
-                    {/* Primary Action: Print (Prioritized) */}
+                    {/* Primary Action: Print (Prioritized & Enhanced) */}
                     {onBuyPrint && (
-                        <div className="col-span-1 md:col-span-2">
-                            <div className="bg-white dark:bg-gray-800/80 p-5 rounded-2xl border border-blue-100 dark:border-blue-900/30 shadow-xl shadow-blue-500/5 relative overflow-hidden group">
+                        <div className="col-span-1">
+                            {/* Key change: Added border-blue-500/30 and ring effect for emphasis */}
+                            <div className="bg-white dark:bg-gray-800/80 p-5 rounded-2xl border border-blue-200 dark:border-blue-900/50 shadow-xl shadow-blue-500/10 relative overflow-hidden group ring-1 ring-blue-500/20">
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
 
-                                <div className="relative flex flex-col md:flex-row gap-6 items-center">
+                                {/* Recommended Badge */}
+                                <div className="absolute top-0 right-0 bg-blue-600 text-white text-[10px] sm:text-xs font-bold px-3 py-1 rounded-bl-xl shadow-sm z-10">
+                                    RECOMMENDED
+                                </div>
+
+                                <div className="relative flex flex-col sm:flex-row gap-6 items-center">
                                     {previewUrl && (
-                                        <div className="shrink-0 relative transform group-hover:scale-[1.02] transition-transform duration-500" style={{ maxWidth: '12rem' }}>
-                                            <div className="relative shadow-2xl rounded-sm overflow-hidden bg-white border-[8px] border-gray-900 dark:border-gray-200">
+                                        <div className="shrink-0 relative transform group-hover:scale-[1.02] transition-transform duration-500 w-full sm:w-auto flex justify-center">
+                                            <div className="relative shadow-2xl rounded-sm overflow-hidden bg-white border-[8px] border-gray-900 dark:border-gray-200 max-w-[160px] sm:max-w-[200px]">
                                                 <div className="border-[6px] border-white bg-white">
                                                     <img
                                                         src={previewUrl}
                                                         alt="Your Design"
-                                                        className="max-w-full max-h-48 md:max-h-64 w-auto h-auto block"
+                                                        className="w-full h-auto block"
                                                     />
                                                 </div>
                                                 <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/20 pointer-events-none" />
@@ -270,48 +275,35 @@ export function ExportSuccessModal({
                                         </div>
                                     )}
 
-                                    <div className="flex-1 text-center md:text-left space-y-3">
+                                    <div className="flex-1 text-center sm:text-left space-y-3 w-full">
                                         <div>
-                                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-semibold mb-2">
-                                                <ShoppingBag className="w-3.5 h-3.5" />
-                                                Museum Quality Prints
-                                            </div>
-                                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                                                Love your design?
+                                            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white leading-tight">
+                                                The Ultimate Way to Display Your Map
                                             </h3>
-                                            <p className="text-gray-600 dark:text-gray-400 mt-1">
-                                                Get a framed print shipped to your door.
+                                            <p className="text-gray-600 dark:text-gray-400 mt-2 text-sm sm:text-base leading-relaxed">
+                                                You've made a great design. It deserves to be on your wall in museum-quality print.
                                             </p>
                                         </div>
 
-                                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-4 gap-y-2 text-xs text-gray-500 dark:text-gray-400">
-                                            <span className="flex items-center gap-1.5">
-                                                <Check className="w-4 h-4 text-green-500" />
-                                                Ships in 2-3 days
-                                            </span>
+                                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-2 text-xs text-gray-500 dark:text-gray-400 py-1">
                                             <span className="flex items-center gap-1.5">
                                                 <Check className="w-4 h-4 text-green-500" />
                                                 Ready to hang
                                             </span>
+                                            <span className="flex items-center gap-1.5">
+                                                <Check className="w-4 h-4 text-green-500" />
+                                                Free Shipping
+                                            </span>
                                         </div>
 
-                                        <div className="flex flex-col gap-2 pt-2">
+                                        <div className="pt-2">
                                             <Button
                                                 variant="default"
-                                                className="w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                                                className="w-full sm:w-auto min-w-[200px] h-11 gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-base shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all hover:-translate-y-0.5"
                                                 onClick={onBuyPrint}
                                             >
-                                                <ShoppingBag className="w-4 h-4" />
-                                                Order Print from $35
-                                            </Button>
-
-                                            <Button
-                                                variant="outline"
-                                                className="w-full gap-2 border-2 hover:bg-gray-50 dark:hover:bg-gray-800 font-bold"
-                                                onClick={handlePublishWithTracking}
-                                            >
-                                                <Upload className="w-4 h-4 text-blue-600" />
-                                                Publish to Gallery
+                                                <ShoppingBag className="w-5 h-5" />
+                                                View Print Options
                                             </Button>
                                         </div>
                                     </div>
@@ -320,148 +312,101 @@ export function ExportSuccessModal({
                         </div>
                     )}
 
-                    {/* Featured Donation CTA */}
-                    <div className="col-span-1 md:col-span-2">
-                        <div className="relative overflow-hidden rounded-xl border border-yellow-200 dark:border-yellow-900/50 bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-100 dark:from-yellow-900/20 dark:via-amber-900/20 dark:to-yellow-800/20 p-3 md:p-4 shadow-lg">
-                            <div className="absolute inset-0 opacity-5 dark:opacity-10" style={{
-                                backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)',
-                                backgroundSize: '24px 24px'
-                            }} />
-
-                            <div className="relative flex flex-col sm:flex-row items-center gap-3 md:gap-4">
-                                <div className="flex-shrink-0">
-                                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-lg">
-                                        <Heart className="w-5 h-5 md:w-6 md:h-6 text-white fill-white" />
-                                    </div>
+                    {/* Secondary Actions Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Donation - Smaller footprint now */}
+                        <div className="rounded-xl border border-yellow-200 dark:border-yellow-900/50 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-yellow-900/10 dark:to-yellow-800/10 p-4 relative overflow-hidden flex flex-col justify-center">
+                            <div className="relative z-10 flex gap-3 items-start">
+                                <div className="shrink-0 w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center text-yellow-600 dark:text-yellow-400">
+                                    <Heart className="w-5 h-5 fill-current" />
                                 </div>
-                                <div className="flex-1 text-center sm:text-left">
-                                    <h3 className="text-sm md:text-base font-bold text-gray-900 dark:text-white mb-0.5 md:mb-1">
-                                        {donationMessage.title}
-                                    </h3>
-                                    <p className="text-gray-700 dark:text-gray-300 text-xs md:text-sm leading-snug md:leading-relaxed">
+                                <div>
+                                    <h4 className="font-bold text-gray-900 dark:text-white text-sm">
+                                        Enjoying the tool?
+                                    </h4>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 mb-2">
                                         {donationMessage.description}
                                     </p>
-                                </div>
-                                <div className="flex-shrink-0">
                                     <a
                                         href="https://buymeacoffee.com/kkingsbe"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         onClick={handleDonateClick}
-                                        className={cn(
-                                            "inline-flex items-center gap-2 px-4 md:px-5 py-2 md:py-2.5 rounded-xl font-bold text-xs md:text-sm",
-                                            "bg-gradient-to-r from-yellow-400 to-amber-500 text-gray-900",
-                                            "hover:from-yellow-500 hover:to-amber-600",
-                                            "transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95",
-                                            "whitespace-nowrap"
-                                        )}
+                                        className="text-xs font-bold text-yellow-700 dark:text-yellow-500 hover:underline flex items-center gap-1"
                                     >
-                                        <Heart className="w-4 h-4 fill-current" />
-                                        {donationMessage.cta}
+                                        {donationMessage.cta} <ExternalLink className="w-3 h-3" />
                                     </a>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Secondary Actions */}
-                    <div className="space-y-4">
-                        <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 h-full">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                    <Save className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                                </div>
-                                <div className="font-semibold text-gray-900 dark:text-white">
-                                    {isAuthenticated ? 'Save to Profile' : 'Don\'t Lose This!'}
-                                </div>
-                            </div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                                {isAuthenticated
-                                    ? "Save this map to your collection to edit it later."
-                                    : "Create a free account to save your design and edit it anytime."}
-                            </p>
+                        {/* Other Actions Grouped */}
+                        <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 p-4 space-y-3">
+                            <h4 className="font-semibold text-gray-900 dark:text-white text-sm flex items-center gap-2">
+                                <Share2 className="w-4 h-4" />
+                                Other Actions
+                            </h4>
 
-                            {isAuthenticated ? (
-                                <SaveButton
-                                    onSave={handleSaveWithTracking}
-                                    isAuthenticated={isAuthenticated}
-                                    currentMapName={currentMapName}
-                                    hasUnsavedChanges={hasUnsavedChanges}
-                                    className="w-full justify-center py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-600 border-none shadow-none dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30"
-                                />
-                            ) : (
-                                <button
-                                    onClick={handleSignUp}
-                                    className={cn(
-                                        "w-full py-2.5 rounded-lg font-medium text-sm transition-colors",
-                                        "bg-blue-50 text-blue-600 hover:bg-blue-100",
-                                        "dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30"
-                                    )}
-                                >
-                                    Sign Up to Save
-                                </button>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 h-full">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                                    <Share2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                                </div>
-                                <div className="font-semibold text-gray-900 dark:text-white">
-                                    Share Design
-                                </div>
-                            </div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                                Show off your map creation with friends.
-                            </p>
                             <div className="grid grid-cols-2 gap-2">
-                                <button
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full text-xs h-9"
+                                    onClick={handlePublishWithTracking}
+                                >
+                                    <Upload className="w-3.5 h-3.5 mr-1.5" />
+                                    Publish
+                                </Button>
+
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full text-xs h-9"
+                                    onClick={isAuthenticated ? () => handleSaveWithTracking(currentMapName || 'New Map') : handleSignUp}
+                                >
+                                    <Save className="w-3.5 h-3.5 mr-1.5" />
+                                    {isAuthenticated ? 'Save' : 'Save & Sign Up'}
+                                </Button>
+                            </div>
+
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="flex-1 text-xs h-8 bg-white dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700"
                                     onClick={handleCopyLink}
-                                    className="flex flex-col items-center justify-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                 >
-                                    {copied ? <Check className="w-5 h-5 text-green-500 mb-1" /> : <LinkIcon className="w-5 h-5 text-gray-600 dark:text-gray-400 mb-1" />}
-                                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{copied ? 'Copied!' : 'Copy Link'}</span>
-                                </button>
-                                <button
+                                    {copied ? <Check className="w-3.5 h-3.5 mr-1.5 text-green-500" /> : <LinkIcon className="w-3.5 h-3.5 mr-1.5" />}
+                                    {copied ? 'Copied' : 'Copy Link'}
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="flex-1 text-xs h-8 bg-white dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700"
                                     onClick={handleShareTwitter}
-                                    className="flex flex-col items-center justify-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                 >
-                                    <Twitter className="w-5 h-5 text-blue-400 mb-1" />
-                                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Tweet</span>
-                                </button>
+                                    <Twitter className="w-3.5 h-3.5 mr-1.5 text-blue-400" />
+                                    Tweet
+                                </Button>
                             </div>
                         </div>
                     </div>
 
                 </div>
 
-                {/* Discord Community CTA */}
-                <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 p-3 md:p-4 border-t border-indigo-500/20">
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 md:gap-3">
-                        <div className="flex items-center gap-2.5 md:gap-3 text-center sm:text-left">
-                            <div className="flex-shrink-0 w-9 h-9 md:w-10 md:h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                                <MessageCircle className="w-5 h-5 text-white" />
-                            </div>
-                            <div>
-                                <h4 className="text-white font-bold text-xs md:text-sm mb-0 md:mb-0.5">Join the CartoArt Community</h4>
-                                <p className="text-indigo-100 text-[10px] md:text-xs leading-tight">Get help, share designs, and request features</p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => window.open('https://discord.gg/UVKEfcfZVc', '_blank', 'noopener,noreferrer')}
-                            className={cn(
-                                "flex items-center gap-1.5 md:gap-2 px-4 md:px-5 py-2 md:py-2.5 rounded-xl font-bold text-xs md:text-sm whitespace-nowrap",
-                                "bg-white text-indigo-600 hover:bg-indigo-50",
-                                "transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
-                            )}
+                {/* Discord Community CTA - Retained as footer */}
+                <div className="bg-gray-50 dark:bg-gray-800/50 p-3 border-t border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center justify-between gap-3 text-xs text-gray-500 dark:text-gray-400">
+                        <span>Need help or want to share feedback?</span>
+                        <a
+                            href="https://discord.gg/UVKEfcfZVc"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors"
                         >
-                            <MessageCircle className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                            <MessageCircle className="w-3.5 h-3.5" />
                             Join Discord
-                            <ExternalLink className="w-2.5 h-2.5 md:w-3 md:h-3" />
-                        </button>
+                        </a>
                     </div>
                 </div>
             </div>

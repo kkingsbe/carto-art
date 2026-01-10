@@ -16,6 +16,13 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TimeDisplay } from '@/components/ui/time-display';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 interface PageEvent {
     id: string;
@@ -52,14 +59,20 @@ const EVENT_COLORS: Record<string, string> = {
 export default function ActivityPage() {
     const [events, setEvents] = useState<PageEvent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [selectedEventType, setSelectedEventType] = useState<string>('all');
 
     useEffect(() => {
         fetchEvents();
-    }, []);
+    }, [selectedEventType]);
 
     const fetchEvents = async () => {
         try {
-            const res = await fetch('/api/admin/activity?limit=100');
+            const params = new URLSearchParams({ limit: '100' });
+            if (selectedEventType && selectedEventType !== 'all') {
+                params.append('event_type', selectedEventType);
+            }
+
+            const res = await fetch(`/api/admin/activity?${params.toString()}`);
             if (res.ok) {
                 const data = await res.json();
                 setEvents(data.events);
@@ -95,10 +108,19 @@ export default function ActivityPage() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input className="pl-10" placeholder="Filter events..." />
                 </div>
-                <Button variant="outline" className="flex items-center gap-2">
-                    <Filter className="w-4 h-4" />
-                    Filters
-                </Button>
+                <Select value={selectedEventType} onValueChange={setSelectedEventType}>
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Display Level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Events</SelectItem>
+                        {Object.entries(EVENT_ICONS).map(([type]) => (
+                            <SelectItem key={type} value={type}>
+                                {type.replace('_', ' ')}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
 
             <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
@@ -165,6 +187,6 @@ export default function ActivityPage() {
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

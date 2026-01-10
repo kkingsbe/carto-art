@@ -9,6 +9,7 @@ export async function GET(req: Request) {
         const limit = parseInt(searchParams.get('limit') || '50');
         const offset = parseInt(searchParams.get('offset') || '0');
         const userId = searchParams.get('userId');
+        const eventType = searchParams.get('event_type');
 
         const supabase = createServiceRoleClient();
         let query = supabase
@@ -24,6 +25,10 @@ export async function GET(req: Request) {
 
         if (userId) {
             query = query.eq('user_id', userId);
+        }
+
+        if (eventType) {
+            query = query.eq('event_type', eventType);
         }
 
         const { data: events, error, count } = await query

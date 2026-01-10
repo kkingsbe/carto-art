@@ -13,6 +13,8 @@ import { RATE_LIMITS } from '@/lib/constants/limits';
 import { z } from 'zod';
 import { sanitizeText } from '@/lib/utils/sanitize';
 import { trackEvent } from '@/lib/events';
+import { checkProjectLimit } from '@/lib/actions/usage';
+import { getUserProfile } from '@/lib/actions/user';
 
 export interface SavedMap {
   id: string;
@@ -59,6 +61,20 @@ export async function saveMap(config: PosterConfig, title: string) {
         name: `Location at ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
       },
     };
+  }
+
+  // Check project limits
+  const profile = await getUserProfile(user.id);
+  if (!profile) {
+    throw createError.authRequired('User profile not found');
+  }
+
+  const usage = await checkProjectLimit(user.id, profile.subscription_tier);
+
+  if (!usage.allowed) {
+    throw createError.permissionDenied(
+      `You have reached your project limit of ${usage.limit}. Please upgrade to create more projects.`
+    );
   }
 
   // Validate config before saving
@@ -133,6 +149,20 @@ export async function saveMapWithThumbnail(
         name: `Location at ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
       },
     };
+  }
+
+  // Check project limits
+  const profile = await getUserProfile(user.id);
+  if (!profile) {
+    throw createError.authRequired('User profile not found');
+  }
+
+  const usage = await checkProjectLimit(user.id, profile.subscription_tier);
+
+  if (!usage.allowed) {
+    throw createError.permissionDenied(
+      `You have reached your project limit of ${usage.limit}. Please upgrade to create more projects.`
+    );
   }
 
   // Validate config before saving

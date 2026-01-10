@@ -54,7 +54,10 @@ export async function createFeaturedMap(map: FeaturedMapInput) {
         .select()
         .single();
 
-    if (error) throw new Error(error.message);
+    if (error) {
+        console.error('Error creating featured map:', error);
+        throw new Error(error.message);
+    }
     revalidatePath('/');
     revalidatePath('/admin/featured');
     return data;

@@ -4,7 +4,7 @@ import { groupVariantsByProduct } from '@/lib/utils/store';
 import { ProductCard } from '@/components/store/ProductCard';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
-import { trackEvent } from '@/lib/events';
+import { StorePageTracker } from '@/components/store/StorePageTracker';
 
 export const metadata = {
     title: 'Select Product | Carto Art',
@@ -29,18 +29,13 @@ export default async function StorePage({ searchParams }: StorePageProps) {
     const params = await searchParams;
     const designUrl = typeof params.image === 'string' ? params.image : undefined;
 
-    // Track store view
-    await trackEvent({
-        eventType: 'store_view',
-        eventName: 'store_page_loaded',
-        metadata: {
-            product_count: products.length,
-            has_design: !!designUrl
-        }
-    });
-
     return (
         <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950">
+            <StorePageTracker
+                productCount={products.length}
+                hasDesign={!!designUrl}
+            />
+
             {/* Header */}
             <div className="bg-white dark:bg-gray-900 border-b sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">

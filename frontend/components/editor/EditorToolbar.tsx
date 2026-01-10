@@ -646,7 +646,6 @@ export function EditorToolbar({
                 subscriptionTier={subscriptionTier}
                 exportUsage={exportUsage}
                 isAuthenticated={isAuthenticated}
-                onBuyPrint={onBuyPrint}
             />
 
             {/* Export Success Modal */}
