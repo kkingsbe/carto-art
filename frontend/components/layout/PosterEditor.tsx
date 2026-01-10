@@ -752,10 +752,32 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
               orientation: config.format.orientation
             });
 
+            // Track successful transition before navigation
+            trackEventAction({
+              eventType: 'shop_transition_success',
+              eventName: 'order_print_success',
+              sessionId: getSessionId(),
+              metadata: {
+                mapId: currentMapId
+              }
+            });
+
             router.push(`/store?${params.toString()}`);
 
           } catch (e) {
             console.error("Order navigation failed", e);
+
+            // Track failure
+            trackEventAction({
+              eventType: 'shop_transition_error',
+              eventName: 'order_print_failed',
+              sessionId: getSessionId(),
+              metadata: {
+                error: e instanceof Error ? e.message : 'Unknown error',
+                mapId: currentMapId
+              }
+            });
+
             toast.error(e instanceof Error ? e.message : "Failed to prepare order. Please try again.", { id: toastId });
           }
         } : undefined}

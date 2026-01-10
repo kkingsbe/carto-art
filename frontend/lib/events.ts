@@ -32,6 +32,7 @@ export type EventType =
     // Ecommerce Funnel Events
     | 'shop_transition_start'
     | 'shop_transition_success'
+    | 'shop_transition_error'
     | 'gallery_view'
     | 'gallery_map_click'
     | 'gallery_remix_click'
