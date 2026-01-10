@@ -1,22 +1,16 @@
-
 import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
-import path from 'path';
 
-// Load env vars
-dotenv.config({ path: path.resolve(__dirname, '../frontend/.env.local') });
+export async function checkProductsIntegrity() {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!supabaseUrl || !supabaseKey) {
+        console.error('Missing Supabase credentials');
+        return;
+    }
 
-if (!supabaseUrl || !supabaseKey) {
-    console.error('Missing Supabase credentials');
-    process.exit(1);
-}
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-async function debug() {
     console.log('--- Debugging Products & Variants ---');
 
     // 1. Check Products Table
@@ -53,5 +47,3 @@ async function debug() {
         }
     }
 }
-
-debug().catch(console.error);

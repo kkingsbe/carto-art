@@ -9,7 +9,9 @@ import {
     ExternalLink,
     Loader2,
     AlertCircle,
-    Activity
+    Activity,
+    MapPin,
+    UserPlus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MetricCard } from '@/components/admin/MetricCard';
@@ -18,6 +20,8 @@ interface AnalyticsData {
     views: number;
     sessions: number;
     activeUsers: number;
+    customMarkers: number;
+    markerAdoption: number;
     topPages: Array<{ url: string; views: number }>;
 }
 
@@ -158,6 +162,16 @@ export default function AnalyticsPage() {
                     title="Active Users"
                     value={data?.activeUsers.toLocaleString() || '0'}
                     icon={Users}
+                />
+                <MetricCard
+                    title="Custom Markers"
+                    value={data?.customMarkers.toLocaleString() || '0'}
+                    icon={MapPin}
+                />
+                <MetricCard
+                    title="Adoption (Unique Users)"
+                    value={data?.markerAdoption.toLocaleString() || '0'}
+                    icon={UserPlus}
                 />
             </div>
 

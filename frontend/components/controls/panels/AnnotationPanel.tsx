@@ -10,6 +10,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/
 import { MarkersList } from '../markers/MarkersList';
 import { useUserSubscription } from '@/hooks/useUserSubscription';
 import type { PosterConfig, CustomMarker } from '@/types/poster';
+import { trackEvent } from '@/lib/events';
 
 interface AnnotationPanelProps {
     config: PosterConfig;
@@ -50,6 +51,15 @@ export function AnnotationPanel({
         };
 
         setConfig({ ...config, markers: [...markers, newMarker] });
+
+        // Track marker creation
+        trackEvent({
+            eventType: 'marker_add',
+            eventName: 'custom_marker',
+            metadata: {
+                source: 'center_button'
+            }
+        });
     };
 
     return (
@@ -77,6 +87,14 @@ export function AnnotationPanel({
                                 onMarkersChange={handleMarkersUpdate}
                                 onCenterAdd={handleAddCenterMarker}
                                 isPlusEnabled={isPlusEnabled}
+                                connectMarkers={layers.connectMarkers}
+                                markerPathColor={layers.markerPathColor}
+                                showSegmentLengths={layers.showSegmentLengths}
+                                fillMarkers={layers.fillMarkers}
+                                markerFillColor={layers.markerFillColor}
+                                markerPathLabelStyle={layers.markerPathLabelStyle}
+                                markerPathLabelSize={layers.markerPathLabelSize}
+                                onSettingsChange={(settings) => updateLayers(settings)}
                             />
                         </AccordionContent>
                     </AccordionItem>

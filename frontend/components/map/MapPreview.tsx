@@ -77,9 +77,9 @@ export function MapPreview({
   }, []);
 
   // Store event handler references and timeout IDs for cleanup
-  const loadingHandlerRef = useRef<(() => void) | null>(null);
-  const idleHandlerRef = useRef<(() => void) | null>(null);
-  const timeoutHandlerRef = useRef<(() => void) | null>(null);
+  const loadingHandlerRef = useRef<((e?: any) => void) | null>(null);
+  const idleHandlerRef = useRef<((e?: any) => void) | null>(null);
+  const timeoutHandlerRef = useRef<((e?: any) => void) | null>(null);
   const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
 
   // Calculate effective zoom with overzoom boost for tile detail
@@ -100,6 +100,60 @@ export function MapPreview({
     if (!layers?.graticules) return null;
     return generateGraticuleGeoJSON(layers.graticuleDensity ?? 10);
   }, [layers?.graticules, layers?.graticuleDensity]);
+
+  // Calculate distances for labels
+  const distanceLabelData = useMemo(() => {
+    if (!layers?.showSegmentLengths || !markers || markers.length < 2) return null;
+
+    const features = [];
+    for (let i = 0; i < markers.length - 1; i++) {
+      const start = markers[i];
+      const end = markers[i + 1];
+
+      // Simple Haversine distance
+      const R = 6371; // km
+      const dLatAndRad = (end.lat - start.lat) * Math.PI / 180;
+      const dLonAndRad = (end.lng - start.lng) * Math.PI / 180;
+      const lat1 = start.lat * Math.PI / 180;
+      const lat2 = end.lat * Math.PI / 180;
+
+      const a = Math.sin(dLatAndRad / 2) * Math.sin(dLatAndRad / 2) +
+        Math.sin(dLonAndRad / 2) * Math.sin(dLonAndRad / 2) * Math.cos(lat1) * Math.cos(lat2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const d = R * c;
+
+      // Calculate initial bearing
+      const y = Math.sin(dLonAndRad) * Math.cos(lat2);
+      const x = Math.cos(lat1) * Math.sin(lat2) -
+        Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLonAndRad);
+      const bearing = Math.atan2(y, x) * 180 / Math.PI;
+
+      // Midpoint
+      const midLat = (start.lat + end.lat) / 2;
+      const midLng = (start.lng + end.lng) / 2;
+
+      // Format distance: use meters if < 1km
+      const distanceText = d < 1
+        ? `${Math.round(d * 1000)} m`
+        : d < 10
+          ? `${d.toFixed(1)} km`
+          : `${Math.round(d)} km`;
+
+      features.push({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [midLng, midLat] },
+        properties: {
+          distance: distanceText,
+          bearing: bearing
+        }
+      });
+    }
+
+    return {
+      type: 'FeatureCollection',
+      features
+    };
+  }, [markers, layers?.showSegmentLengths]);
 
   // Sync with external location changes
   useEffect(() => {
@@ -202,7 +256,11 @@ export function MapPreview({
       const map = mapRef.current.getMap();
       onMapLoad(map);
 
-      const loadingHandler = () => {
+      const loadingHandler = (e: any) => {
+        // Ignore local GeoJSON sources to prevent flicker and render loops
+        if (e.sourceId?.startsWith('marker-') || e.sourceId === 'graticules') {
+          return;
+        }
         setIsLoading(true);
       };
       const idleHandler = () => {
@@ -315,6 +373,8 @@ export function MapPreview({
 
   const closeContextMenu = useCallback(() => setContextMenuInfo(null), []);
 
+
+
   return (
     <div id="walkthrough-map" className="relative w-full h-full overflow-hidden">
       {/* Initial Loading Skeleton */}
@@ -408,6 +468,133 @@ export function MapPreview({
             <MarkerIcon type={layers?.markerType || 'crosshair'} color={markerColor} size={40} />
           </div>
         )}
+
+
+        {/* Render Custom Markers Path and Fill */}
+        {((layers?.connectMarkers) || (layers?.fillMarkers)) && markers && markers.length > 1 && (
+          <>
+            <Source
+              id="marker-path"
+              type="geojson"
+              data={{
+                type: 'Feature',
+                properties: {},
+                geometry: layers?.fillMarkers ? {
+                  type: 'Polygon',
+                  coordinates: [[
+                    ...markers.map(m => [m.lng, m.lat]),
+                    [markers[0].lng, markers[0].lat]
+                  ]]
+                } : {
+                  type: 'LineString',
+                  coordinates: markers.map(m => [m.lng, m.lat])
+                }
+              }}
+            >
+              {/* Fill Layer */}
+              {layers?.fillMarkers && (
+                <Layer
+                  id="marker-fill-layer"
+                  type="fill"
+                  paint={{
+                    'fill-color': layers.markerFillColor || layers.markerPathColor || markerColor || '#000',
+                    'fill-opacity': 0.2
+                  }}
+                />
+              )}
+
+              {/* Line Layer - Only if connect is enabled */}
+              {layers?.connectMarkers && (
+                <Layer
+                  id="marker-path-layer"
+                  type="line"
+                  paint={{
+                    'line-color': layers.markerPathColor || markerColor || '#000',
+                    'line-width': layers.markerPathWidth ?? 2,
+                    'line-dasharray': layers.markerPathStyle === 'dashed' ? [2, 2] : [1, 0]
+                  }}
+                />
+              )}
+            </Source>
+          </>
+        )}
+
+        {/* Distance Labels */}
+        {layers?.showSegmentLengths && distanceLabelData?.features && distanceLabelData.features.map((feature: any, i: number) => {
+          // Calculate offset to place label next to line instead of on top
+          // We want the label perpendicular to the line direction
+          const segmentBearing = feature.properties.bearing;
+          const mapBearing = viewState.bearing;
+          const relativeAngle = (segmentBearing - mapBearing) * Math.PI / 180;
+
+          // Offset vector perpendicular to the line (rotated 90 degrees right)
+          // Standard rotation: x' = x cos θ - y sin θ, y' = x sin θ + y cos θ
+          // For 90 deg: x' = -y, y' = x
+          // But effectively we just want to project length along the perpendicular angle
+          // Angle of perpendicular = relativeAngle + 90 deg
+          // Screen X = r * cos(angle), Screen Y = r * sin(angle) (inverted Y? no, standard CSS offset)
+          // Let's use simple trig: 
+          // 0 deg segment (Up) -> Perpendicular is Right (90 deg) -> offset [d, 0]
+          // 90 deg segment (Right) -> Perpendicular is Down (180 deg) -> offset [0, d]
+
+          // Estimate label width based on character count (approx 7px per char for typical font size)
+          const charWidth = 7;
+          const labelLength = feature.properties.distance.length;
+          const estimatedLabelWidth = labelLength * charWidth;
+
+          // Base padding + half of label width to ensure it clears the line
+          const offsetDist = 15 + (estimatedLabelWidth / 2);
+          const finalAngle = relativeAngle; // The relative angle of the line itself on screen
+
+          // Perpendicular offset: (x,y) = (d * cos(angle), d * sin(angle))
+          // Wait, cos(0) = 1 (Right), sin(0) = 0 (Down).
+          // If line is 0 deg (Up on screen), we want offset Right.
+          // cos(0-90) = 0, sin(0-90) = -1 (Up).
+          // Let's stick to the proven math:
+          // x = d * cos(ang)
+          // y = d * sin(ang)
+          // If line is Up (0 deg bearing), screen angle is -90 deg (standard math 0 is Right).
+          // Let's just adjust the input angle to be standard math angle.
+          // Compass 0 (Up) = Math -90. Compass 90 (Right) = Math 0.
+          // MathAngle = CompassAngle - 90.
+
+          const mathAngle = (segmentBearing - mapBearing - 90) * Math.PI / 180;
+
+          // Perpendicular (+90 deg to line)
+          const perpAngle = mathAngle + Math.PI / 2;
+
+          const offsetX = offsetDist * Math.cos(perpAngle);
+          const offsetY = offsetDist * Math.sin(perpAngle);
+
+          return (
+            <Marker
+              key={`distance-${i}`}
+              longitude={feature.geometry.coordinates[0]}
+              latitude={feature.geometry.coordinates[1]}
+              anchor="center"
+              offset={[offsetX, offsetY]}
+              style={{
+                zIndex: 5 // Ensure below main markers but above lines if possible ( Markers are z-indexed by DOM order usually)
+              }}
+            >
+              <MarkerIcon
+                type="none"
+                // Use configured styles
+                label={feature.properties.distance}
+                labelStyle={layers.markerPathLabelStyle || 'standard'}
+                labelSize={layers.markerPathLabelSize || 12}
+                // These colors need to match the style logic in MarkerIcon if we passed them,
+                // but MarkerIcon handles the style->color mapping internally for background/border.
+                // For 'standard', we might want to pass the text color if it's not black.
+                labelColor={layers.markerPathLabelStyle === 'glass' || layers.markerPathLabelStyle === 'elevated' ? 'black' :
+                  layers.markerPathLabelStyle === 'vintage' ? '#4a3b2a' :
+                    (layers.markerPathColor || markerColor || '#000')}
+                size={0} // Irrelevant since type='none', but keeps it clean
+                shadow={false}
+              />
+            </Marker>
+          );
+        })}
 
         {/* Render Custom Markers */}
         {markers?.map(marker => (

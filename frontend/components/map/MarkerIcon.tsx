@@ -2,7 +2,7 @@ import React from 'react';
 import { Heart, Home } from 'lucide-react';
 
 interface MarkerIconProps {
-  type?: 'pin' | 'crosshair' | 'dot' | 'ring' | 'heart' | 'home';
+  type?: 'pin' | 'crosshair' | 'dot' | 'ring' | 'heart' | 'home' | 'none';
   size?: number;
   color?: string;
   borderColor?: string;
@@ -122,6 +122,10 @@ export const MarkerIcon: React.FC<MarkerIconProps & {
         );
       }
 
+      if (type === 'none') {
+        return null;
+      }
+
       // Default Pin shape path (normalized for viewBox 0 0 24 28)
       const path = "M 12 2.1 C 7.3 2.1 3.5 5.9 3.5 10.6 c 0 5.2 7 13.9 7.9 15.1 c 0.3 0.4 0.9 0.4 1.2 0 C 13.5 24.5 20.5 15.8 20.5 10.6 c 0 -4.7 -3.8 -8.5 -8.5 -8.5 z";
 
@@ -168,7 +172,7 @@ export const MarkerIcon: React.FC<MarkerIconProps & {
 
         {label && (
           <div
-            className="absolute top-full mt-1 px-2 py-0.5 rounded text-center whitespace-nowrap z-20"
+            className={type === 'none' ? "px-2 py-0.5 rounded text-center whitespace-nowrap z-20" : "absolute top-full mt-1 px-2 py-0.5 rounded text-center whitespace-nowrap z-20"}
             style={{
               fontSize: labelSize,
               color: labelColor,

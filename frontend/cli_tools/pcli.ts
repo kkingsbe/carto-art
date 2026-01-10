@@ -41,9 +41,71 @@ const commands: Record<string, (args: string[]) => Promise<void>> = {
         const { checkFeatureFlagsSchema } = await import('./check-feature-flags');
         await checkFeatureFlagsSchema();
     },
+    'check-products-integrity': async () => {
+        const { checkProductsIntegrity } = await import('./check-products-integrity');
+        await checkProductsIntegrity();
+    },
+    'view-feedback': async () => {
+        const { viewFeedback } = await import('./view-feedback');
+        await viewFeedback();
+    },
+    'test-local-upload': async () => {
+        const { testLocalUpload } = await import('./test-local-upload');
+        await testLocalUpload();
+    },
     'help': async () => {
         printHelp();
-    }
+    },
+    'db:inspect': async (args) => {
+        const table = args[0];
+        if (!table) {
+            console.error('Usage: db:inspect <table> [limit] [--json]');
+            return;
+        }
+        const json = args.includes('--json');
+        const limitIndex = args.findIndex(arg => !arg.startsWith('--') && arg !== table);
+        const limit = limitIndex !== -1 ? parseInt(args[limitIndex]) : 20;
+
+        const { inspectTable } = await import('./db-utils');
+        await inspectTable(table, limit, json);
+    },
+    'db:get': async (args) => {
+        const table = args[0];
+        const id = args[1];
+        if (!table || !id) {
+            console.error('Usage: db:get <table> <id> [--json]');
+            return;
+        }
+        const json = args.includes('--json');
+        const { getRow } = await import('./db-utils');
+        await getRow(table, id, json);
+    },
+    'db:rpc': async (args) => {
+        const func = args[0];
+        if (!func) {
+            console.error('Usage: db:rpc <function> [key=value]... [--json]');
+            return;
+        }
+        const json = args.includes('--json');
+        const rpcArgs: Record<string, any> = {};
+
+        // Parse key=value arguments
+        for (const arg of args.slice(1)) {
+            if (arg.startsWith('--')) continue;
+            const [key, value] = arg.split('=');
+            if (key && value) {
+                // Try to parse basic types
+                if (value === 'true') rpcArgs[key] = true;
+                else if (value === 'false') rpcArgs[key] = false;
+                else if (!isNaN(Number(value))) rpcArgs[key] = Number(value);
+                else rpcArgs[key] = value;
+            }
+        }
+
+        const { callRpc } = await import('./db-utils');
+        await callRpc(func, rpcArgs, json);
+    },
+
 };
 
 async function main() {
@@ -80,11 +142,18 @@ Printful CLI Tool (pcli)
 Usage:
   pcli <command> [options]
 
-Commands:
   inspect <variantId>    Fetch and display DB vs Printful API data for a variant.
   verify-templates       Scan DB for products with missing/incorrect templates.
   check-site-config      Check the site_config table in Supabase.
-  help                   Show this help message.
+  check-variants-schema  Check schema for product_variants table.
+  check-feature-flags    Check schema for feature_flags table.
+  check-products-integrity Check for orphaned variants and bad product links.
+  view-feedback          View recent user feedback.
+  test-local-upload      Test local upload endpoint (requires dev server).
+  db:inspect <table> [limit] [--json] View table rows.
+  db:get <table> <id> [--json]        Fetch row by ID.
+  db:rpc <func> [k=v]... [--json]     Call Supabase RPC.
+  help                                Show this help message.
 `);
 }
 
@@ -92,16 +161,8 @@ Commands:
 // Moved imports to dynamic to ensure dotenv loads first
 
 async function getSupabase() {
-    // Dynamic import to avoid hoisting issues
-    const { createClient } = await import('@supabase/supabase-js');
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
-        throw new Error("Missing Supabase credentials in .env");
-    }
-    return createClient(supabaseUrl, supabaseKey);
+    const { getSupabase } = await import('./db-utils');
+    return getSupabase();
 }
 
 async function inspectVariant(variantId: number) {
@@ -134,8 +195,8 @@ async function inspectVariant(variantId: number) {
     // 2. Fetch from Printful
     try {
         console.log("\n[Printful API Data]");
-        const pfVariant = await printful.getVariant(dbVariant?.printful_variant_id || variantId); // Fallback if DB fetch failed but user provided ID might be printful ID? No, CLI arg is likely DB ID. 
-        // Logic check: The CLI arg is DB ID or Printful ID? Let's assume DB ID first.
+        const pfVariant = await printful.getVariant(dbVariant?.id || variantId);
+        // Logic check: The CLI arg is DB ID or Printful ID? We are using DB ID as fallback.
 
         console.log("Variant Info:", pfVariant.variant.name);
         console.log("Product ID:", pfVariant.variant.product_id);
@@ -149,10 +210,9 @@ async function verifyTemplates() {
     const supabase = await getSupabase();
 
     // Fetch all variants
-    // Note: If too many, might need pagination, but for now select all
     const { data: variants, error } = await supabase
         .from('product_variants')
-        .select('id, name, mockup_template_url, printful_variant_id');
+        .select('id, name, mockup_template_url');
 
     if (error) {
         console.error("Failed to fetch variants:", error.message);

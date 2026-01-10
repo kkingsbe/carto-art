@@ -197,6 +197,16 @@ export interface PosterConfig {
     graticuleWeight?: number;       // New: control graticule line thickness
     graticuleLabelSize?: number;    // New: control graticule label size
     graticuleDensity?: number;      // New: control graticule line density (degrees)
+    // Custom Marker Path
+    connectMarkers?: boolean;       // New: toggle to connect custom markers with a line
+    markerPathColor?: string;       // New: color for the marker path
+    markerPathWidth?: number;       // New: width for the marker path
+    markerPathStyle?: 'solid' | 'dashed'; // New: style for the marker path
+    showSegmentLengths?: boolean;   // New: toggle segment lengths visibility
+    markerPathLabelStyle?: 'standard' | 'elevated' | 'glass' | 'vintage'; // New: style for distance labels
+    markerPathLabelSize?: number;   // New: size for distance labels
+    fillMarkers?: boolean;          // New: toggle to fill the shape formed by markers
+    markerFillColor?: string;       // New: color for the fill
   };
   markers?: CustomMarker[]; // New: Custom markers list
   // Rendering quality settings

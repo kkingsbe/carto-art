@@ -1,7 +1,7 @@
 import type { ColorPalette } from '@/types/poster';
 
 export interface LabelLayerOptions {
-  style?: 'halo' | 'none' | 'strong';
+  style?: 'halo' | 'none' | 'strong' | 'standard' | 'elevated' | 'glass' | 'vintage';
   countrySize?: [number, number, number, number]; // [zoom1, size1, zoom2, size2]
   stateSize?: [number, number, number, number];
   citySize?: [number, number, number, number];
@@ -9,7 +9,13 @@ export interface LabelLayerOptions {
 
 /**
  * Creates label layers (country, state, city) for place names.
- * Supports different halo styles: halo (standard), none (no halo), strong (thicker halo).
+ * Supports different styles:
+ * - halo/standard: Default white halo
+ * - none: No halo
+ * - strong: Thicker halo
+ * - elevated: High contrast like a card
+ * - glass: Dark text, blurred white halo
+ * - vintage: Sepia tones
  */
 export function createLabelLayers(
   palette: ColorPalette,
@@ -29,6 +35,16 @@ export function createLabelLayers(
         return { 'text-halo-width': 0, 'text-halo-blur': 0 };
       case 'strong':
         return { 'text-halo-width': 3, 'text-halo-blur': 1 };
+      case 'elevated':
+        // Sharp, distinct halo to simulate elevation/card
+        return { 'text-halo-width': 2, 'text-halo-blur': 0.2 };
+      case 'glass':
+        // Soft, wide blur to simulate glass diffusion
+        return { 'text-halo-width': 4, 'text-halo-blur': 4 };
+      case 'vintage':
+        // Simple/rough look
+        return { 'text-halo-width': 1.5, 'text-halo-blur': 1 };
+      case 'standard':
       case 'halo':
       default:
         return { 'text-halo-width': 2.5, 'text-halo-blur': 1.5 };
@@ -36,7 +52,21 @@ export function createLabelLayers(
   };
 
   const haloSettings = getHaloSettings();
-  const haloColor = style !== 'none' ? palette.background : undefined;
+
+  // Determine colors based on style
+  let textColor = palette.text;
+  let haloColor = style !== 'none' ? palette.background : undefined;
+
+  if (style === 'vintage') {
+    textColor = '#4a3b2a'; // Dark brown
+    haloColor = '#f4e4bc'; // Parchment
+  } else if (style === 'glass') {
+    textColor = '#000000'; // Black text
+    haloColor = 'rgba(255, 255, 255, 0.7)'; // Translucent white
+  } else if (style === 'elevated') {
+    // Keep standard text but ensure high contrast halo
+    haloColor = '#ffffff';
+  }
 
   const layers: any[] = [
     {
@@ -53,7 +83,7 @@ export function createLabelLayers(
         'text-letter-spacing': 0.3,
       },
       paint: {
-        'text-color': palette.text,
+        'text-color': textColor,
         ...(haloColor ? { 'text-halo-color': haloColor } : {}),
         ...haloSettings,
       },
@@ -72,7 +102,7 @@ export function createLabelLayers(
         'text-letter-spacing': 0.15,
       },
       paint: {
-        'text-color': palette.text,
+        'text-color': textColor,
         'text-opacity': 0.85,
         ...(haloColor ? { 'text-halo-color': haloColor } : {}),
         ...haloSettings,
@@ -98,9 +128,9 @@ export function createLabelLayers(
         'text-padding': 5,
       },
       paint: {
-        'text-color': palette.text,
+        'text-color': textColor,
         ...(haloColor ? { 'text-halo-color': haloColor } : {}),
-        ...(style === 'strong' ? { 'text-halo-width': 2.5, 'text-halo-blur': 1 } : haloSettings),
+        ...haloSettings,
       },
     },
   ];

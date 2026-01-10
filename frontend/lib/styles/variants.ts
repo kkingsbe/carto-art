@@ -12,7 +12,7 @@ export interface StyleVariantConfig {
     includeGlow?: boolean;
     includeBridges?: boolean;
   };
-  labelStyle: 'halo' | 'none' | 'strong';
+  labelStyle: 'halo' | 'none' | 'strong' | 'standard' | 'elevated' | 'glass' | 'vintage';
   includeSpaceports: boolean;
   terrainOptions?: {
     includeVolumetricBathymetry?: boolean;

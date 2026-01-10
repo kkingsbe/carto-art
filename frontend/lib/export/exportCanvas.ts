@@ -466,6 +466,108 @@ export async function exportMapToPNG(options: ExportOptions): Promise<Blob> {
       drawMarker(exportCtx, markerX, markerY, markerSize, markerColor, config.layers.markerType || 'crosshair');
     }
 
+    // 9.04 DRAW CUSTOM MARKERS FILL
+    if (config.layers.fillMarkers && config.markers && config.markers.length > 2 && exportMap) {
+      exportCtx.save();
+      exportCtx.beginPath();
+      exportCtx.fillStyle = config.layers.markerFillColor || config.layers.markerPathColor || config.layers.markerColor || '#000000';
+      exportCtx.globalAlpha = 0.2; // Match preview opacity
+
+      config.markers.forEach((marker, index) => {
+        const { x, y } = exportMap!.project([marker.lng, marker.lat]);
+        const markerX = marginPx + (x * mapExportScale);
+        const markerY = marginPx + (y * mapExportScale);
+
+        if (index === 0) {
+          exportCtx.moveTo(markerX, markerY);
+        } else {
+          exportCtx.lineTo(markerX, markerY);
+        }
+      });
+
+      exportCtx.closePath();
+      exportCtx.fill();
+      exportCtx.restore();
+    }
+
+    // 9.05 DRAW CUSTOM MARKERS PATH
+    if (config.layers.connectMarkers && config.markers && config.markers.length > 1 && exportMap) {
+      exportCtx.save();
+      exportCtx.beginPath();
+      exportCtx.strokeStyle = config.layers.markerPathColor || config.layers.markerColor || config.palette.primary || config.palette.accent || config.palette.text;
+      exportCtx.lineWidth = (config.layers.markerPathWidth || 2) * mapExportScale;
+      if (config.layers.markerPathStyle === 'dashed') {
+        exportCtx.setLineDash([4 * mapExportScale, 4 * mapExportScale]);
+      }
+
+      config.markers.forEach((marker, index) => {
+        const { x, y } = exportMap!.project([marker.lng, marker.lat]);
+        const markerX = marginPx + (x * mapExportScale);
+        const markerY = marginPx + (y * mapExportScale);
+
+        if (index === 0) {
+          exportCtx.moveTo(markerX, markerY);
+        } else {
+          exportCtx.lineTo(markerX, markerY);
+        }
+      });
+
+      exportCtx.stroke();
+      exportCtx.restore();
+    }
+
+    // 9.06 DRAW MARKER SEGMENT LENGTHS
+    if (config.layers.connectMarkers && config.layers.showSegmentLengths && config.markers && config.markers.length > 1 && exportMap) {
+      exportCtx.save();
+      exportCtx.font = `bold ${12 * mapExportScale}px "Open Sans", sans-serif`;
+      exportCtx.textAlign = 'center';
+      exportCtx.textBaseline = 'bottom';
+
+      const markerColor = config.layers.markerPathColor || config.layers.markerColor || '#000000';
+      exportCtx.fillStyle = markerColor;
+      exportCtx.strokeStyle = '#ffffff';
+      exportCtx.lineWidth = 2 * mapExportScale;
+
+      config.markers.forEach((marker, index) => {
+        if (index === config.markers!.length - 1) return;
+
+        const nextMarker = config.markers![index + 1];
+
+        // Helper to project coordinates
+        const p1 = exportMap!.project([marker.lng, marker.lat]);
+        const p2 = exportMap!.project([nextMarker.lng, nextMarker.lat]);
+
+        const x1 = marginPx + (p1.x * mapExportScale);
+        const y1 = marginPx + (p1.y * mapExportScale);
+        const x2 = marginPx + (p2.x * mapExportScale);
+        const y2 = marginPx + (p2.y * mapExportScale);
+
+        // Midpoint
+        const midX = (x1 + x2) / 2;
+        const midY = (y1 + y2) / 2;
+
+        // Distance Calculation (Haversine)
+        const R = 6371; // km
+        const dLat = (nextMarker.lat - marker.lat) * Math.PI / 180;
+        const dLon = (nextMarker.lng - marker.lng) * Math.PI / 180;
+        const lat1 = marker.lat * Math.PI / 180;
+        const lat2 = nextMarker.lat * Math.PI / 180;
+
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const d = R * c;
+
+        const text = d < 10 ? `${d.toFixed(1)} km` : `${Math.round(d)} km`;
+
+        // Draw with halo
+        exportCtx.strokeText(text, midX, midY - (2 * mapExportScale));
+        exportCtx.fillText(text, midX, midY - (2 * mapExportScale));
+      });
+
+      exportCtx.restore();
+    }
+
     // 9.1 DRAW CUSTOM MARKERS
     if (config.markers && config.markers.length > 0 && exportMap) {
       config.markers.forEach(marker => {

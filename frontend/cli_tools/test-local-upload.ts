@@ -1,15 +1,22 @@
-
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-async function testUpload() {
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export async function testLocalUpload() {
     const url = 'http://localhost:3000/api/upload-design';
 
     // Create a dummy file
     const dummyFilePath = path.join(__dirname, 'test-image.png');
-    fs.writeFileSync(dummyFilePath, 'fake image content');
+    // Ensure test-image.png exists or create it
+    if (!fs.existsSync(dummyFilePath)) {
+        fs.writeFileSync(dummyFilePath, 'fake image content');
+    }
+    const fileContent = fs.readFileSync(dummyFilePath);
 
-    const blob = new Blob(['fake image content'], { type: 'image/png' });
+    const blob = new Blob([fileContent], { type: 'image/png' });
     const formData = new FormData();
     formData.append('file', blob, 'test-image.png');
 
@@ -28,5 +35,3 @@ async function testUpload() {
         console.error('Fetch failed:', err);
     }
 }
-
-testUpload();

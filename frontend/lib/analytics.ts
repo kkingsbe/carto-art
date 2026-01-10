@@ -5,6 +5,8 @@ export interface AnalyticsReport {
     views: number;
     sessions: number;
     activeUsers: number;
+    customMarkers: number;
+    markerAdoption: number;
     topPages: Array<{ url: string; views: number }>;
 }
 
@@ -34,6 +36,8 @@ export async function getCoreTrafficStats(): Promise<AnalyticsReport> {
             views: Number(data?.views || 0),
             sessions: Number(data?.sessions || 0),
             activeUsers: Number(data?.activeUsers || 0),
+            customMarkers: Number(data?.customMarkers || 0),
+            markerAdoption: Number(data?.markerAdoption || 0),
             topPages: data?.topPages || []
         };
     } catch (error) {
@@ -43,6 +47,8 @@ export async function getCoreTrafficStats(): Promise<AnalyticsReport> {
             views: 0,
             sessions: 0,
             activeUsers: 0,
+            customMarkers: 0,
+            markerAdoption: 0,
             topPages: []
         };
     }

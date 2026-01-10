@@ -1,15 +1,7 @@
 'use server';
 
-import { trackEvent as trackEventInternal, EventType } from '@/lib/events';
-
-interface TrackEventParams {
-    eventType: EventType;
-    eventName?: string;
-    userId?: string;
-    sessionId?: string;
-    pageUrl?: string;
-    metadata?: any;
-}
+import { trackEventInternal } from '@/lib/events/server';
+import { EventType, TrackEventParams } from '@/lib/events/types';
 
 /**
  * Server action to track events from client components.
@@ -17,3 +9,4 @@ interface TrackEventParams {
 export async function trackEventAction(params: TrackEventParams) {
     return await trackEventInternal(params);
 }
+
