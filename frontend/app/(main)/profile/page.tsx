@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { getUserMaps, deleteMap, publishMap, unpublishMap } from '@/lib/actions/maps';
+import { getUserMapsSummary, deleteMap, publishMap, unpublishMap } from '@/lib/actions/maps';
 import { getProfileStats, type UserProfile } from '@/lib/actions/user';
 import { MyMapsList } from '@/components/profile/MyMapsList';
 import { ProfileHeader } from '@/components/profile/ProfileHeader';
@@ -48,7 +48,7 @@ export default async function ProfilePage() {
   const typedProfile = profile as unknown as UserProfile;
 
   const [maps, stats] = await Promise.all([
-    getUserMaps(),
+    getUserMapsSummary(),
     getProfileStats(user.id)
   ]);
 

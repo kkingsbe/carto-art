@@ -2,14 +2,14 @@
 
 import { useState, useTransition } from 'react';
 import Masonry from 'react-masonry-css';
-import { SavedMap } from '@/lib/actions/maps';
+import { SavedMap, SavedMapSummary } from '@/lib/actions/maps';
 import { updateFeaturedMaps } from '@/lib/actions/user';
 import { Star } from 'lucide-react';
 import Image from 'next/image';
 import { toast } from 'sonner';
 
 interface FeaturedMapsEditorProps {
-    allMaps: SavedMap[];
+    allMaps: SavedMap[] | SavedMapSummary[];
     initialFeaturedIds: string[];
 }
 

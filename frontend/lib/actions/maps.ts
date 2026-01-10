@@ -31,6 +31,20 @@ export interface SavedMap {
   view_count?: number;
 }
 
+export interface SavedMapSummary {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  thumbnail_url: string | null;
+  vote_score: number;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+  view_count?: number;
+  is_published: boolean;
+}
+
 // Alias for backward compatibility
 // JSONB representation of PosterConfig - inferred from Zod schema
 export type MapConfig = z.infer<typeof PosterConfigSchema>;
@@ -517,6 +531,36 @@ export async function getUserMaps(): Promise<SavedMap[]> {
     ...map,
     config: deserializeMapConfig(map.config),
   })) as SavedMap[];
+}
+
+/**
+ * Get all maps for the current user (summary only, no config)
+ * Efficient for listing in profile grid
+ */
+export async function getUserMapsSummary(): Promise<SavedMapSummary[]> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return [];
+  }
+
+  const { data, error } = await (supabase as any)
+    .from('maps')
+    .select('id, title, subtitle, thumbnail_url, vote_score, view_count, published_at, created_at, updated_at, user_id, is_published')
+    .eq('user_id', user.id)
+    .order('updated_at', { ascending: false });
+
+  if (error) {
+    logger.error('Failed to fetch user maps summary:', { error, userId: user.id });
+    throw createError.databaseError(`Failed to fetch maps: ${error.message}`);
+  }
+
+  return (data || []) as SavedMapSummary[];
 }
 
 /**

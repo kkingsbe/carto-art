@@ -4,8 +4,8 @@ import { getProfileByUsername, getProfileStats } from '@/lib/actions/user';
 import { ProfileHeader } from '@/components/profile/ProfileHeader';
 import { ProfileMapsGrid } from '@/components/profile/ProfileMapsGrid';
 import { Star } from 'lucide-react';
-import { deserializeMapConfig } from '@/lib/supabase/maps'; // Need to expose this or reimplement? It's exported from actions/maps usually but better from utils
-import { getUserMaps } from '@/lib/actions/maps'; // We'll need a different function for "get public maps by user"
+// import { deserializeMapConfig } from '@/lib/supabase/maps'; // Not needed for summary
+import { getUserMaps, SavedMapSummary, SavedMap } from '@/lib/actions/maps'; // We'll need a different function for "get public maps by user"
 import { ProfileViewTracker } from '@/components/analytics/ProfileViewTracker';
 import { ViewTracker } from '@/components/analytics/ViewTracker';
 
@@ -14,16 +14,13 @@ async function getPublicMaps(userId: string) {
     const supabase = await createClient();
     const { data } = await supabase
         .from('maps')
-        .select('*')
+        .select('id, title, subtitle, thumbnail_url, vote_score, view_count, published_at, created_at, updated_at, user_id, is_published')
         .eq('user_id', userId)
         .eq('is_published', true)
         .order('vote_score', { ascending: false })
         .order('published_at', { ascending: false });
 
-    return ((data || []) as any[]).map(map => ({
-        ...map,
-        config: typeof map.config === 'string' ? JSON.parse(map.config) : map.config
-    }));
+    return (data || []) as any[];
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }) {
@@ -51,7 +48,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 
     const [stats, maps] = await Promise.all([
         getProfileStats(profile.id),
-        getPublicMaps(profile.id)
+        getPublicMaps(profile.id) as Promise<SavedMapSummary[]>
     ]);
 
     const featuredIds = profile.featured_map_ids || [];

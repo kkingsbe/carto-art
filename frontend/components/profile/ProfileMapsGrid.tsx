@@ -1,11 +1,11 @@
 'use client';
 
 import { MapCard } from '@/components/feed/MapCard';
-import type { SavedMap } from '@/lib/actions/maps';
+import type { SavedMap, SavedMapSummary } from '@/lib/actions/maps';
 import type { FeedMap } from '@/lib/actions/feed';
 
 interface ProfileMapsGridProps {
-    maps: SavedMap[];
+    maps: SavedMap[] | SavedMapSummary[];
     profile: {
         username: string;
         display_name: string | null;
@@ -13,7 +13,7 @@ interface ProfileMapsGridProps {
     };
 }
 
-function toFeedMap(map: SavedMap, user: ProfileMapsGridProps['profile']): FeedMap {
+function toFeedMap(map: SavedMap | SavedMapSummary, user: ProfileMapsGridProps['profile']): FeedMap {
     return {
         id: map.id,
         title: map.title,

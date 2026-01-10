@@ -7,7 +7,7 @@ import { Trash2, Edit, Eye, EyeOff, Map as MapIcon } from 'lucide-react';
 import { Button } from '@/components/ui/control-components';
 import { PublishModal } from './PublishModal';
 import { MapCard } from '@/components/feed/MapCard';
-import type { SavedMap } from '@/lib/actions/maps';
+import type { SavedMap, SavedMapSummary } from '@/lib/actions/maps';
 import type { FeedMap } from '@/lib/actions/feed';
 
 const myMapsBreakpointColumns = {
@@ -18,7 +18,7 @@ const myMapsBreakpointColumns = {
 };
 
 interface MyMapsListProps {
-  maps: SavedMap[];
+  maps: SavedMap[] | SavedMapSummary[];
   userProfile: {
     username: string;
     display_name: string | null;
@@ -30,7 +30,7 @@ interface MyMapsListProps {
 }
 
 // Convert SavedMap to FeedMap for MapCard compatibility
-function toFeedMap(map: SavedMap, author: MyMapsListProps['userProfile']): FeedMap {
+function toFeedMap(map: SavedMap | SavedMapSummary, author: MyMapsListProps['userProfile']): FeedMap {
   return {
     id: map.id,
     title: map.title,
@@ -51,7 +51,7 @@ function toFeedMap(map: SavedMap, author: MyMapsListProps['userProfile']): FeedM
 export function MyMapsList({ maps, userProfile, onDelete, onPublish, onUnpublish }: MyMapsListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
-  const [publishModalMap, setPublishModalMap] = useState<SavedMap | null>(null);
+  const [publishModalMap, setPublishModalMap] = useState<SavedMap | SavedMapSummary | null>(null);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this map?')) return;
@@ -67,7 +67,7 @@ export function MyMapsList({ maps, userProfile, onDelete, onPublish, onUnpublish
     }
   };
 
-  const handlePublishClick = (map: SavedMap) => {
+  const handlePublishClick = (map: SavedMap | SavedMapSummary) => {
     setPublishModalMap(map);
   };
 
