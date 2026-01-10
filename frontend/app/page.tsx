@@ -7,6 +7,7 @@ import { FAQSchema } from '@/components/seo/FAQSchema';
 import { HowToSchema } from '@/components/seo/HowToSchema';
 import { ChangelogModal } from '@/components/changelog/ChangelogModal';
 import { FeaturedMaps } from '@/components/landing/FeaturedMaps';
+import { TopGallerySection } from '@/components/landing/TopGallerySection';
 
 export default async function LandingPage() {
   return (
@@ -14,6 +15,7 @@ export default async function LandingPage() {
       <FAQSchema />
       <HowToSchema />
       <Hero />
+      <TopGallerySection />
       <Features />
       <StyleShowcase />
       <FeaturedMaps />

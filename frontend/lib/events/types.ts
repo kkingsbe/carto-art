@@ -50,7 +50,10 @@ export type EventType =
     | 'export_modal_donate_click'
     | 'export_modal_share_click'
     | 'export_modal_save_click'
-    | 'export_modal_publish_click';
+    | 'export_modal_publish_click'
+    // Upgrade Nudge Events
+    | 'upgrade_nudge_shown'
+    | 'upgrade_nudge_clicked';
 
 export interface TrackEventParams {
     eventType: EventType;

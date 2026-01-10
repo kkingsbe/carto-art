@@ -207,6 +207,7 @@ export interface PosterConfig {
     markerPathLabelSize?: number;   // New: size for distance labels
     fillMarkers?: boolean;          // New: toggle to fill the shape formed by markers
     markerFillColor?: string;       // New: color for the fill
+    showScale?: boolean;            // New: toggle scale bar visibility
   };
   markers?: CustomMarker[]; // New: Custom markers list
   // Rendering quality settings

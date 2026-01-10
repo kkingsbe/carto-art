@@ -7,8 +7,11 @@ import { getUserProfile } from '@/lib/actions/user';
 
 export function useUserSubscription() {
     const [subscriptionTier, setSubscriptionTier] = useState<'free' | 'carto_plus'>('free');
+    const [user, setUser] = useState<any | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const searchParams = useSearchParams();
+
+
 
     useEffect(() => {
         let isMounted = true;
@@ -22,6 +25,10 @@ export function useUserSubscription() {
             try {
                 const supabase = createClient();
                 const { data: { user } } = await supabase.auth.getUser();
+
+                if (isMounted) {
+                    setUser(user);
+                }
 
                 if (user) {
                     const poll = async () => {
@@ -102,5 +109,5 @@ export function useUserSubscription() {
         };
     }, [searchParams]);
 
-    return { subscriptionTier, isLoading };
+    return { subscriptionTier, isLoading, user, isAuthenticated: !!user };
 }

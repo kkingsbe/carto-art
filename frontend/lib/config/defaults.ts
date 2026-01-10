@@ -103,6 +103,7 @@ export const DEFAULT_CONFIG: PosterConfig = {
     graticuleWeight: 1.0,
     graticuleLabelSize: 12,
     graticuleDensity: 10,
+    showScale: false,
   },
   rendering: {
     overzoom: 1,

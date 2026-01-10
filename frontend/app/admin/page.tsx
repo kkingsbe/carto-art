@@ -4,6 +4,7 @@ import { AddDonationDialog } from '@/components/admin/AddDonationDialog';
 import { ReferrerLeaderboard } from '@/components/admin/ReferrerLeaderboard';
 import { DashboardStats } from '@/components/admin/DashboardStats';
 import { DashboardActivityFeed } from '@/components/admin/DashboardActivityFeed';
+import { GlobalActivityMap } from '@/components/admin/GlobalActivityMap';
 import { StatsSkeleton, ActivitySkeleton } from '@/components/admin/Skeletons';
 
 export default function AdminDashboardPage() {
@@ -22,6 +23,11 @@ export default function AdminDashboardPage() {
             {/* Quick Stats Grid */}
             <Suspense fallback={<StatsSkeleton />}>
                 <DashboardStats />
+            </Suspense>
+
+            {/* Global Activity Map */}
+            <Suspense fallback={<div className="h-[500px] w-full bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />}>
+                <GlobalActivityMap />
             </Suspense>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">

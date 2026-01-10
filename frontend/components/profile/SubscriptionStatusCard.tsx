@@ -87,7 +87,7 @@ export function SubscriptionStatusCard({ tier, status }: SubscriptionStatusCardP
                         Subscription
                     </h3>
                     <p className="text-sm text-[#d4cfc4]/60 mb-6">
-                        Unlock video exports, unlimited GIFs, and more.
+                        Unlock custom markers, routes, video exports, and more.
                     </p>
 
                     <button

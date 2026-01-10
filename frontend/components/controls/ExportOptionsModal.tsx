@@ -77,6 +77,16 @@ export function ExportOptionsModal({
 
     const isExportLimitReached = exportUsage && !exportUsage.allowed && subscriptionTier === 'free';
 
+    // Determine if we should show upgrade nudge (when user has 1-2 exports remaining)
+    const shouldShowUpgradeNudge = subscriptionTier === 'free' &&
+        exportUsage &&
+        exportUsage.limit !== Infinity &&
+        exportUsage.remaining !== undefined &&
+        exportUsage.remaining > 0 &&
+        exportUsage.remaining <= 2;
+
+    const hasTrackedNudgeRef = useRef(false);
+
     // Track paywall shown event
     // Track paywall/login wall shown event
     useEffect(() => {
@@ -101,6 +111,27 @@ export function ExportOptionsModal({
             hasTrackedPaywallRef.current = true;
         }
     }, [isOpen, isExportLimitReached, exportUsage, isAuthenticated]);
+
+    // Track upgrade nudge shown (when user has 1-2 exports remaining)
+    useEffect(() => {
+        if (!isOpen) {
+            hasTrackedNudgeRef.current = false;
+            return;
+        }
+
+        if (isOpen && shouldShowUpgradeNudge && !hasTrackedNudgeRef.current) {
+            trackEventAction({
+                eventType: 'upgrade_nudge_shown',
+                eventName: 'low_export_count',
+                sessionId: getSessionId(),
+                metadata: {
+                    remaining: exportUsage?.remaining,
+                    limit: exportUsage?.limit
+                }
+            });
+            hasTrackedNudgeRef.current = true;
+        }
+    }, [isOpen, shouldShowUpgradeNudge, exportUsage]);
 
     // Calculate countdown timer when limit is reached
     useEffect(() => {
@@ -385,7 +416,7 @@ export function ExportOptionsModal({
                                                 </h4>
                                             </div>
                                             <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                Get unlimited exports, GIF/Video animations, and more.
+                                                Get unlimited exports, Custom Markers & Routes, GIF/Video animations, and more.
                                             </p>
                                             <button
                                                 onClick={handleUpgrade}
@@ -402,14 +433,48 @@ export function ExportOptionsModal({
                         <>
                             {/* Remaining exports indicator for free tier */}
                             {subscriptionTier === 'free' && exportUsage && exportUsage.limit !== Infinity && (
-                                <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900/20 px-4 py-2.5 rounded-xl border border-blue-100 dark:border-blue-800 mb-4">
-                                    <span className="text-sm text-blue-700 dark:text-blue-300">
-                                        Exports remaining today
-                                    </span>
-                                    <span className="font-semibold text-blue-700 dark:text-blue-300">
-                                        {exportUsage.remaining}/{exportUsage.limit}
-                                    </span>
-                                </div>
+                                shouldShowUpgradeNudge ? (
+                                    /* Upgrade nudge when running low on exports */
+                                    <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-4">
+                                        <div className="flex items-start gap-3">
+                                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                                                <Sparkles className="w-5 h-5 text-white" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <span className="font-semibold text-gray-900 dark:text-white">
+                                                        {exportUsage.remaining === 1 ? 'Last export today!' : `Only ${exportUsage.remaining} exports left`}
+                                                    </span>
+                                                    <span className="text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 rounded-full">
+                                                        {exportUsage.remaining}/{exportUsage.limit}
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                                                    Upgrade for unlimited exports, plus GIF animations, video exports, and custom markers.
+                                                </p>
+                                                <button
+                                                    onClick={handleUpgrade}
+                                                    className="text-sm font-medium text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200 flex items-center gap-1 group"
+                                                >
+                                                    Upgrade to Plus
+                                                    <svg className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    /* Standard exports counter when not running low */
+                                    <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900/20 px-4 py-2.5 rounded-xl border border-blue-100 dark:border-blue-800 mb-4">
+                                        <span className="text-sm text-blue-700 dark:text-blue-300">
+                                            Exports remaining today
+                                        </span>
+                                        <span className="font-semibold text-blue-700 dark:text-blue-300">
+                                            {exportUsage.remaining}/{exportUsage.limit}
+                                        </span>
+                                    </div>
+                                )
                             )}
 
                             <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -522,44 +587,72 @@ export function ExportOptionsModal({
                                         })}
                                     </div>
                                 </div>
-                                {/* Animation Category - only show when gif_export feature flag is enabled */}
-                                {isGifExportEnabled && (
-                                    <div>
-                                        <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Animation</div>
-                                        <div className="space-y-3">
-                                            <button
-                                                onClick={() => setSelectedKey('ORBIT_GIF')}
-                                                className={cn(
-                                                    "w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-left",
-                                                    selectedKey === 'ORBIT_GIF'
+                                {/* Animation Category - Always visible, locked for free users */}
+                                <div>
+                                    <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                        Animation
+                                        {isLocked('ORBIT_GIF') && (
+                                            <span className="text-[9px] font-medium text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">PLUS</span>
+                                        )}
+                                    </div>
+                                    <div className="space-y-3">
+                                        <button
+                                            onClick={() => {
+                                                if (isLocked('ORBIT_GIF')) {
+                                                    trackEventAction({
+                                                        eventType: 'upgrade_nudge_clicked',
+                                                        eventName: 'locked_feature_gif',
+                                                        sessionId: getSessionId()
+                                                    });
+                                                    handleUpgrade();
+                                                } else {
+                                                    setSelectedKey('ORBIT_GIF');
+                                                }
+                                            }}
+                                            className={cn(
+                                                "w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-left group",
+                                                isLocked('ORBIT_GIF')
+                                                    ? "border-amber-200 dark:border-amber-800/50 bg-gradient-to-br from-amber-50/50 to-orange-50/30 dark:from-amber-900/10 dark:to-orange-900/5 hover:border-amber-300 dark:hover:border-amber-700"
+                                                    : selectedKey === 'ORBIT_GIF'
                                                         ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
-                                                        : "border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800",
-                                                    isLocked('ORBIT_GIF') && "opacity-60 cursor-not-allowed"
-                                                )}
-                                                disabled={isLocked('ORBIT_GIF')}
-                                            >
-                                                <div className="flex-1">
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                                            Orbit GIF
-                                                            {isLocked('ORBIT_GIF') && <Lock className="w-3.5 h-3.5 text-amber-500" />}
-                                                        </div>
-                                                        {selectedKey === 'ORBIT_GIF' && <Check className="w-5 h-5 text-blue-500" />}
+                                                        : "border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800"
+                                            )}
+                                        >
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                                        <Film className="w-4 h-4 text-purple-500" />
+                                                        Orbit GIF
+                                                        {isLocked('ORBIT_GIF') && (
+                                                            <span className="flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+                                                                <Lock className="w-3 h-3" />
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                    <div className="text-xs text-gray-400 dark:text-gray-500 mb-2">
-                                                        Animated orbit of your map location.
-                                                    </div>
+                                                    {isLocked('ORBIT_GIF') ? (
+                                                        <span className="text-xs font-medium text-amber-600 dark:text-amber-400 group-hover:underline">
+                                                            Unlock
+                                                        </span>
+                                                    ) : selectedKey === 'ORBIT_GIF' ? (
+                                                        <Check className="w-5 h-5 text-blue-500" />
+                                                    ) : null}
+                                                </div>
+                                                <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                                    {isLocked('ORBIT_GIF')
+                                                        ? "Create stunning animated orbits around your map. Perfect for social media."
+                                                        : "Animated orbit of your map location."}
+                                                </div>
+                                                {!isLocked('ORBIT_GIF') && (
                                                     <div className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
                                                         <span>{gifDuration}s</span>
                                                         <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
                                                         <span>{gifFps} FPS</span>
                                                         <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
                                                         <span>{gifRotation}° rotation</span>
-                                                        <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
-                                                        <span className="capitalize">{gifAnimationMode}</span>
                                                     </div>
-                                                </div>
-                                            </button>
+                                                )}
+                                            </div>
+                                        </button>
 
                                             {/* GIF Configuration - only show when ORBIT_GIF is selected */}
                                             {selectedKey === 'ORBIT_GIF' && (
@@ -667,45 +760,73 @@ export function ExportOptionsModal({
                                             )}
                                         </div>
                                     </div>
-                                )}
-                                {/* Video Export */}
-                                {isVideoExportEnabled && (
-                                    <div>
-                                        <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Video</div>
-                                        <div className="space-y-3">
-                                            <button
-                                                onClick={() => !isLocked('ORBIT_VIDEO') && setSelectedKey('ORBIT_VIDEO')}
-                                                className={cn(
-                                                    "w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-left",
-                                                    selectedKey === 'ORBIT_VIDEO'
+
+                                {/* Video Export - Always visible, locked for free users */}
+                                <div>
+                                    <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                        Video
+                                        {isLocked('ORBIT_VIDEO') && (
+                                            <span className="text-[9px] font-medium text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">PLUS</span>
+                                        )}
+                                    </div>
+                                    <div className="space-y-3">
+                                        <button
+                                            onClick={() => {
+                                                if (isLocked('ORBIT_VIDEO')) {
+                                                    trackEventAction({
+                                                        eventType: 'upgrade_nudge_clicked',
+                                                        eventName: 'locked_feature_video',
+                                                        sessionId: getSessionId()
+                                                    });
+                                                    handleUpgrade();
+                                                } else {
+                                                    setSelectedKey('ORBIT_VIDEO');
+                                                }
+                                            }}
+                                            className={cn(
+                                                "w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-left group",
+                                                isLocked('ORBIT_VIDEO')
+                                                    ? "border-rose-200 dark:border-rose-800/50 bg-gradient-to-br from-rose-50/50 to-pink-50/30 dark:from-rose-900/10 dark:to-pink-900/5 hover:border-rose-300 dark:hover:border-rose-700"
+                                                    : selectedKey === 'ORBIT_VIDEO'
                                                         ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
-                                                        : "border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800",
-                                                    isLocked('ORBIT_VIDEO') && "opacity-60 cursor-not-allowed"
-                                                )}
-                                                disabled={isLocked('ORBIT_VIDEO')}
-                                            >
-                                                <div className="flex-1">
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                                            Orbit Video
-                                                            {isLocked('ORBIT_VIDEO') && <Lock className="w-3.5 h-3.5 text-amber-500" />}
-                                                        </div>
-                                                        {selectedKey === 'ORBIT_VIDEO' && <Check className="w-5 h-5 text-blue-500" />}
+                                                        : "border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800"
+                                            )}
+                                        >
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                                        <Film className="w-4 h-4 text-rose-500" />
+                                                        Orbit Video
+                                                        {isLocked('ORBIT_VIDEO') && (
+                                                            <span className="flex items-center gap-1 text-xs font-medium text-rose-600 dark:text-rose-400">
+                                                                <Lock className="w-3 h-3" />
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                    <div className="text-xs text-gray-400 dark:text-gray-500 mb-2">
-                                                        High quality video orbit.
-                                                    </div>
+                                                    {isLocked('ORBIT_VIDEO') ? (
+                                                        <span className="text-xs font-medium text-rose-600 dark:text-rose-400 group-hover:underline">
+                                                            Unlock
+                                                        </span>
+                                                    ) : selectedKey === 'ORBIT_VIDEO' ? (
+                                                        <Check className="w-5 h-5 text-blue-500" />
+                                                    ) : null}
+                                                </div>
+                                                <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                                    {isLocked('ORBIT_VIDEO')
+                                                        ? "Export high-quality MP4 videos with smooth 60fps. Share anywhere."
+                                                        : "High quality video orbit."}
+                                                </div>
+                                                {!isLocked('ORBIT_VIDEO') && (
                                                     <div className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
                                                         <span>{videoDuration}s</span>
                                                         <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
                                                         <span>{videoFps} FPS</span>
                                                         <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
                                                         <span>{videoRotation}° rotation</span>
-                                                        <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
-                                                        <span className="capitalize">{videoAnimationMode}</span>
                                                     </div>
-                                                </div>
-                                            </button>
+                                                )}
+                                            </div>
+                                        </button>
 
                                             {/* Video Configuration */}
                                             {selectedKey === 'ORBIT_VIDEO' && (
@@ -813,43 +934,74 @@ export function ExportOptionsModal({
                                             )}
                                         </div>
                                     </div>
-                                )}
 
-                                {/* STL Export */}
-                                {isStlExportEnabled && (
-                                    <div>
-                                        <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">3D Fabrication</div>
-                                        <div className="space-y-3">
-                                            <button
-                                                onClick={() => !isLocked('STL_MODEL') && setSelectedKey('STL_MODEL')}
-                                                className={cn(
-                                                    "w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-left",
-                                                    selectedKey === 'STL_MODEL'
+                                {/* STL Export - Always visible, locked for free users */}
+                                <div>
+                                    <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                        3D Fabrication
+                                        {isLocked('STL_MODEL') && (
+                                            <span className="text-[9px] font-medium text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">PLUS</span>
+                                        )}
+                                    </div>
+                                    <div className="space-y-3">
+                                        <button
+                                            onClick={() => {
+                                                if (isLocked('STL_MODEL')) {
+                                                    trackEventAction({
+                                                        eventType: 'upgrade_nudge_clicked',
+                                                        eventName: 'locked_feature_stl',
+                                                        sessionId: getSessionId()
+                                                    });
+                                                    handleUpgrade();
+                                                } else {
+                                                    setSelectedKey('STL_MODEL');
+                                                }
+                                            }}
+                                            className={cn(
+                                                "w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-left group",
+                                                isLocked('STL_MODEL')
+                                                    ? "border-emerald-200 dark:border-emerald-800/50 bg-gradient-to-br from-emerald-50/50 to-teal-50/30 dark:from-emerald-900/10 dark:to-teal-900/5 hover:border-emerald-300 dark:hover:border-emerald-700"
+                                                    : selectedKey === 'STL_MODEL'
                                                         ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
-                                                        : "border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800",
-                                                    isLocked('STL_MODEL') && "opacity-60 cursor-not-allowed"
-                                                )}
-                                                disabled={isLocked('STL_MODEL')}
-                                            >
-                                                <div className="flex-1">
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                                            3D Model (STL)
-                                                            {isLocked('STL_MODEL') && <Lock className="w-3.5 h-3.5 text-amber-500" />}
-                                                        </div>
-                                                        {selectedKey === 'STL_MODEL' && <Check className="w-5 h-5 text-blue-500" />}
+                                                        : "border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800"
+                                            )}
+                                        >
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                                        <Box className="w-4 h-4 text-emerald-500" />
+                                                        3D Model (STL)
+                                                        {isLocked('STL_MODEL') && (
+                                                            <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                                                                <Lock className="w-3 h-3" />
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                    <div className="text-xs text-gray-400 dark:text-gray-500 mb-2">
-                                                        Binary STL for 3D printing.
-                                                    </div>
+                                                    {isLocked('STL_MODEL') ? (
+                                                        <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 group-hover:underline">
+                                                            Unlock
+                                                        </span>
+                                                    ) : selectedKey === 'STL_MODEL' ? (
+                                                        <Check className="w-5 h-5 text-blue-500" />
+                                                    ) : null}
+                                                </div>
+                                                <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                                    {isLocked('STL_MODEL')
+                                                        ? "Export 3D terrain models for printing. Create physical map art."
+                                                        : "Binary STL for 3D printing."}
+                                                </div>
+                                                {!isLocked('STL_MODEL') && (
                                                     <div className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
                                                         <span>{stlModelHeight}mm Base</span>
                                                         <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
                                                         <span className="capitalize">{stlResolution} Quality</span>
                                                     </div>
-                                                </div>
+                                                )}
+                                            </div>
+                                            {!isLocked('STL_MODEL') && (
                                                 <Box className="w-8 h-8 text-gray-300 dark:text-gray-600 ml-4 group-hover:text-gray-400" />
-                                            </button>
+                                            )}
+                                        </button>
 
                                             {/* STL Configuration */}
                                             {selectedKey === 'STL_MODEL' && (
@@ -902,7 +1054,6 @@ export function ExportOptionsModal({
                                             )}
                                         </div>
                                     </div>
-                                )}
                             </div>
 
                             {/* Upgrade Callout */}

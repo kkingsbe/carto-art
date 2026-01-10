@@ -56,6 +56,14 @@ const commands: Record<string, (args: string[]) => Promise<void>> = {
     'help': async () => {
         printHelp();
     },
+    'check-paywall-stats': async () => {
+        const { checkPaywallStats } = await import('./check_paywall_stats');
+        await checkPaywallStats();
+    },
+    'check-subscribers': async () => {
+        const { checkNewSubscribers } = await import('./check_new_subscribers');
+        await checkNewSubscribers();
+    },
     'db:inspect': async (args) => {
         const table = args[0];
         if (!table) {
@@ -153,6 +161,8 @@ Usage:
   db:inspect <table> [limit] [--json] View table rows.
   db:get <table> <id> [--json]        Fetch row by ID.
   db:rpc <func> [k=v]... [--json]     Call Supabase RPC.
+  check-paywall-stats                 Show users who hit the paywall in last 24h.
+  check-subscribers                   Show new subscribers in last 24h.
   help                                Show this help message.
 `);
 }

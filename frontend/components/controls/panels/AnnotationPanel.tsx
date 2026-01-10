@@ -7,6 +7,7 @@ import { BackdropSection } from '../typography/BackdropSection';
 import { DisplayOptionsSection } from '../typography/DisplayOptionsSection';
 import { MapLabelsSection } from '../typography/MapLabelsSection';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
+import { ControlCheckbox } from '@/components/ui/control-components';
 import { MarkersList } from '../markers/MarkersList';
 import { useUserSubscription } from '@/hooks/useUserSubscription';
 import type { PosterConfig, CustomMarker } from '@/types/poster';
@@ -28,7 +29,7 @@ export function AnnotationPanel({
     setConfig
 }: AnnotationPanelProps) {
     const { typography, style, layers, location, markers = [] } = config;
-    const { subscriptionTier } = useUserSubscription();
+    const { subscriptionTier, isAuthenticated } = useUserSubscription();
     const isPlusEnabled = subscriptionTier === 'carto_plus';
 
     const handleMarkersUpdate = (newMarkers: CustomMarker[]) => {
@@ -79,7 +80,12 @@ export function AnnotationPanel({
                 <Accordion type="single" collapsible>
                     <AccordionItem value="markers" className="border-none">
                         <AccordionTrigger className="py-2 hover:no-underline">
-                            <span className="text-sm font-semibold text-gray-900 dark:text-white">Custom Markers</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold text-gray-900 dark:text-white">Custom Markers</span>
+                                <span className="px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-[10px] font-bold text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+                                    NEW
+                                </span>
+                            </div>
                         </AccordionTrigger>
                         <AccordionContent>
                             <MarkersList
@@ -87,6 +93,7 @@ export function AnnotationPanel({
                                 onMarkersChange={handleMarkersUpdate}
                                 onCenterAdd={handleAddCenterMarker}
                                 isPlusEnabled={isPlusEnabled}
+                                isAuthenticated={isAuthenticated}
                                 connectMarkers={layers.connectMarkers}
                                 markerPathColor={layers.markerPathColor}
                                 showSegmentLengths={layers.showSegmentLengths}
@@ -113,6 +120,19 @@ export function AnnotationPanel({
                             onLayersChange={updateLayers}
                         />
                     </Accordion>
+                </div>
+
+                {/* Map Tools / Overlays */}
+                <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
+                    <h4 className="text-sm font-semibold mb-3 text-gray-900 dark:text-white">Map Tools</h4>
+                    <div className="space-y-2">
+                        <ControlCheckbox
+                            label="Show Scale Bar"
+                            description="Display a distance scale in the corner"
+                            checked={Boolean(layers.showScale)}
+                            onChange={(e) => updateLayers({ showScale: e.target.checked })}
+                        />
+                    </div>
                 </div>
             </div>
 

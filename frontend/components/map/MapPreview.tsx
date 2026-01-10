@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
-import Map, { type MapRef, Source, Layer, Marker } from 'react-map-gl/maplibre';
+import Map, { type MapRef, Source, Layer, Marker, ScaleControl } from 'react-map-gl/maplibre';
 import maplibregl from 'maplibre-gl';
 import { Loader2 } from 'lucide-react';
 import type { PosterLocation, LayerToggle, PosterConfig, CustomMarker } from '@/types/poster';
@@ -189,6 +189,32 @@ export function MapPreview({
     }
   }, [layers?.buildings3DPitch, layers?.buildings3DBearing, isMoving, locked, is3DMode]);
 
+  // Handle layer visibility toggles
+  useEffect(() => {
+    if (!mapRef.current || !layers || !layerToggles) return;
+    const map = mapRef.current.getMap();
+
+    // Map specific boolean flags from 'layers' config to layerToggle IDs
+    // The keys in layers (e.g. 'streets', 'population') often match layerToggle.id
+    // We iterate through all defined toggles to set their state
+    layerToggles.forEach(toggle => {
+      const isVisible = layers[toggle.id as keyof typeof layers];
+
+      // If the config explicitly defines this toggle state (boolean), apply it
+      if (typeof isVisible === 'boolean') {
+        toggle.layerIds.forEach(layerId => {
+          if (map.getLayer(layerId)) {
+            map.setLayoutProperty(
+              layerId,
+              'visibility',
+              isVisible ? 'visible' : 'none'
+            );
+          }
+        });
+      }
+    });
+  }, [layers, layerToggles, mapStyle]); // Re-run when config or style changes
+
   // Ensure graticule layers render on top to prevent z-fighting
   useEffect(() => {
     if (!mapRef.current || !layers?.graticules) return;
@@ -251,10 +277,13 @@ export function MapPreview({
     }
   }, [onError]);
 
+
   const handleLoad = useCallback(() => {
-    if (mapRef.current && onMapLoad) {
+    if (mapRef.current) {
       const map = mapRef.current.getMap();
-      onMapLoad(map);
+      if (onMapLoad) {
+        onMapLoad(map);
+      }
 
       const loadingHandler = (e: any) => {
         // Ignore local GeoJSON sources to prevent flicker and render loops
@@ -665,6 +694,19 @@ export function MapPreview({
             elevationData={getAwsTerrariumTileUrl()}
             visible={true}
           />
+        )}
+        {layers?.showScale && (
+          <ScaleControl position="top-left" maxWidth={100} unit="metric" style={{
+            background: 'rgba(255, 255, 255, 0.5)',
+            border: 'none',
+            borderRadius: '2px',
+            color: '#333',
+            fontSize: '10px',
+            padding: '0 4px',
+            boxShadow: 'none',
+            marginLeft: '4px',
+            marginTop: '40px' // Offset down to avoid overlap with "Updating tiles" indicator at top-4
+          }} />
         )}
       </Map>
 

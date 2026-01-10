@@ -16,11 +16,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { HexColorPicker } from 'react-colorful';
 import { MarkerIcon } from '@/components/map/MarkerIcon';
 
+import { useRouter } from 'next/navigation';
+
 interface MarkersListProps {
     markers?: CustomMarker[];
     onMarkersChange: (markers: CustomMarker[]) => void;
     onCenterAdd: () => void;
     isPlusEnabled?: boolean;
+    isAuthenticated?: boolean;
     connectMarkers?: boolean;
     markerPathColor?: string;
     fillMarkers?: boolean;
@@ -44,6 +47,7 @@ export const MarkersList: React.FC<MarkersListProps> = ({
     onMarkersChange,
     onCenterAdd,
     isPlusEnabled = false,
+    isAuthenticated = false,
     connectMarkers = false,
     markerPathColor = '#000000',
     fillMarkers = false,
@@ -56,16 +60,43 @@ export const MarkersList: React.FC<MarkersListProps> = ({
     // Capture props in an object to use in the render function to avoid stale closures in the conditional block
     const markersListProps = { showSegmentLengths, markerPathLabelStyle, markerPathLabelSize };
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [isPending, startTransition] = React.useTransition();
+    const router = useRouter();
+
+    const handleUpgrade = () => {
+        if (!isAuthenticated) {
+            router.push('/login');
+            return;
+        }
+
+        startTransition(async () => {
+            try {
+                // Dynamically import to avoid server/client issues if not already handled or just use the imported action
+                const { createCheckoutSession } = await import('@/lib/actions/subscription');
+                await createCheckoutSession();
+            } catch (error) {
+                console.error('Failed to start checkout', error);
+            }
+        });
+    };
 
     // If not plus enabled, show upgrade prompt (or disable controls)
     if (!isPlusEnabled) {
         return (
             <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 text-center">
                 <MapPin className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">Custom Markers</h4>
-                <p className="text-xs text-gray-500 mt-1 mb-3">Add and customize markers with Carto Plus.</p>
-                <Button variant="outline" size="sm" className="w-full" disabled>
-                    Upgrade to Plus
+                <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">Custom Markers & Routes</h4>
+                <p className="text-xs text-gray-500 mt-1 mb-3">
+                    Plan routes, measure distances, and add custom points with Carto Plus.
+                </p>
+                <Button
+                    variant="default"
+                    size="sm"
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 border-0"
+                    onClick={handleUpgrade}
+                    disabled={isPending}
+                >
+                    {isPending ? 'Redirecting...' : 'Upgrade to Plus'}
                 </Button>
             </div>
         );
