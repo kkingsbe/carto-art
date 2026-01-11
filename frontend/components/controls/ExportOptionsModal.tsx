@@ -96,18 +96,21 @@ export function ExportOptionsModal({
         }
 
         if (isOpen && isExportLimitReached && !hasTrackedPaywallRef.current) {
-            const eventType = isAuthenticated ? 'paywall_shown' : 'login_wall_shown';
-            console.log(`Tracking ${eventType} event`);
+            // Only track if authenticated to avoid server action redirects
+            if (isAuthenticated) {
+                const eventType = 'paywall_shown';
+                console.log(`Tracking ${eventType} event`);
 
-            trackEventAction({
-                eventType,
-                eventName: 'export_limit_reached',
-                sessionId: getSessionId(),
-                metadata: {
-                    limit: exportUsage?.limit,
-                    used: exportUsage?.used
-                }
-            });
+                trackEventAction({
+                    eventType,
+                    eventName: 'export_limit_reached',
+                    sessionId: getSessionId(),
+                    metadata: {
+                        limit: exportUsage?.limit,
+                        used: exportUsage?.used
+                    }
+                }).catch(() => { });
+            }
             hasTrackedPaywallRef.current = true;
         }
     }, [isOpen, isExportLimitReached, exportUsage, isAuthenticated]);
@@ -120,18 +123,20 @@ export function ExportOptionsModal({
         }
 
         if (isOpen && shouldShowUpgradeNudge && !hasTrackedNudgeRef.current) {
-            trackEventAction({
-                eventType: 'upgrade_nudge_shown',
-                eventName: 'low_export_count',
-                sessionId: getSessionId(),
-                metadata: {
-                    remaining: exportUsage?.remaining,
-                    limit: exportUsage?.limit
-                }
-            });
+            if (isAuthenticated) {
+                trackEventAction({
+                    eventType: 'upgrade_nudge_shown',
+                    eventName: 'low_export_count',
+                    sessionId: getSessionId(),
+                    metadata: {
+                        remaining: exportUsage?.remaining,
+                        limit: exportUsage?.limit
+                    }
+                }).catch(() => { });
+            }
             hasTrackedNudgeRef.current = true;
         }
-    }, [isOpen, shouldShowUpgradeNudge, exportUsage]);
+    }, [isOpen, shouldShowUpgradeNudge, exportUsage, isAuthenticated]);
 
     // Calculate countdown timer when limit is reached
     useEffect(() => {
@@ -174,6 +179,11 @@ export function ExportOptionsModal({
     };
 
     const handleUpgrade = async () => {
+        if (!isAuthenticated) {
+            const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+            router.push(`/login?next=${returnUrl}`);
+            return;
+        }
         // Pass current search params to preserve state on redirect
         const searchParams = typeof window !== 'undefined' ? window.location.search.substring(1) : '';
         await createCheckoutSession(searchParams);
@@ -187,15 +197,17 @@ export function ExportOptionsModal({
     // Track export_abandon when closing without exporting
     const handleClose = () => {
         if (selectedKey && !isExporting && !isExportLimitReached) {
-            trackEventAction({
-                eventType: 'export_abandon',
-                eventName: 'export_modal_closed',
-                sessionId: getSessionId(),
-                metadata: {
-                    selectedResolution: selectedKey,
-                    wasExporting: isExporting
-                }
-            });
+            if (isAuthenticated) {
+                trackEventAction({
+                    eventType: 'export_abandon',
+                    eventName: 'export_modal_closed',
+                    sessionId: getSessionId(),
+                    metadata: {
+                        selectedResolution: selectedKey,
+                        wasExporting: isExporting
+                    }
+                }).catch(() => { });
+            }
         }
         onClose();
     };
@@ -599,11 +611,13 @@ export function ExportOptionsModal({
                                         <button
                                             onClick={() => {
                                                 if (isLocked('ORBIT_GIF')) {
-                                                    trackEventAction({
-                                                        eventType: 'upgrade_nudge_clicked',
-                                                        eventName: 'locked_feature_gif',
-                                                        sessionId: getSessionId()
-                                                    });
+                                                    if (isAuthenticated) {
+                                                        trackEventAction({
+                                                            eventType: 'upgrade_nudge_clicked',
+                                                            eventName: 'locked_feature_gif',
+                                                            sessionId: getSessionId()
+                                                        }).catch(() => { });
+                                                    }
                                                     handleUpgrade();
                                                 } else {
                                                     setSelectedKey('ORBIT_GIF');
@@ -654,112 +668,112 @@ export function ExportOptionsModal({
                                             </div>
                                         </button>
 
-                                            {/* GIF Configuration - only show when ORBIT_GIF is selected */}
-                                            {selectedKey === 'ORBIT_GIF' && (
-                                                <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 space-y-4">
-                                                    {/* Duration Slider */}
-                                                    <div>
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Duration</label>
-                                                            <span className="text-sm text-gray-500 dark:text-gray-400">{gifDuration}s</span>
-                                                        </div>
-                                                        <input
-                                                            type="range"
-                                                            min="1"
-                                                            max="10"
-                                                            step="1"
-                                                            value={gifDuration}
-                                                            onChange={(e) => setGifDuration(Number(e.target.value))}
-                                                            className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                                                        />
-                                                        <div className="flex justify-between text-xs text-gray-400 mt-1">
-                                                            <span>1s</span>
-                                                            <span>10s</span>
-                                                        </div>
+                                        {/* GIF Configuration - only show when ORBIT_GIF is selected */}
+                                        {selectedKey === 'ORBIT_GIF' && (
+                                            <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 space-y-4">
+                                                {/* Duration Slider */}
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Duration</label>
+                                                        <span className="text-sm text-gray-500 dark:text-gray-400">{gifDuration}s</span>
                                                     </div>
-
-                                                    {/* Rotation Slider */}
-                                                    <div>
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Rotation</label>
-                                                            <span className="text-sm text-gray-500 dark:text-gray-400">{gifRotation}°</span>
-                                                        </div>
-                                                        <input
-                                                            type="range"
-                                                            min="0"
-                                                            max="720"
-                                                            step="45"
-                                                            value={gifRotation}
-                                                            onChange={(e) => setGifRotation(Number(e.target.value))}
-                                                            className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                                                        />
-                                                        <div className="flex justify-between text-xs text-gray-400 mt-1">
-                                                            <span>0°</span>
-                                                            <span>360°</span>
-                                                            <span>720°</span>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* FPS Slider */}
-                                                    <div>
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Frames Per Second (FPS)</label>
-                                                            <span className="text-sm text-gray-500 dark:text-gray-400">{gifFps} fps</span>
-                                                        </div>
-                                                        <input
-                                                            type="range"
-                                                            min="5"
-                                                            max="50"
-                                                            step="1"
-                                                            value={gifFps}
-                                                            onChange={(e) => setGifFps(Number(e.target.value))}
-                                                            className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                                                        />
-                                                        <div className="flex justify-between text-xs text-gray-400 mt-1">
-                                                            <span>5 fps</span>
-                                                            <span>50 fps</span>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Animation Mode */}
-                                                    <div>
-                                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Animation Type</label>
-                                                        <div className="grid grid-cols-2 gap-2">
-                                                            <button
-                                                                onClick={() => setGifAnimationMode('orbit')}
-                                                                className={cn(
-                                                                    "flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-sm font-medium transition-all",
-                                                                    gifAnimationMode === 'orbit'
-                                                                        ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300"
-                                                                        : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400"
-                                                                )}
-                                                            >
-                                                                <RotateCw className="w-4 h-4" />
-                                                                Orbit
-                                                            </button>
-                                                            <button
-                                                                onClick={() => setGifAnimationMode('cinematic')}
-                                                                className={cn(
-                                                                    "flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-sm font-medium transition-all",
-                                                                    gifAnimationMode === 'cinematic'
-                                                                        ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300"
-                                                                        : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400"
-                                                                )}
-                                                            >
-                                                                <Film className="w-4 h-4" />
-                                                                Cinematic
-                                                            </button>
-                                                        </div>
-                                                        <p className="text-[10px] text-gray-400 mt-1.5 leading-tight">
-                                                            {gifAnimationMode === 'orbit'
-                                                                ? "Simple rotation around the center point."
-                                                                : "Pro camerawork: Top-down to 3D tilt + pull back + orbit."}
-                                                        </p>
+                                                    <input
+                                                        type="range"
+                                                        min="1"
+                                                        max="10"
+                                                        step="1"
+                                                        value={gifDuration}
+                                                        onChange={(e) => setGifDuration(Number(e.target.value))}
+                                                        className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                                                    />
+                                                    <div className="flex justify-between text-xs text-gray-400 mt-1">
+                                                        <span>1s</span>
+                                                        <span>10s</span>
                                                     </div>
                                                 </div>
-                                            )}
-                                        </div>
+
+                                                {/* Rotation Slider */}
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Rotation</label>
+                                                        <span className="text-sm text-gray-500 dark:text-gray-400">{gifRotation}°</span>
+                                                    </div>
+                                                    <input
+                                                        type="range"
+                                                        min="0"
+                                                        max="720"
+                                                        step="45"
+                                                        value={gifRotation}
+                                                        onChange={(e) => setGifRotation(Number(e.target.value))}
+                                                        className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                                                    />
+                                                    <div className="flex justify-between text-xs text-gray-400 mt-1">
+                                                        <span>0°</span>
+                                                        <span>360°</span>
+                                                        <span>720°</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* FPS Slider */}
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Frames Per Second (FPS)</label>
+                                                        <span className="text-sm text-gray-500 dark:text-gray-400">{gifFps} fps</span>
+                                                    </div>
+                                                    <input
+                                                        type="range"
+                                                        min="5"
+                                                        max="50"
+                                                        step="1"
+                                                        value={gifFps}
+                                                        onChange={(e) => setGifFps(Number(e.target.value))}
+                                                        className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                                                    />
+                                                    <div className="flex justify-between text-xs text-gray-400 mt-1">
+                                                        <span>5 fps</span>
+                                                        <span>50 fps</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Animation Mode */}
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Animation Type</label>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <button
+                                                            onClick={() => setGifAnimationMode('orbit')}
+                                                            className={cn(
+                                                                "flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-sm font-medium transition-all",
+                                                                gifAnimationMode === 'orbit'
+                                                                    ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300"
+                                                                    : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400"
+                                                            )}
+                                                        >
+                                                            <RotateCw className="w-4 h-4" />
+                                                            Orbit
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setGifAnimationMode('cinematic')}
+                                                            className={cn(
+                                                                "flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-sm font-medium transition-all",
+                                                                gifAnimationMode === 'cinematic'
+                                                                    ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300"
+                                                                    : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400"
+                                                            )}
+                                                        >
+                                                            <Film className="w-4 h-4" />
+                                                            Cinematic
+                                                        </button>
+                                                    </div>
+                                                    <p className="text-[10px] text-gray-400 mt-1.5 leading-tight">
+                                                        {gifAnimationMode === 'orbit'
+                                                            ? "Simple rotation around the center point."
+                                                            : "Pro camerawork: Top-down to 3D tilt + pull back + orbit."}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
+                                </div>
 
                                 {/* Video Export - Always visible, locked for free users */}
                                 <div>
@@ -773,11 +787,13 @@ export function ExportOptionsModal({
                                         <button
                                             onClick={() => {
                                                 if (isLocked('ORBIT_VIDEO')) {
-                                                    trackEventAction({
-                                                        eventType: 'upgrade_nudge_clicked',
-                                                        eventName: 'locked_feature_video',
-                                                        sessionId: getSessionId()
-                                                    });
+                                                    if (isAuthenticated) {
+                                                        trackEventAction({
+                                                            eventType: 'upgrade_nudge_clicked',
+                                                            eventName: 'locked_feature_video',
+                                                            sessionId: getSessionId()
+                                                        }).catch(() => { });
+                                                    }
                                                     handleUpgrade();
                                                 } else {
                                                     setSelectedKey('ORBIT_VIDEO');
@@ -828,112 +844,112 @@ export function ExportOptionsModal({
                                             </div>
                                         </button>
 
-                                            {/* Video Configuration */}
-                                            {selectedKey === 'ORBIT_VIDEO' && (
-                                                <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 space-y-4">
-                                                    {/* Duration Slider */}
+                                        {/* Video Configuration */}
+                                        {selectedKey === 'ORBIT_VIDEO' && (
+                                            <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 space-y-4">
+                                                {/* Duration Slider */}
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Duration</label>
+                                                        <span className="text-sm text-gray-500 dark:text-gray-400">{videoDuration}s</span>
+                                                    </div>
+                                                    <input
+                                                        type="range"
+                                                        min="1"
+                                                        max="20"
+                                                        step="1"
+                                                        value={videoDuration}
+                                                        onChange={(e) => setVideoDuration(Number(e.target.value))}
+                                                        className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                                                    />
+                                                    <div className="flex justify-between text-xs text-gray-400 mt-1">
+                                                        <span>1s</span>
+                                                        <span>20s</span>
+                                                    </div>
+
+                                                    {/* Rotation Slider */}
                                                     <div>
                                                         <div className="flex items-center justify-between mb-2">
-                                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Duration</label>
-                                                            <span className="text-sm text-gray-500 dark:text-gray-400">{videoDuration}s</span>
+                                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Rotation</label>
+                                                            <span className="text-sm text-gray-500 dark:text-gray-400">{videoRotation}°</span>
                                                         </div>
                                                         <input
                                                             type="range"
-                                                            min="1"
-                                                            max="20"
-                                                            step="1"
-                                                            value={videoDuration}
-                                                            onChange={(e) => setVideoDuration(Number(e.target.value))}
+                                                            min="0"
+                                                            max="720"
+                                                            step="45"
+                                                            value={videoRotation}
+                                                            onChange={(e) => setVideoRotation(Number(e.target.value))}
                                                             className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
                                                         />
                                                         <div className="flex justify-between text-xs text-gray-400 mt-1">
-                                                            <span>1s</span>
-                                                            <span>20s</span>
-                                                        </div>
-
-                                                        {/* Rotation Slider */}
-                                                        <div>
-                                                            <div className="flex items-center justify-between mb-2">
-                                                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Rotation</label>
-                                                                <span className="text-sm text-gray-500 dark:text-gray-400">{videoRotation}°</span>
-                                                            </div>
-                                                            <input
-                                                                type="range"
-                                                                min="0"
-                                                                max="720"
-                                                                step="45"
-                                                                value={videoRotation}
-                                                                onChange={(e) => setVideoRotation(Number(e.target.value))}
-                                                                className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                                                            />
-                                                            <div className="flex justify-between text-xs text-gray-400 mt-1">
-                                                                <span>0°</span>
-                                                                <span>360°</span>
-                                                                <span>720°</span>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* FPS Slider */}
-                                                        <div>
-                                                            <div className="flex items-center justify-between mb-2">
-                                                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Frames Per Second (FPS)</label>
-                                                                <span className="text-sm text-gray-500 dark:text-gray-400">{videoFps} fps</span>
-                                                            </div>
-                                                            <input
-                                                                type="range"
-                                                                min="15"
-                                                                max="120"
-                                                                step="5"
-                                                                value={videoFps}
-                                                                onChange={(e) => setVideoFps(Number(e.target.value))}
-                                                                className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                                                            />
-                                                            <div className="flex justify-between text-xs text-gray-400 mt-1">
-                                                                <span>15 fps</span>
-                                                                <span>120 fps</span>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Animation Mode */}
-                                                        <div>
-                                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Animation Type</label>
-                                                            <div className="grid grid-cols-2 gap-2">
-                                                                <button
-                                                                    onClick={() => setVideoAnimationMode('orbit')}
-                                                                    className={cn(
-                                                                        "flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-sm font-medium transition-all",
-                                                                        videoAnimationMode === 'orbit'
-                                                                            ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300"
-                                                                            : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400"
-                                                                    )}
-                                                                >
-                                                                    <RotateCw className="w-4 h-4" />
-                                                                    Orbit
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => setVideoAnimationMode('cinematic')}
-                                                                    className={cn(
-                                                                        "flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-sm font-medium transition-all",
-                                                                        videoAnimationMode === 'cinematic'
-                                                                            ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300"
-                                                                            : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400"
-                                                                    )}
-                                                                >
-                                                                    <Film className="w-4 h-4" />
-                                                                    Cinematic
-                                                                </button>
-                                                            </div>
-                                                            <p className="text-[10px] text-gray-400 mt-1.5 leading-tight">
-                                                                {videoAnimationMode === 'orbit'
-                                                                    ? "Simple rotation around the center point."
-                                                                    : "Pro camerawork: Top-down to 3D tilt + pull back + orbit."}
-                                                            </p>
+                                                            <span>0°</span>
+                                                            <span>360°</span>
+                                                            <span>720°</span>
                                                         </div>
                                                     </div>
+
+                                                    {/* FPS Slider */}
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Frames Per Second (FPS)</label>
+                                                            <span className="text-sm text-gray-500 dark:text-gray-400">{videoFps} fps</span>
+                                                        </div>
+                                                        <input
+                                                            type="range"
+                                                            min="15"
+                                                            max="120"
+                                                            step="5"
+                                                            value={videoFps}
+                                                            onChange={(e) => setVideoFps(Number(e.target.value))}
+                                                            className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                                                        />
+                                                        <div className="flex justify-between text-xs text-gray-400 mt-1">
+                                                            <span>15 fps</span>
+                                                            <span>120 fps</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Animation Mode */}
+                                                    <div>
+                                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Animation Type</label>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <button
+                                                                onClick={() => setVideoAnimationMode('orbit')}
+                                                                className={cn(
+                                                                    "flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-sm font-medium transition-all",
+                                                                    videoAnimationMode === 'orbit'
+                                                                        ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300"
+                                                                        : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400"
+                                                                )}
+                                                            >
+                                                                <RotateCw className="w-4 h-4" />
+                                                                Orbit
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setVideoAnimationMode('cinematic')}
+                                                                className={cn(
+                                                                    "flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-sm font-medium transition-all",
+                                                                    videoAnimationMode === 'cinematic'
+                                                                        ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300"
+                                                                        : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400"
+                                                                )}
+                                                            >
+                                                                <Film className="w-4 h-4" />
+                                                                Cinematic
+                                                            </button>
+                                                        </div>
+                                                        <p className="text-[10px] text-gray-400 mt-1.5 leading-tight">
+                                                            {videoAnimationMode === 'orbit'
+                                                                ? "Simple rotation around the center point."
+                                                                : "Pro camerawork: Top-down to 3D tilt + pull back + orbit."}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                            )}
-                                        </div>
+                                            </div>
+                                        )}
                                     </div>
+                                </div>
 
                                 {/* STL Export - Always visible, locked for free users */}
                                 <div>
@@ -1003,57 +1019,57 @@ export function ExportOptionsModal({
                                             )}
                                         </button>
 
-                                            {/* STL Configuration */}
-                                            {selectedKey === 'STL_MODEL' && (
-                                                <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 space-y-4">
-                                                    {/* Base Height Slider */}
-                                                    <div>
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Minimum Base Height</label>
-                                                            <span className="text-sm text-gray-500 dark:text-gray-400">{stlModelHeight}mm</span>
-                                                        </div>
-                                                        <input
-                                                            type="range"
-                                                            min="1"
-                                                            max="20"
-                                                            step="1"
-                                                            value={stlModelHeight}
-                                                            onChange={(e) => setStlModelHeight(Number(e.target.value))}
-                                                            className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                                                        />
-                                                        <div className="flex justify-between text-xs text-gray-400 mt-1">
-                                                            <span>1mm</span>
-                                                            <span>20mm</span>
-                                                        </div>
+                                        {/* STL Configuration */}
+                                        {selectedKey === 'STL_MODEL' && (
+                                            <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 space-y-4">
+                                                {/* Base Height Slider */}
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Minimum Base Height</label>
+                                                        <span className="text-sm text-gray-500 dark:text-gray-400">{stlModelHeight}mm</span>
                                                     </div>
-
-                                                    {/* Resolution Select */}
-                                                    <div>
-                                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Mesh Resolution</label>
-                                                        <div className="grid grid-cols-3 gap-2">
-                                                            {(['low', 'medium', 'high'] as const).map(res => (
-                                                                <button
-                                                                    key={res}
-                                                                    onClick={() => setStlResolution(res)}
-                                                                    className={cn(
-                                                                        "flex flex-col items-center justify-center py-2 px-1 rounded-lg border text-xs font-medium transition-all capitalize",
-                                                                        stlResolution === res
-                                                                            ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300"
-                                                                            : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400"
-                                                                    )}
-                                                                >
-                                                                    {res}
-                                                                    <span className="text-[9px] font-normal opacity-70 mt-0.5">
-                                                                        {res === 'low' ? '512px' : res === 'medium' ? '1024px' : '2048px'}
-                                                                    </span>
-                                                                </button>
-                                                            ))}
-                                                        </div>
+                                                    <input
+                                                        type="range"
+                                                        min="1"
+                                                        max="20"
+                                                        step="1"
+                                                        value={stlModelHeight}
+                                                        onChange={(e) => setStlModelHeight(Number(e.target.value))}
+                                                        className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                                                    />
+                                                    <div className="flex justify-between text-xs text-gray-400 mt-1">
+                                                        <span>1mm</span>
+                                                        <span>20mm</span>
                                                     </div>
                                                 </div>
-                                            )}
-                                        </div>
+
+                                                {/* Resolution Select */}
+                                                <div>
+                                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Mesh Resolution</label>
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        {(['low', 'medium', 'high'] as const).map(res => (
+                                                            <button
+                                                                key={res}
+                                                                onClick={() => setStlResolution(res)}
+                                                                className={cn(
+                                                                    "flex flex-col items-center justify-center py-2 px-1 rounded-lg border text-xs font-medium transition-all capitalize",
+                                                                    stlResolution === res
+                                                                        ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300"
+                                                                        : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400"
+                                                                )}
+                                                            >
+                                                                {res}
+                                                                <span className="text-[9px] font-normal opacity-70 mt-0.5">
+                                                                    {res === 'low' ? '512px' : res === 'medium' ? '1024px' : '2048px'}
+                                                                </span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
+                                </div>
                             </div>
 
                             {/* Upgrade Callout */}

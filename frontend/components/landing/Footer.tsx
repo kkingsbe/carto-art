@@ -47,6 +47,7 @@ export function Footer() {
               <li><Link href="/editor" className="text-[#d4cfc4]/70 hover:text-[#c9a962] transition-colors">Editor</Link></li>
               <li><Link href="/gallery" className="text-[#d4cfc4]/70 hover:text-[#c9a962] transition-colors">Gallery</Link></li>
               <li><Link href="/showcase" className="text-[#d4cfc4]/70 hover:text-[#c9a962] transition-colors">Showcase</Link></li>
+              <li><Link href="/pricing" className="text-[#c9a962] hover:text-[#b87333] font-medium transition-colors">Carto Plus</Link></li>
               <li>
                 <ChangelogModal
                   trigger={

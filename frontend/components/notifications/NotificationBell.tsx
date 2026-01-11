@@ -22,6 +22,9 @@ export function NotificationBell() {
     const supabase = createClient();
 
     const fetchCount = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
         try {
             const count = await getUnreadNotificationCount();
             setUnreadCount(count);

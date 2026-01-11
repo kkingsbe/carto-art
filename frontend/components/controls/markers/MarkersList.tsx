@@ -73,7 +73,8 @@ export const MarkersList: React.FC<MarkersListProps> = ({
             try {
                 // Dynamically import to avoid server/client issues if not already handled or just use the imported action
                 const { createCheckoutSession } = await import('@/lib/actions/subscription');
-                await createCheckoutSession();
+                const searchParams = typeof window !== 'undefined' ? window.location.search.substring(1) : '';
+                await createCheckoutSession(searchParams);
             } catch (error) {
                 console.error('Failed to start checkout', error);
             }

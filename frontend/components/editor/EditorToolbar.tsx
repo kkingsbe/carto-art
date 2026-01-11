@@ -16,7 +16,8 @@ import {
     MoreHorizontal,
     Upload,
     HelpCircle,
-    LayoutGrid
+    LayoutGrid,
+    Sparkles
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -317,6 +318,32 @@ export function EditorToolbar({
                         </Tooltip>
 
                         <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1.5" />
+
+                        {subscriptionTier === 'free' && (
+                            <>
+                                <Tooltip content="Upgrade to Carto Plus" side="bottom">
+                                    <button
+                                        onClick={() => {
+                                            if (!isAuthenticated) {
+                                                router.push('/login');
+                                            } else {
+                                                // Dynamic import to avoid heavy bundle load if not needed immediately
+                                                import('@/lib/actions/subscription').then(({ createCheckoutSession }) => {
+                                                    // Pass current search params to preserve state
+                                                    const searchParams = typeof window !== 'undefined' ? window.location.search.substring(1) : '';
+                                                    createCheckoutSession(searchParams);
+                                                });
+                                            }
+                                        }}
+                                        className={cn(iconButtonBase, "text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-900/30 font-medium flex items-center gap-1.5 px-3")}
+                                    >
+                                        <Sparkles className="w-[18px] h-[18px]" />
+                                        <span className="hidden lg:inline text-xs">Plus</span>
+                                    </button>
+                                </Tooltip>
+                                <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1.5" />
+                            </>
+                        )}
 
                         <ModeToggle />
                     </div>
@@ -660,6 +687,7 @@ export function EditorToolbar({
                 hasUnsavedChanges={hasUnsavedChanges}
                 exportCount={exportCount}
                 onPublish={onPublish}
+                subscriptionTier={subscriptionTier}
             />
         </>
     );

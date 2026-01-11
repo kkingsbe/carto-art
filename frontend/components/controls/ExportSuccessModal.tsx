@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { trackEventAction } from '@/lib/actions/events';
 import { getSessionId } from '@/lib/utils';
-import { X, MessageCircle, Heart, ExternalLink, Share2, Save, ShoppingBag, Check, Twitter, Link as LinkIcon, Upload } from 'lucide-react';
+import { X, MessageCircle, Heart, ExternalLink, Share2, Save, ShoppingBag, Check, Twitter, Link as LinkIcon, Upload, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { SaveButton } from './SaveButton';
@@ -18,6 +18,7 @@ interface ExportSuccessModalProps {
     exportCount?: number;
     previewUrl?: string | null;
     onPublish?: () => void;
+    subscriptionTier?: 'free' | 'carto_plus';
 }
 
 export function ExportSuccessModal({
@@ -30,7 +31,8 @@ export function ExportSuccessModal({
     hasUnsavedChanges,
     exportCount = 0,
     previewUrl,
-    onPublish
+    onPublish,
+    subscriptionTier = 'free'
 }: ExportSuccessModalProps) {
     const router = useRouter();
     const [copied, setCopied] = useState(false);
@@ -314,31 +316,67 @@ export function ExportSuccessModal({
 
                     {/* Secondary Actions Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Donation - Smaller footprint now */}
-                        <div className="rounded-xl border border-yellow-200 dark:border-yellow-900/50 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-yellow-900/10 dark:to-yellow-800/10 p-4 relative overflow-hidden flex flex-col justify-center">
-                            <div className="relative z-10 flex gap-3 items-start">
-                                <div className="shrink-0 w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center text-yellow-600 dark:text-yellow-400">
-                                    <Heart className="w-5 h-5 fill-current" />
+                        {/* Donation or Upsell */}
+                        {subscriptionTier === 'free' ? (
+                            <div
+                                className="rounded-xl border border-purple-200 dark:border-purple-900/50 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/10 dark:to-indigo-900/10 p-4 relative overflow-hidden flex flex-col justify-center group cursor-pointer"
+                                onClick={() => {
+                                    if (!isAuthenticated) {
+                                        router.push('/login');
+                                    } else {
+                                        import('@/lib/actions/subscription').then(({ createCheckoutSession }) => {
+                                            const searchParams = typeof window !== 'undefined' ? window.location.search.substring(1) : '';
+                                            createCheckoutSession(searchParams);
+                                        });
+                                    }
+                                }}
+                            >
+                                <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+                                    <Sparkles className="w-16 h-16 text-purple-600 dark:text-purple-400" />
                                 </div>
-                                <div>
-                                    <h4 className="font-bold text-gray-900 dark:text-white text-sm">
-                                        Enjoying the tool?
-                                    </h4>
-                                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 mb-2">
-                                        {donationMessage.description}
-                                    </p>
-                                    <a
-                                        href="https://buymeacoffee.com/kkingsbe"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        onClick={handleDonateClick}
-                                        className="text-xs font-bold text-yellow-700 dark:text-yellow-500 hover:underline flex items-center gap-1"
-                                    >
-                                        {donationMessage.cta} <ExternalLink className="w-3 h-3" />
-                                    </a>
+                                <div className="relative z-10 flex gap-3 items-start">
+                                    <div className="shrink-0 w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                                        <Sparkles className="w-5 h-5 fill-current" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className="font-bold text-gray-900 dark:text-white text-sm">
+                                            Unlock the Full Experience
+                                        </h4>
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 mb-2 leading-relaxed">
+                                            Get unlimited exports, GIF/Video generation, commercial license, and more.
+                                        </p>
+                                        <button className="text-xs font-bold text-purple-700 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 flex items-center gap-1 transition-colors">
+                                            Upgrade to Plus <ExternalLink className="w-3 h-3" />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        ) : (
+                            <div className="rounded-xl border border-yellow-200 dark:border-yellow-900/50 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-yellow-900/10 dark:to-yellow-800/10 p-4 relative overflow-hidden flex flex-col justify-center">
+                                <div className="relative z-10 flex gap-3 items-start">
+                                    <div className="shrink-0 w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center text-yellow-600 dark:text-yellow-400">
+                                        <Heart className="w-5 h-5 fill-current" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-gray-900 dark:text-white text-sm">
+                                            Enjoying the tool?
+                                        </h4>
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 mb-2">
+                                            {donationMessage.description}
+                                        </p>
+                                        <a
+                                            href="https://buymeacoffee.com/kkingsbe"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={handleDonateClick}
+                                            className="text-xs font-bold text-yellow-700 dark:text-yellow-500 hover:underline flex items-center gap-1"
+                                        >
+                                            {donationMessage.cta} <ExternalLink className="w-3 h-3" />
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Other Actions Grouped */}
                         <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 p-4 space-y-3">
