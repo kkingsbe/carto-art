@@ -1,10 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState, useRef } from 'react';
-import { useControl, useMap } from 'react-map-gl/maplibre';
-import { MapboxOverlay } from '@deck.gl/mapbox';
-import { BitmapLayer } from '@deck.gl/layers';
-import type { MapboxOverlayProps } from '@deck.gl/mapbox';
+import { useEffect, useState, useRef } from 'react';
+import { useMap } from 'react-map-gl/maplibre';
 
 interface DeckTerrainLayerProps {
     /** Terrain exaggeration factor (0-5) */
@@ -158,24 +155,6 @@ function computeTerrainShadowTexture(
 
     outputCtx.putImageData(new ImageData(shadowData, width, height), 0, 0);
     return outputCanvas;
-}
-
-/**
- * Deck.gl-based MapboxOverlay controller hook for react-map-gl.
- * Creates and manages a MapboxOverlay instance with the provided layers.
- */
-function useDeckOverlay(props: MapboxOverlayProps & { interleaved?: boolean }) {
-    const overlay = useControl<MapboxOverlay>(
-        () => new MapboxOverlay(props),
-        { position: undefined }
-    );
-
-    // Update overlay when props change
-    useEffect(() => {
-        overlay.setProps(props);
-    }, [overlay, props]);
-
-    return overlay;
 }
 
 /**
@@ -419,46 +398,76 @@ export function DeckTerrainLayer({
         };
     }, [enableShadows, map]);
 
-    // Create shadow overlay layer - MapLibre handles the 3D terrain mesh,
-    // we just overlay the computed shadows as a 2D texture on top
-    const layers = useMemo(() => {
-        // Only render if we have shadows computed
+    // Add shadow overlay as a MapLibre layer so it gets draped over the terrain
+    // This is key - MapLibre's terrain drapes all its layers over the 3D mesh
+    useEffect(() => {
+        if (!map) return;
+
+        const sourceId = 'terrain-shadow-source';
+        const layerId = 'terrain-shadow-layer';
+
+        // Clean up function
+        const cleanup = () => {
+            try {
+                if (map.getLayer(layerId)) {
+                    map.removeLayer(layerId);
+                }
+                if (map.getSource(sourceId)) {
+                    map.removeSource(sourceId);
+                }
+            } catch (e) {
+                // Ignore errors during cleanup (map might be destroyed)
+            }
+        };
+
+        // If no shadow texture, just clean up and return
         if (!enableShadows || !shadowTexture || !shadowBounds) {
-            return [];
+            cleanup();
+            return cleanup;
         }
 
-        console.log('[DeckTerrainLayer] Creating shadow overlay bitmap', {
+        console.log('[DeckTerrainLayer] Adding shadow overlay as MapLibre layer', {
             bounds: shadowBounds
         });
 
-        return [
-            new BitmapLayer({
-                id: 'shadow-overlay',
-                bounds: shadowBounds,
-                image: shadowTexture,
-                opacity: 1.0,
-                // Use transparency from the shadow texture
-                parameters: {
-                    blend: true,
-                    blendFunc: [
-                        WebGLRenderingContext.SRC_ALPHA,
-                        WebGLRenderingContext.ONE_MINUS_SRC_ALPHA
-                    ],
-                    blendEquation: WebGLRenderingContext.FUNC_ADD,
-                    depthTest: false, // Render on top of everything
-                },
-            }),
-        ];
-    }, [
-        enableShadows,
-        shadowTexture,
-        shadowBounds,
-    ]);
+        try {
+            // Remove existing layer/source if present
+            cleanup();
 
-    useDeckOverlay({
-        layers,
-        interleaved: true,
-    });
+            // Add the shadow texture as an image source
+            // Bounds format: [west, south, east, north] -> coordinates for image corners
+            const coordinates: [[number, number], [number, number], [number, number], [number, number]] = [
+                [shadowBounds[0], shadowBounds[3]], // top-left (west, north)
+                [shadowBounds[2], shadowBounds[3]], // top-right (east, north)
+                [shadowBounds[2], shadowBounds[1]], // bottom-right (east, south)
+                [shadowBounds[0], shadowBounds[1]], // bottom-left (west, south)
+            ];
+
+            map.addSource(sourceId, {
+                type: 'image',
+                url: shadowTexture,
+                coordinates: coordinates,
+            });
+
+            // Add a raster layer to display the shadow
+            // This layer will be draped over the terrain automatically
+            map.addLayer({
+                id: layerId,
+                type: 'raster',
+                source: sourceId,
+                paint: {
+                    'raster-opacity': 1,
+                    'raster-fade-duration': 0,
+                },
+            });
+
+            console.log('[DeckTerrainLayer] Shadow layer added successfully');
+        } catch (err) {
+            console.warn('[DeckTerrainLayer] Failed to add shadow layer:', err);
+        }
+
+        return cleanup;
+    }, [map, enableShadows, shadowTexture, shadowBounds]);
 
     return null;
 }
