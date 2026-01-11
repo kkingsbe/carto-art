@@ -1,13 +1,14 @@
 'use client';
 
 import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
-import Map, { type MapRef, Source, Layer, Marker, ScaleControl } from 'react-map-gl/maplibre';
+import Map, { type MapRef, Source, Layer, Marker } from 'react-map-gl/maplibre';
 import maplibregl from 'maplibre-gl';
 import { Loader2 } from 'lucide-react';
 import type { PosterLocation, LayerToggle, PosterConfig, CustomMarker } from '@/types/poster';
 import { cn } from '@/lib/utils';
 import { MarkerIcon } from './MarkerIcon';
 import { MapContextMenu } from './MapContextMenu';
+import { CustomScaleControl } from './CustomScaleControl';
 import { DeckTerrainLayer, TERRAIN_QUALITY_PRESETS } from './DeckTerrainLayer';
 import { getAwsTerrariumTileUrl } from '@/lib/styles/tileUrl';
 import { MAP, TIMEOUTS, TEXTURE } from '@/lib/constants';
@@ -696,17 +697,7 @@ export function MapPreview({
           />
         )}
         {layers?.showScale && (
-          <ScaleControl position="top-left" maxWidth={100} unit="metric" style={{
-            background: 'rgba(255, 255, 255, 0.5)',
-            border: 'none',
-            borderRadius: '2px',
-            color: '#333',
-            fontSize: '10px',
-            padding: '0 4px',
-            boxShadow: 'none',
-            marginLeft: '4px',
-            marginTop: '40px' // Offset down to avoid overlap with "Updating tiles" indicator at top-4
-          }} />
+          <CustomScaleControl />
         )}
       </Map>
 

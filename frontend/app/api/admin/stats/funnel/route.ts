@@ -24,7 +24,7 @@ export async function GET() {
         // RPC Call: Fetch all analytics in one generic pass
         const { data, error } = await supabase.rpc('get_period_analytics', {
             start_time: startTime
-        });
+        } as any);
 
         if (error) {
             console.error('Funnel RPC error:', error);
