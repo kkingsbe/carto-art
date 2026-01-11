@@ -238,6 +238,7 @@ function RendererContent() {
                     layers={config.layers}
                     onMapLoad={handleMapLoad}
                     onError={handleMapError}
+                    palette={config.palette}
                 />
             </div>
 

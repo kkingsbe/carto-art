@@ -949,6 +949,7 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
               is3DMode={config.is3DMode}
               markers={config.markers}
               onAddMarker={handleAddMarker}
+              palette={config.palette}
             />
 
             {/* Map Interaction Helpers Overlay */}

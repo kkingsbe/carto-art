@@ -17,7 +17,8 @@
       "Bash(npm run dev:*)",
       "Bash(find:*)",
       "Bash(npx tsx:*)",
-      "Bash(npx tsc --noEmit)"
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx eslint:*)"
     ]
   }
 }

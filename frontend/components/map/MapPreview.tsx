@@ -4,7 +4,8 @@ import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import Map, { type MapRef, Source, Layer, Marker } from 'react-map-gl/maplibre';
 import maplibregl from 'maplibre-gl';
 import { Loader2 } from 'lucide-react';
-import type { PosterLocation, LayerToggle, PosterConfig, CustomMarker } from '@/types/poster';
+import type { PosterLocation, LayerToggle, PosterConfig, CustomMarker, ColorPalette } from '@/types/poster';
+import { hexToRgb, isColorDark } from '@/lib/utils/color';
 import { cn } from '@/lib/utils';
 import { MarkerIcon } from './MarkerIcon';
 import { MapContextMenu } from './MapContextMenu';
@@ -42,6 +43,7 @@ interface MapPreviewProps {
   is3DMode?: boolean;
   markers?: CustomMarker[];
   onAddMarker?: (lat: number, lng: number) => void;
+  palette?: ColorPalette;
 }
 
 export function MapPreview({
@@ -62,7 +64,8 @@ export function MapPreview({
   thumbnailUrl,
   is3DMode = false,
   markers,
-  onAddMarker
+  onAddMarker,
+  palette
 }: MapPreviewProps) {
   const mapRef = useRef<MapRef>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -678,25 +681,64 @@ export function MapPreview({
         )}
 
         {/* Deck.gl Terrain Layer - Rendered for volumetric terrain OR 3D print preview mode */}
-        {(layers?.volumetricTerrain || is3DMode) && (
-          <DeckTerrainLayer
-            exaggeration={layers?.volumetricTerrainExaggeration ?? 1.5}
-            meshMaxError={TERRAIN_QUALITY_PRESETS[(layers?.terrainMeshQuality ?? 'balanced') as keyof typeof TERRAIN_QUALITY_PRESETS]}
-            elevationData={getAwsTerrariumTileUrl()}
-            visible={true}
-            lightAzimuth={layers?.terrainLightAzimuth}
-            lightAltitude={layers?.terrainLightAltitude}
-            ambientLight={layers?.terrainAmbientLight ?? 0.15}
-            diffuseLight={layers?.terrainDiffuseLight ?? 1.0}
-            zoomOffset={layers?.terrainDetailLevel === 'high' ? 1 : layers?.terrainDetailLevel === 'ultra' ? 2 : 0}
-            // Shadow settings
-            enableShadows={layers?.terrainShadows ?? true}
-            shadowDarkness={layers?.terrainShadowDarkness ?? 0.7}
-            terrainColor={layers?.terrainColor as [number, number, number] ?? [220, 220, 220]}
-            shadowColor={layers?.terrainShadowColor as [number, number, number] ?? [80, 80, 100]}
-            highlightColor={layers?.terrainHighlightColor as [number, number, number] ?? [255, 255, 255]}
-          />
-        )}
+        {(layers?.volumetricTerrain || is3DMode) && (() => {
+          // Derive terrain shadow colors from palette (matching 2D hillshade logic)
+          let derivedTerrainColor: [number, number, number] = [220, 220, 220];
+          let derivedShadowColor: [number, number, number] = [80, 80, 100];
+          let derivedHighlightColor: [number, number, number] = [255, 255, 255];
+
+          if (palette) {
+            const isDark = isColorDark(palette.background);
+
+            // Highlight color: from background (same as 2D hillshade)
+            const bgRgb = hexToRgb(palette.background);
+            if (bgRgb) {
+              derivedHighlightColor = bgRgb;
+            }
+
+            // Shadow color: from hillshade color or secondary/text (same as 2D hillshade)
+            const shadowHex = palette.hillshade || palette.secondary || palette.text;
+            if (shadowHex) {
+              const shadowRgb = hexToRgb(shadowHex);
+              if (shadowRgb) {
+                derivedShadowColor = shadowRgb;
+              }
+            }
+
+            // Terrain base color: blend between shadow and highlight for mid-tones
+            // Use landuse color if available, otherwise mix shadow and highlight
+            const baseHex = palette.landuse || palette.background;
+            const baseRgb = hexToRgb(baseHex);
+            if (baseRgb) {
+              // Mix with a slight tint toward the shadow color for terrain depth
+              derivedTerrainColor = [
+                Math.round(baseRgb[0] * 0.7 + derivedShadowColor[0] * 0.3),
+                Math.round(baseRgb[1] * 0.7 + derivedShadowColor[1] * 0.3),
+                Math.round(baseRgb[2] * 0.7 + derivedShadowColor[2] * 0.3),
+              ];
+            }
+          }
+
+          return (
+            <DeckTerrainLayer
+              exaggeration={layers?.volumetricTerrainExaggeration ?? 1.5}
+              meshMaxError={TERRAIN_QUALITY_PRESETS[(layers?.terrainMeshQuality ?? 'balanced') as keyof typeof TERRAIN_QUALITY_PRESETS]}
+              elevationData={getAwsTerrariumTileUrl()}
+              visible={true}
+              lightAzimuth={layers?.terrainLightAzimuth}
+              lightAltitude={layers?.terrainLightAltitude}
+              ambientLight={layers?.terrainAmbientLight ?? 0.15}
+              diffuseLight={layers?.terrainDiffuseLight ?? 1.0}
+              zoomOffset={layers?.terrainDetailLevel === 'high' ? 1 : layers?.terrainDetailLevel === 'ultra' ? 2 : 0}
+              // Shadow settings - use palette-derived colors, or explicit overrides if set
+              enableShadows={layers?.terrainShadows ?? true}
+              shadowDarkness={layers?.terrainShadowDarkness ?? 0.7}
+              terrainColor={layers?.terrainColor as [number, number, number] ?? derivedTerrainColor}
+              shadowColor={layers?.terrainShadowColor as [number, number, number] ?? derivedShadowColor}
+              highlightColor={layers?.terrainHighlightColor as [number, number, number] ?? derivedHighlightColor}
+            />
+          );
+        })()}
         {layers?.showScale && (
           <CustomScaleControl />
         )}

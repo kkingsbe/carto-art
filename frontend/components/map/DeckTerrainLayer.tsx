@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useControl, useMap } from 'react-map-gl/maplibre';
 import { MapboxOverlay } from '@deck.gl/mapbox';
-import { TerrainLayer } from '@deck.gl/geo-layers';
-import { LightingEffect, AmbientLight, DirectionalLight } from '@deck.gl/core';
+import { BitmapLayer } from '@deck.gl/layers';
 import type { MapboxOverlayProps } from '@deck.gl/mapbox';
 
 interface DeckTerrainLayerProps {
@@ -46,8 +45,14 @@ interface DeckTerrainLayerProps {
 }
 
 /**
- * Computes a shadow texture from elevation data using ray marching.
+ * Computes a shadow-only texture from elevation data using ray marching.
  * Each pixel traces a ray toward the sun to determine if it's in shadow.
+ *
+ * This creates a TRANSPARENT overlay texture:
+ * - Shadowed areas: dark with partial alpha (darkens underlying map)
+ * - Lit areas: fully transparent (shows underlying map unchanged)
+ *
+ * This allows the beautiful 2D map to show through while adding cast shadows.
  */
 function computeTerrainShadowTexture(
     elevationCanvas: HTMLCanvasElement,
@@ -55,9 +60,7 @@ function computeTerrainShadowTexture(
     sunAltitude: number,
     shadowDarkness: number,
     exaggeration: number,
-    baseColor: [number, number, number],
-    shadowColor: [number, number, number],
-    highlightColor: [number, number, number]
+    shadowColor: [number, number, number]
 ): HTMLCanvasElement {
     const width = elevationCanvas.width;
     const height = elevationCanvas.height;
@@ -93,7 +96,7 @@ function computeTerrainShadowTexture(
     // Max ray distance
     const maxRayDist = Math.max(width, height);
 
-    // Output shadow buffer
+    // Output shadow buffer - RGBA with transparency
     const shadowData = new Uint8ClampedArray(width * height * 4);
 
     // Ray march each pixel
@@ -126,47 +129,23 @@ function computeTerrainShadowTexture(
                 }
             }
 
-            // Compute surface normal for basic shading
-            const left = x > 0 ? elevation[idx - 1] : baseElev;
-            const right = x < width - 1 ? elevation[idx + 1] : baseElev;
-            const up = y > 0 ? elevation[idx - width] : baseElev;
-            const down = y < height - 1 ? elevation[idx + width] : baseElev;
-
-            // Normal from gradient
-            const nx = (left - right) / (2 * pixelScale);
-            const ny = (up - down) / (2 * pixelScale);
-            const nz = 1;
-            const nLen = Math.sqrt(nx * nx + ny * ny + nz * nz);
-
-            // Light direction (toward sun)
-            const lx = sunDirX * Math.cos(altitudeRad);
-            const ly = sunDirY * Math.cos(altitudeRad);
-            const lz = Math.sin(altitudeRad);
-
-            // Lambertian shading
-            const dotProduct = (nx / nLen) * lx + (ny / nLen) * ly + (nz / nLen) * lz;
-            const shade = Math.max(0, dotProduct);
-
-            // Combine shadow and shading
-            let r: number, g: number, b: number;
-            if (inShadow) {
-                // In shadow: use shadow color darkened by shadowDarkness
-                const darkness = shadowDarkness;
-                r = shadowColor[0] * (1 - darkness) + baseColor[0] * darkness * 0.3;
-                g = shadowColor[1] * (1 - darkness) + baseColor[1] * darkness * 0.3;
-                b = shadowColor[2] * (1 - darkness) + baseColor[2] * darkness * 0.3;
-            } else {
-                // Lit: interpolate between base and highlight based on shading
-                r = baseColor[0] + (highlightColor[0] - baseColor[0]) * shade;
-                g = baseColor[1] + (highlightColor[1] - baseColor[1]) * shade;
-                b = baseColor[2] + (highlightColor[2] - baseColor[2]) * shade;
-            }
-
             const outIdx = idx * 4;
-            shadowData[outIdx] = Math.min(255, Math.max(0, r));
-            shadowData[outIdx + 1] = Math.min(255, Math.max(0, g));
-            shadowData[outIdx + 2] = Math.min(255, Math.max(0, b));
-            shadowData[outIdx + 3] = 255;
+
+            if (inShadow) {
+                // In shadow: dark overlay with transparency based on shadowDarkness
+                // Use shadow color tint for artistic effect
+                shadowData[outIdx] = shadowColor[0];
+                shadowData[outIdx + 1] = shadowColor[1];
+                shadowData[outIdx + 2] = shadowColor[2];
+                // Alpha controls how much we darken - shadowDarkness of 0.7 = 70% dark overlay
+                shadowData[outIdx + 3] = Math.round(shadowDarkness * 255);
+            } else {
+                // Lit areas: fully transparent - let the underlying map show through
+                shadowData[outIdx] = 0;
+                shadowData[outIdx + 1] = 0;
+                shadowData[outIdx + 2] = 0;
+                shadowData[outIdx + 3] = 0;
+            }
         }
     }
 
@@ -305,23 +284,24 @@ async function loadElevationTiles(
  */
 export function DeckTerrainLayer({
     exaggeration = 1.5,
-    meshMaxError = 4.0,
+    _meshMaxError = 4.0,
     elevationData,
-    bounds,
-    visible = true,
-    ambientLight = 0.4,
-    diffuseLight = 0.8,
+    _bounds,
+    _visible = true,
+    _ambientLight = 0.4,
+    _diffuseLight = 0.8,
     lightAzimuth,
     lightAltitude,
-    zoomOffset = 0,
+    _zoomOffset = 0,
     enableShadows = true,
     shadowDarkness = 0.7,
-    terrainColor = [200, 200, 200],
+    _terrainColor = [200, 200, 200],
     shadowColor = [60, 60, 80],
-    highlightColor = [255, 255, 255],
+    _highlightColor = [255, 255, 255],
 }: DeckTerrainLayerProps) {
     const { current: map } = useMap();
     const [shadowTexture, setShadowTexture] = useState<string | null>(null);
+    const [shadowBounds, setShadowBounds] = useState<[number, number, number, number] | null>(null);
     const computingRef = useRef(false);
     const lastComputeParamsRef = useRef<string>('');
 
@@ -332,6 +312,7 @@ export function DeckTerrainLayer({
         if (!enableShadows || !map) {
             console.log('[DeckTerrainLayer] Shadows disabled or no map, clearing texture');
             setShadowTexture(null);
+            setShadowBounds(null);
             return;
         }
 
@@ -387,13 +368,18 @@ export function DeckTerrainLayer({
                         altitude,
                         shadowDarkness,
                         exaggeration,
-                        terrainColor,
-                        shadowColor,
-                        highlightColor
+                        shadowColor
                     );
 
                     console.log('[DeckTerrainLayer] Shadow texture computed, applying...');
                     setShadowTexture(shadowCanvas.toDataURL());
+                    // Store bounds for positioning the shadow overlay
+                    setShadowBounds([
+                        mapBounds.getWest(),
+                        mapBounds.getSouth(),
+                        mapBounds.getEast(),
+                        mapBounds.getNorth()
+                    ]);
                 } else {
                     console.log('[DeckTerrainLayer] No elevation canvas returned (too many tiles?)');
                 }
@@ -415,9 +401,7 @@ export function DeckTerrainLayer({
         lightAltitude,
         shadowDarkness,
         exaggeration,
-        terrainColor,
         shadowColor,
-        highlightColor
     ]);
 
     // Also recompute when map stops moving
@@ -435,91 +419,45 @@ export function DeckTerrainLayer({
         };
     }, [enableShadows, map]);
 
-    const lightingEffect = useMemo(() => {
-        const azimuth = lightAzimuth ?? 315;
-        const altitude = lightAltitude ?? 45;
+    // Create shadow overlay layer - MapLibre handles the 3D terrain mesh,
+    // we just overlay the computed shadows as a 2D texture on top
+    const layers = useMemo(() => {
+        // Only render if we have shadows computed
+        if (!enableShadows || !shadowTexture || !shadowBounds) {
+            return [];
+        }
 
-        const azimuthRad = (azimuth * Math.PI) / 180;
-        const altitudeRad = (altitude * Math.PI) / 180;
-
-        const dirX = Math.sin(azimuthRad) * Math.cos(altitudeRad);
-        const dirY = Math.cos(azimuthRad) * Math.cos(altitudeRad);
-        const dirZ = Math.sin(altitudeRad);
-
-        // When using shadow texture, we want flat lighting (shadows are baked in)
-        // When not using shadows, we want normal directional lighting
-        const effectiveAmbient = enableShadows && shadowTexture ? 0.9 : ambientLight;
-        const effectiveDiffuse = enableShadows && shadowTexture ? 0.1 : diffuseLight;
-
-        const ambient = new AmbientLight({
-            color: [255, 255, 255],
-            intensity: effectiveAmbient
+        console.log('[DeckTerrainLayer] Creating shadow overlay bitmap', {
+            bounds: shadowBounds
         });
 
-        const mainLight = new DirectionalLight({
-            color: [255, 255, 255],
-            intensity: effectiveDiffuse,
-            direction: [-dirX, -dirY, -dirZ],
-        });
-
-        return new LightingEffect({ ambient, mainLight });
-    }, [lightAzimuth, lightAltitude, ambientLight, diffuseLight, enableShadows, shadowTexture]);
-
-    const terrainLayer = useMemo(() => {
-        const useTexture = enableShadows && shadowTexture;
-        console.log('[DeckTerrainLayer] Creating terrain layer', {
-            enableShadows,
-            hasShadowTexture: !!shadowTexture,
-            useTexture,
-            textureLength: shadowTexture?.length
-        });
-
-        return new TerrainLayer({
-            id: 'deck-terrain',
-            minZoom: 0,
-            maxZoom: 14,
-            strategy: 'no-overlap',
-            zoomOffset: Math.min(zoomOffset, 3),
-            elevationDecoder: {
-                rScaler: 256 * exaggeration,
-                gScaler: 1 * exaggeration,
-                bScaler: (1 / 256) * exaggeration,
-                offset: -32768 * exaggeration,
-            },
-            elevationData,
-            // Use shadow texture if available, otherwise solid color
-            texture: useTexture ? shadowTexture : null,
-            color: terrainColor,
-            meshMaxError,
-            bounds,
-            wireframe: false,
-            material: {
-                ambient: useTexture ? 1.0 : ambientLight,
-                diffuse: useTexture ? 0.0 : diffuseLight,
-                shininess: 0,
-                specularColor: [0, 0, 0],
-            },
-            visible,
-            operation: 'terrain+draw',
-        });
+        return [
+            new BitmapLayer({
+                id: 'shadow-overlay',
+                bounds: shadowBounds,
+                image: shadowTexture,
+                opacity: 1.0,
+                // Use transparency from the shadow texture
+                parameters: {
+                    blend: true,
+                    blendFunc: [
+                        WebGLRenderingContext.SRC_ALPHA,
+                        WebGLRenderingContext.ONE_MINUS_SRC_ALPHA
+                    ],
+                    blendEquation: WebGLRenderingContext.FUNC_ADD,
+                    depthTest: false, // Render on top of everything
+                },
+            }),
+        ];
     }, [
-        exaggeration,
-        meshMaxError,
-        elevationData,
-        bounds,
-        visible,
-        zoomOffset,
-        ambientLight,
-        diffuseLight,
         enableShadows,
         shadowTexture,
-        terrainColor
+        shadowBounds,
     ]);
 
     useDeckOverlay({
-        layers: [terrainLayer],
+        layers,
         interleaved: true,
-        effects: [lightingEffect]
     });
 
     return null;

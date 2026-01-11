@@ -95,6 +95,7 @@ export function MapDetailView({ map, comments: initialComments, userVote, isOwne
                           setHasWebGLError(true);
                         }
                       }}
+                      palette={map.config.palette}
                     />
                   )}
                 </PosterCanvas>
