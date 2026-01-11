@@ -677,23 +677,24 @@ export function MapPreview({
           </Source>
         )}
 
-        {/* Deck.gl Terrain Layer - Disabled for Preview to allow native texture draping
-        {layers?.volumetricTerrain && (
-          <DeckTerrainLayer
-            exaggeration={layers.volumetricTerrainExaggeration ?? 1.5}
-            meshMaxError={TERRAIN_QUALITY_PRESETS[(layers.terrainMeshQuality ?? 'balanced') as keyof typeof TERRAIN_QUALITY_PRESETS]}
-            elevationData={getAwsTerrariumTileUrl()}
-          />
-        )}
-        */}
-
-        {/* 3D Preview Mode - STL Terrain Layer */}
-        {is3DMode && (
+        {/* Deck.gl Terrain Layer - Rendered for volumetric terrain OR 3D print preview mode */}
+        {(layers?.volumetricTerrain || is3DMode) && (
           <DeckTerrainLayer
             exaggeration={layers?.volumetricTerrainExaggeration ?? 1.5}
             meshMaxError={TERRAIN_QUALITY_PRESETS[(layers?.terrainMeshQuality ?? 'balanced') as keyof typeof TERRAIN_QUALITY_PRESETS]}
             elevationData={getAwsTerrariumTileUrl()}
             visible={true}
+            lightAzimuth={layers?.terrainLightAzimuth}
+            lightAltitude={layers?.terrainLightAltitude}
+            ambientLight={layers?.terrainAmbientLight ?? 0.15}
+            diffuseLight={layers?.terrainDiffuseLight ?? 1.0}
+            zoomOffset={layers?.terrainDetailLevel === 'high' ? 1 : layers?.terrainDetailLevel === 'ultra' ? 2 : 0}
+            // Shadow settings
+            enableShadows={layers?.terrainShadows ?? true}
+            shadowDarkness={layers?.terrainShadowDarkness ?? 0.7}
+            terrainColor={layers?.terrainColor as [number, number, number] ?? [220, 220, 220]}
+            shadowColor={layers?.terrainShadowColor as [number, number, number] ?? [80, 80, 100]}
+            highlightColor={layers?.terrainHighlightColor as [number, number, number] ?? [255, 255, 255]}
           />
         )}
         {layers?.showScale && (

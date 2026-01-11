@@ -16,7 +16,8 @@
       "WebSearch",
       "Bash(npm run dev:*)",
       "Bash(find:*)",
-      "Bash(npx tsx:*)"
+      "Bash(npx tsx:*)",
+      "Bash(npx tsc --noEmit)"
     ]
   }
 }

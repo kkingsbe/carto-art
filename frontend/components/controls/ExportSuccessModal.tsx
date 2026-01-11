@@ -149,7 +149,7 @@ export function ExportSuccessModal({
         });
 
         const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
-        router.push(`/register?next=${returnUrl}`);
+        router.push(`/login?redirect=${returnUrl}`);
     };
 
     const handleDonateClick = () => {

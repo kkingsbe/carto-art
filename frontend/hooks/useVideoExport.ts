@@ -12,7 +12,7 @@ export interface VideoExportOptions {
     duration: number; // seconds
     totalRotation: number; // degrees
     fps?: number;
-    animationMode: 'orbit' | 'cinematic' | 'spiral' | 'zoomIn' | 'zoomOut' | 'rise' | 'dive' | 'flyover';
+    animationMode: 'orbit' | 'cinematic' | 'spiral' | 'swoopIn' | 'rocketOut' | 'rise' | 'dive' | 'flyover';
 }
 
 interface UseVideoExportReturn {
@@ -190,11 +190,17 @@ export function useVideoExport(
                         currentTargetBearing = originalBearing + (p * totalRotation);
                         currentTargetZoom = originalZoom - (2 * p);
                         break;
-                    case 'zoomIn':
-                        currentTargetZoom = originalZoom + (2 * p);
+                    case 'swoopIn':
+                        const swoopProgress = easeInOutCubic(p);
+                        currentTargetBearing = originalBearing + (swoopProgress * 180);
+                        currentTargetZoom = originalZoom + (4 * swoopProgress);
+                        currentTargetPitch = originalPitch + ((60 - originalPitch) * swoopProgress);
                         break;
-                    case 'zoomOut':
-                        currentTargetZoom = originalZoom - (2 * p);
+                    case 'rocketOut':
+                        const rocketProgress = easeInOutCubic(p);
+                        currentTargetBearing = originalBearing - (rocketProgress * 180);
+                        currentTargetZoom = originalZoom - (4 * rocketProgress);
+                        currentTargetPitch = originalPitch + ((0 - originalPitch) * rocketProgress);
                         break;
                     case 'rise':
                         currentTargetPitch = originalPitch + (60 - originalPitch) * p;

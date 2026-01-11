@@ -135,6 +135,97 @@ export function TerrainControls({ layers, onLayersChange, showUnderwaterToggle }
                     </div>
                 </div>
 
+                {/* Light Altitude - controls shadow angle */}
+                <div className="space-y-1 pt-2 border-t border-gray-100 dark:border-gray-700">
+                    <ControlLabel className="text-[10px] uppercase text-gray-500">Light Altitude</ControlLabel>
+                    <ControlSlider
+                        min="5"
+                        max="90"
+                        step="5"
+                        value={layers.terrainLightAltitude ?? 45}
+                        displayValue={`${layers.terrainLightAltitude ?? 45}°`}
+                        onValueChange={(value) => onLayersChange({ terrainLightAltitude: value })}
+                        formatValue={(v) => `${v}°`}
+                        parseValue={(s) => parseFloat(s.replace('°', ''))}
+                    />
+                    <div className="flex justify-between text-[10px] text-gray-400 uppercase font-medium">
+                        <Tooltip content="Low sun (long shadows)">
+                            <span>Low</span>
+                        </Tooltip>
+                        <Tooltip content="High sun (short shadows)">
+                            <span>High</span>
+                        </Tooltip>
+                    </div>
+                </div>
+
+                {/* Terrain Shadows (3D self-shadowing) - Only shown when volumetric terrain is enabled */}
+                {layers.volumetricTerrain && (
+                    <div className="pt-2 border-t border-gray-100 dark:border-gray-700 space-y-3">
+                        <ControlCheckbox
+                            label="3D Terrain Shadows"
+                            checked={layers.terrainShadows !== false}
+                            onChange={(e) => onLayersChange({ terrainShadows: e.target.checked })}
+                            className="text-[10px] font-medium"
+                        />
+
+                        {(layers.terrainShadows !== false) && (
+                            <>
+                                <div className="space-y-1">
+                                    <ControlLabel className="text-[10px] uppercase text-gray-500">Shadow Darkness</ControlLabel>
+                                    <ControlSlider
+                                        min="0"
+                                        max="1"
+                                        step="0.05"
+                                        value={layers.terrainShadowDarkness ?? 0.7}
+                                        displayValue={`${Math.round((layers.terrainShadowDarkness ?? 0.7) * 100)}%`}
+                                        onValueChange={(value) => onLayersChange({ terrainShadowDarkness: value })}
+                                    />
+                                </div>
+
+                                <div className="space-y-1">
+                                    <ControlLabel className="text-[10px] uppercase text-gray-500">Ambient Light</ControlLabel>
+                                    <ControlSlider
+                                        min="0"
+                                        max="0.5"
+                                        step="0.01"
+                                        value={layers.terrainAmbientLight ?? 0.15}
+                                        displayValue={`${Math.round((layers.terrainAmbientLight ?? 0.15) * 100)}%`}
+                                        onValueChange={(value) => onLayersChange({ terrainAmbientLight: value })}
+                                    />
+                                    <div className="flex justify-between text-[10px] text-gray-400 uppercase font-medium">
+                                        <Tooltip content="Dark shadows (dramatic)">
+                                            <span>Dramatic</span>
+                                        </Tooltip>
+                                        <Tooltip content="Lighter shadows (soft)">
+                                            <span>Soft</span>
+                                        </Tooltip>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <ControlLabel className="text-[10px] uppercase text-gray-500">Diffuse Light</ControlLabel>
+                                    <ControlSlider
+                                        min="0.5"
+                                        max="1.5"
+                                        step="0.05"
+                                        value={layers.terrainDiffuseLight ?? 1.0}
+                                        displayValue={`${Math.round((layers.terrainDiffuseLight ?? 1.0) * 100)}%`}
+                                        onValueChange={(value) => onLayersChange({ terrainDiffuseLight: value })}
+                                    />
+                                    <div className="flex justify-between text-[10px] text-gray-400 uppercase font-medium">
+                                        <Tooltip content="Dimmer highlights">
+                                            <span>Dim</span>
+                                        </Tooltip>
+                                        <Tooltip content="Brighter highlights">
+                                            <span>Bright</span>
+                                        </Tooltip>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                )}
+
                 {/* Fog/Atmosphere - only when 3D terrain is enabled */}
                 {layers.volumetricTerrain && (
                     <div className="pt-2 border-t border-gray-100 dark:border-gray-700">

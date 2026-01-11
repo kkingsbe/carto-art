@@ -291,6 +291,17 @@ async function renderSingleDeckTerrain({
         const detailLevel = settings.terrainDetailLevel || 'normal';
         const zoomOffset = detailLevel === 'ultra' ? 2 : detailLevel === 'high' ? 1 : 0;
 
+        // Shadow settings
+        const enableShadows = settings.terrainShadows !== false;
+        const shadowDarkness = settings.terrainShadowDarkness ?? 0.7;
+        const terrainColor = settings.terrainColor ?? [220, 220, 220];
+
+        // Calculate shadow-influenced material properties
+        const ambientValue = settings.terrainAmbientLight ?? 0.15;
+        const shadowInfluencedAmbient = enableShadows
+            ? Math.max(0.05, ambientValue * (1 - shadowDarkness * 0.5))
+            : ambientValue;
+
         const layer = new TerrainLayer({
             id: 'terrain-export',
             minZoom: 0,
@@ -306,14 +317,16 @@ async function renderSingleDeckTerrain({
             elevationData: getAwsTerrariumTileUrl(),
             texture: (texture || null) as any,
             meshMaxError: TERRAIN_QUALITY_PRESETS[settings.terrainMeshQuality || 'export'],
-            color: [255, 255, 255],
+            color: texture ? [255, 255, 255] : terrainColor,
             material: {
-                ambient: settings.terrainAmbientLight ?? 0.35,
-                diffuse: settings.terrainDiffuseLight ?? 0.8,
-                shininess: 32,
-                specularColor: [30, 30, 30],
+                ambient: shadowInfluencedAmbient,
+                diffuse: enableShadows ? Math.min(1.0, (settings.terrainDiffuseLight ?? 1.0) * 1.2) : (settings.terrainDiffuseLight ?? 0.8),
+                shininess: enableShadows ? 8 : 32,
+                specularColor: enableShadows ? [15, 15, 20] : [30, 30, 30],
             },
             operation: 'terrain+draw',
+            // @ts-ignore
+            shadowEnabled: enableShadows,
         });
 
         let deck: Deck<any> | null = null;
@@ -340,25 +353,45 @@ async function renderSingleDeckTerrain({
 
         const lightAzimuth = settings.terrainLightAzimuth ?? 315;
         const lightAltitude = settings.terrainLightAltitude ?? 45;
-        const ambientIntensity = settings.terrainAmbientLight ?? 0.35;
-        const diffuseIntensity = settings.terrainDiffuseLight ?? 0.8;
+        const ambientIntensity = enableShadows ? Math.min(settings.terrainAmbientLight ?? 0.15, 0.15) : (settings.terrainAmbientLight ?? 0.35);
+        const diffuseIntensity = settings.terrainDiffuseLight ?? 1.0;
+        const highlightColor = settings.terrainHighlightColor ?? [255, 255, 255];
 
         const azimuthRad = (lightAzimuth * Math.PI) / 180;
         const altitudeRad = (lightAltitude * Math.PI) / 180;
-        const lightDirection = [
-            -Math.sin(azimuthRad) * Math.cos(altitudeRad),
-            -Math.cos(azimuthRad) * Math.cos(altitudeRad),
-            -Math.sin(altitudeRad)
-        ];
+        const dirX = Math.sin(azimuthRad) * Math.cos(altitudeRad);
+        const dirY = Math.cos(azimuthRad) * Math.cos(altitudeRad);
+        const dirZ = Math.sin(altitudeRad);
 
-        const lightingEffect = new LightingEffect({
-            ambientLight: new AmbientLight({ color: [255, 255, 255], intensity: ambientIntensity }),
-            directionalLight: new DirectionalLight({
+        // Build lighting configuration
+        const lights: Record<string, AmbientLight | DirectionalLight> = {
+            ambientLight: new AmbientLight({
                 color: [255, 255, 255],
+                intensity: ambientIntensity
+            }),
+            mainLight: new DirectionalLight({
+                color: highlightColor as [number, number, number],
                 intensity: diffuseIntensity,
-                direction: lightDirection as [number, number, number],
+                direction: [-dirX, -dirY, -dirZ],
+                _shadow: true
             })
-        });
+        };
+
+        // Add fill and rim lights for enhanced shadow rendering
+        if (enableShadows) {
+            lights.fillLight = new DirectionalLight({
+                color: [200, 210, 230], // Sky reflection tint
+                intensity: 0.1,
+                direction: [dirX, dirY, -0.2],
+            });
+            lights.rimLight = new DirectionalLight({
+                color: [255, 255, 255],
+                intensity: 0.05,
+                direction: [0, 0, -1],
+            });
+        }
+
+        const lightingEffect = new LightingEffect(lights);
 
         // Calculate offset view for tiled rendering
         // MapView x,y are where the view starts on the canvas. 

@@ -175,6 +175,12 @@ export interface PosterConfig {
     terrainLightAltitude?: number;     // Light source vertical angle (0-90°)
     terrainAmbientLight?: number;      // Ambient light intensity (0-1)
     terrainDiffuseLight?: number;      // Diffuse light intensity (0-1)
+    // Terrain Shadows (self-shadowing for 3D terrain)
+    terrainShadows?: boolean;          // Enable terrain self-shadowing
+    terrainShadowDarkness?: number;    // Shadow darkness (0-1, 0=no shadow, 1=full black)
+    terrainColor?: [number, number, number];        // Base terrain color [R, G, B]
+    terrainShadowColor?: [number, number, number];  // Shadow tint color [R, G, B]
+    terrainHighlightColor?: [number, number, number]; // Highlight color for lit areas [R, G, B]
     // 3D Buildings
     buildings3D?: boolean;             // Enable 3D building extrusions
     buildings3DPitch?: number;         // Camera pitch angle (0-60°)

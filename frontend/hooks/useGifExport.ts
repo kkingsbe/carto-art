@@ -12,7 +12,7 @@ export interface GifExportOptions {
     duration: number; // seconds
     totalRotation: number; // degrees
     fps: number; // frames per second
-    animationMode: 'orbit' | 'cinematic';
+    animationMode: 'orbit' | 'cinematic' | 'spiral' | 'swoopIn' | 'rocketOut' | 'rise' | 'dive' | 'flyover';
 }
 
 interface UseGifExportReturn {
@@ -197,30 +197,76 @@ export function useGifExport(
                 }
 
                 const p = i / (totalFrames - 1 || 1);
-                const targetBearing = originalBearing + (p * totalRotation);
+                let currentTargetBearing = originalBearing;
                 let currentTargetPitch = startPitch;
                 let currentTargetZoom = startZoom;
+                let currentTargetCenter = originalCenter;
 
-                if (animationMode === 'cinematic') {
-                    if (p < 0.2) {
-                        const t = easeInOutCubic(p / 0.2);
-                        currentTargetPitch = startPitch + (targetPitch - startPitch) * t;
-                        currentTargetZoom = startZoom - (zoomPullback * t);
-                    } else if (p < 0.8) {
-                        currentTargetPitch = targetPitch;
-                        currentTargetZoom = startZoom - zoomPullback;
-                    } else {
-                        const t = easeInOutCubic((p - 0.8) / 0.2);
-                        currentTargetPitch = targetPitch - (targetPitch - startPitch) * t;
-                        currentTargetZoom = (startZoom - zoomPullback) + (zoomPullback * t);
-                    }
+                switch (animationMode) {
+                    case 'orbit':
+                        currentTargetBearing = originalBearing + (p * totalRotation);
+                        currentTargetPitch = originalPitch; // Orbit usually keeps pitch
+                        break;
+                    case 'cinematic':
+                        currentTargetBearing = originalBearing + (p * (totalRotation / 4));
+                        if (p < 0.2) {
+                            const t = easeInOutCubic(p / 0.2);
+                            currentTargetPitch = startPitch + (targetPitch - startPitch) * t;
+                            currentTargetZoom = startZoom - (zoomPullback * t);
+                        } else if (p < 0.8) {
+                            currentTargetPitch = targetPitch;
+                            currentTargetZoom = startZoom - zoomPullback;
+                        } else {
+                            const t = easeInOutCubic((p - 0.8) / 0.2);
+                            currentTargetPitch = targetPitch - (targetPitch - startPitch) * t;
+                            currentTargetZoom = (startZoom - zoomPullback) + (zoomPullback * t);
+                        }
+                        break;
+                    case 'spiral':
+                        currentTargetBearing = originalBearing + (p * totalRotation);
+                        currentTargetZoom = originalZoom - (2 * p);
+                        currentTargetPitch = originalPitch;
+                        break;
+                    case 'swoopIn':
+                        const swoopProgress = easeInOutCubic(p);
+                        currentTargetBearing = originalBearing + (swoopProgress * 180);
+                        currentTargetZoom = originalZoom + (4 * swoopProgress);
+                        currentTargetPitch = originalPitch + ((60 - originalPitch) * swoopProgress);
+                        break;
+                    case 'rocketOut':
+                        const rocketProgress = easeInOutCubic(p);
+                        currentTargetBearing = originalBearing - (rocketProgress * 180);
+                        currentTargetZoom = originalZoom - (4 * rocketProgress);
+                        currentTargetPitch = originalPitch + ((0 - originalPitch) * rocketProgress);
+                        break;
+                    case 'rise':
+                        currentTargetPitch = originalPitch + (60 - originalPitch) * p;
+                        currentTargetBearing = originalBearing;
+                        break;
+                    case 'dive':
+                        currentTargetPitch = originalPitch + (0 - originalPitch) * p;
+                        currentTargetBearing = originalBearing;
+                        break;
+                    case 'flyover':
+                        const moveAmount = (500 / Math.pow(2, originalZoom)) * p;
+                        const rad = (originalBearing * Math.PI) / 180;
+                        const dLng = Math.sin(rad) * moveAmount;
+                        const dLat = Math.cos(rad) * moveAmount;
+                        currentTargetCenter = {
+                            lng: originalCenter.lng + dLng,
+                            lat: originalCenter.lat + dLat,
+                        } as any;
+                        currentTargetBearing = originalBearing;
+                        currentTargetPitch = originalPitch;
+                        break;
                 }
 
                 // Update map state
                 map.jumpTo({
-                    bearing: targetBearing,
+                    bearing: currentTargetBearing,
                     pitch: currentTargetPitch,
                     zoom: currentTargetZoom,
+                    center: currentTargetCenter,
                 });
 
                 // Wait for idle
