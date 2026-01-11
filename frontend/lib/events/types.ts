@@ -22,6 +22,7 @@ export type EventType =
     | 'export_fail'
     | 'export_abandon'
     | 'paywall_shown'
+    | 'paywall_cta_clicked'
     | 'login_wall_shown'
     | 'session_heartbeat'
     | 'scroll_depth'
