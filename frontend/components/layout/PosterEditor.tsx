@@ -49,6 +49,7 @@ import { publishMap, unpublishMap } from '@/lib/actions/maps';
 import { PublishModal } from '@/components/profile/PublishModal';
 import { LoginWall } from '@/components/auth/LoginWall';
 import { LoginWallModal } from '@/components/auth/LoginWallModal';
+import { ProjectLimitModal } from '@/components/controls/ProjectLimitModal';
 import type { Step } from 'react-joyride';
 
 interface PosterEditorProps {
@@ -65,7 +66,7 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
   const isEcommerceEnabled = useFeatureFlag('ecommerce');
   const isCopyStateEnabled = useFeatureFlag('copy_editor_state_to_json');
   const { subscriptionTier } = useUserSubscription();
-  const { exportUsage, refreshExportUsage } = useUsageLimits(subscriptionTier);
+  const { exportUsage, projectUsage, refreshExportUsage } = useUsageLimits(subscriptionTier);
   const isPlusEnabled = useFeatureFlag('carto_plus');
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -148,6 +149,7 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [showLoginWall, setShowLoginWall] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showProjectLimitModal, setShowProjectLimitModal] = useState(false);
 
   // Marker Dialog State
   const [pendingMarkerLocation, setPendingMarkerLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -529,6 +531,15 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
 
   // Wrapper for SaveButton that passes current config, to maintain simpler API for EditorToolbar
   const handleSaveClick = useCallback(async (name: string) => {
+    // Check project limit for free users (only on new projects or if we decide to enforce on updates too, but usually it's creation)
+    // Actually, saving an EXISTING project should always be allowed if you own it.
+    // The limit is on CREATION (which saveCopy is). 
+    // BUT checking logic: if currentMapId is null, it's a new project.
+    if (!currentMapId && projectUsage && !projectUsage.allowed && subscriptionTier === 'free') {
+      setShowProjectLimitModal(true);
+      return;
+    }
+
     await saveProject(name, config);
 
     // Show celebration modal on first save only
@@ -544,7 +555,18 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
       sessionId: getSessionId(),
       metadata: { name, mapId: currentMapId }
     });
-  }, [saveProject, config, currentMapId]);
+  }, [saveProject, config, currentMapId, projectUsage, subscriptionTier]);
+
+  const handleSaveCopy = useCallback(async (name: string) => {
+    // Saving a copy ALWAYS creates a new project, so check limit
+    if (projectUsage && !projectUsage.allowed && subscriptionTier === 'free') {
+      setShowProjectLimitModal(true);
+      return;
+    }
+
+    await saveCopy(name);
+    trackEventAction({ eventType: 'map_publish', eventName: 'save_copy', sessionId: getSessionId(), metadata: { name } });
+  }, [saveCopy, projectUsage, subscriptionTier]);
 
   const handleCopyState = useCallback(async () => {
     try {
@@ -715,10 +737,7 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
           trackEventAction({ eventType: 'interaction', eventName: 'reset_project', sessionId: getSessionId() });
         }}
         onSave={handleSaveClick}
-        onSaveCopy={async (name) => {
-          await saveCopy(name);
-          trackEventAction({ eventType: 'map_publish', eventName: 'save_copy', sessionId: getSessionId(), metadata: { name } });
-        }}
+        onSaveCopy={handleSaveCopy}
         onExport={handleExport}
         isExporting={isExporting || isGeneratingGif || isExportingVideo || isExportingStl}
         exportProgress={exportProgress}
@@ -1151,6 +1170,16 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
         isOpen={isAdvancedControlsOpen}
         onClose={() => setIsAdvancedControlsOpen(false)}
       />
+      {projectUsage && (
+        <ProjectLimitModal
+          isOpen={showProjectLimitModal}
+          onClose={() => setShowProjectLimitModal(false)}
+          usage={{
+            used: projectUsage.used,
+            limit: projectUsage.limit
+          }}
+        />
+      )}
     </div>
   );
 }
