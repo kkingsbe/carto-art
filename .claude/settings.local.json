@@ -18,7 +18,8 @@
       "Bash(find:*)",
       "Bash(npx tsx:*)",
       "Bash(npx tsc --noEmit)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

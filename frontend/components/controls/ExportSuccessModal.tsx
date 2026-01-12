@@ -132,17 +132,6 @@ export function ExportSuccessModal({
         router.push(`/login?redirect=${returnUrl}`);
     };
 
-    const handleDonateClick = () => {
-        trackEventAction({
-            eventType: 'export_modal_donate_click',
-            eventName: 'donate_button_clicked',
-            sessionId: getSessionId(),
-            metadata: {
-                messageTitle: donationMessage.title
-            }
-        });
-    };
-
     // Helper to wrap save with tracking
     const handleSaveWithTracking = async (name: string) => {
         trackEventAction({
