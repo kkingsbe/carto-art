@@ -13,6 +13,8 @@ export async function GET(request: NextRequest) {
         const ratingFilter = searchParams.get('rating') || 'all';
         const triggerType = searchParams.get('triggerType') || 'all';
         const searchQuery = searchParams.get('search') || '';
+        const statusFilter = searchParams.get('status') || 'all';
+        const categoryFilter = searchParams.get('category') || 'all';
         const offset = parseInt(searchParams.get('offset') || '0');
         const limit = parseInt(searchParams.get('limit') || '50');
 
@@ -32,6 +34,9 @@ export async function GET(request: NextRequest) {
                 feature_ratings,
                 open_feedback,
                 allow_followup,
+                status,
+                admin_category,
+                admin_notes,
                 created_at,
                 user_agent,
                 page_url,
@@ -64,9 +69,19 @@ export async function GET(request: NextRequest) {
             query = query.eq('trigger_type', triggerType);
         }
 
-        // Apply search filter (on open_feedback only)
+        // Apply status filter
+        if (statusFilter !== 'all') {
+            query = query.eq('status', statusFilter);
+        }
+
+        // Apply category filter
+        if (categoryFilter !== 'all') {
+            query = query.eq('admin_category', categoryFilter);
+        }
+
+        // Apply search filter (on open_feedback and admin_notes)
         if (searchQuery) {
-            query = query.ilike('open_feedback', `%${searchQuery}%`);
+            query = query.or(`open_feedback.ilike.%${searchQuery}%,admin_notes.ilike.%${searchQuery}%`);
         }
 
         // Apply pagination and ordering
@@ -81,7 +96,7 @@ export async function GET(request: NextRequest) {
         // Calculate statistics
         const statsQuery = (supabase as any)
             .from('feedback')
-            .select('created_at, overall_rating, nps_score');
+            .select('created_at, overall_rating, nps_score, status');
 
         // Apply same filters for stats
         let statsQueryFiltered = statsQuery;
@@ -101,8 +116,14 @@ export async function GET(request: NextRequest) {
         if (triggerType !== 'all') {
             statsQueryFiltered = statsQueryFiltered.eq('trigger_type', triggerType);
         }
+        if (statusFilter !== 'all') {
+            statsQueryFiltered = statsQueryFiltered.eq('status', statusFilter);
+        }
+        if (categoryFilter !== 'all') {
+            statsQueryFiltered = statsQueryFiltered.eq('admin_category', categoryFilter);
+        }
 
-        const { data: statsData, error: statsError } = await statsQueryFiltered as { data: Array<{ created_at: string; overall_rating: number; nps_score: number | null }> | null; error: any };
+        const { data: statsData, error: statsError } = await statsQueryFiltered as { data: Array<{ created_at: string; overall_rating: number; nps_score: number | null; status: string }> | null; error: any };
 
         if (statsError) throw statsError;
 
@@ -126,6 +147,12 @@ export async function GET(request: NextRequest) {
         const nps_percentage = total_with_nps > 0
             ? ((promoters - detractors) / total_with_nps) * 100
             : 0;
+
+        // Calculate Status Breakdown
+        const statusBreakdown = statsData?.reduce((acc: any, item) => {
+            acc[item.status] = (acc[item.status] || 0) + 1;
+            return acc;
+        }, {});
 
         // Calculate Trend Data (Group by Day)
         const trendMap = new Map<string, { total_rating: number; count: number; total_nps: number; nps_count: number }>();
@@ -171,6 +198,9 @@ export async function GET(request: NextRequest) {
             feature_ratings: item.feature_ratings,
             open_feedback: item.open_feedback,
             allow_followup: item.allow_followup,
+            status: item.status,
+            admin_category: item.admin_category,
+            admin_notes: item.admin_notes,
             created_at: item.created_at,
             user_agent: item.user_agent,
             page_url: item.page_url,
@@ -187,6 +217,7 @@ export async function GET(request: NextRequest) {
                 promoters,
                 passives,
                 detractors,
+                status_breakdown: statusBreakdown,
             },
             trend,
             pagination: {
@@ -195,6 +226,7 @@ export async function GET(request: NextRequest) {
                 limit,
             },
         });
+
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 403 });
     }

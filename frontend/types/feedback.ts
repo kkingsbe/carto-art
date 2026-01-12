@@ -2,6 +2,9 @@
 
 export type TriggerType = 'post_export' | 'gallery_browse' | 'profile_setup' | 'return_visit' | 'voluntary';
 
+export type FeedbackStatus = 'new' | 'investigating' | 'in_progress' | 'completed' | 'archived';
+
+
 export interface FeatureRatings {
     ease_of_use?: 1 | 2 | 3;
     map_quality?: 1 | 2 | 3;
@@ -41,7 +44,13 @@ export interface FeedbackSubmission {
     feature_ratings?: FeatureRatings;
     open_feedback?: string;
     allow_followup?: boolean;
+
+    // Management fields (admin only)
+    status?: FeedbackStatus;
+    admin_category?: string;
+    admin_notes?: string;
 }
+
 
 export interface FeedbackDismissal {
     trigger_type: TriggerType;

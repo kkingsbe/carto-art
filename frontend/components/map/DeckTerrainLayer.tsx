@@ -263,20 +263,20 @@ async function loadElevationTiles(
  */
 export function DeckTerrainLayer({
     exaggeration = 1.5,
-    _meshMaxError = 4.0,
+    meshMaxError = 4.0,
     elevationData,
-    _bounds,
-    _visible = true,
-    _ambientLight = 0.4,
-    _diffuseLight = 0.8,
+    bounds,
+    visible = true,
+    ambientLight = 0.4,
+    diffuseLight = 0.8,
     lightAzimuth,
     lightAltitude,
-    _zoomOffset = 0,
+    zoomOffset = 0,
     enableShadows = true,
     shadowDarkness = 0.7,
-    _terrainColor = [200, 200, 200],
+    terrainColor = [200, 200, 200],
     shadowColor = [60, 60, 80],
-    _highlightColor = [255, 255, 255],
+    highlightColor = [255, 255, 255],
 }: DeckTerrainLayerProps) {
     const { current: map } = useMap();
     const [shadowTexture, setShadowTexture] = useState<string | null>(null);
@@ -408,12 +408,13 @@ export function DeckTerrainLayer({
 
         // Clean up function
         const cleanup = () => {
+            const mapLibre = map.getMap();
             try {
-                if (map.getLayer(layerId)) {
-                    map.removeLayer(layerId);
+                if (mapLibre.getLayer(layerId)) {
+                    mapLibre.removeLayer(layerId);
                 }
-                if (map.getSource(sourceId)) {
-                    map.removeSource(sourceId);
+                if (mapLibre.getSource(sourceId)) {
+                    mapLibre.removeSource(sourceId);
                 }
             } catch (e) {
                 // Ignore errors during cleanup (map might be destroyed)
@@ -443,7 +444,8 @@ export function DeckTerrainLayer({
                 [shadowBounds[0], shadowBounds[1]], // bottom-left (west, south)
             ];
 
-            map.addSource(sourceId, {
+            const mapLibre = map.getMap();
+            mapLibre.addSource(sourceId, {
                 type: 'image',
                 url: shadowTexture,
                 coordinates: coordinates,
@@ -451,7 +453,7 @@ export function DeckTerrainLayer({
 
             // Add a raster layer to display the shadow
             // This layer will be draped over the terrain automatically
-            map.addLayer({
+            mapLibre.addLayer({
                 id: layerId,
                 type: 'raster',
                 source: sourceId,
