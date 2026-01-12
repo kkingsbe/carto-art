@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useStripe, useElements, PaymentElement } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
 import { FrameMockupRenderer } from "./FrameMockupRenderer";
+import { trackEventAction } from '@/lib/actions/events';
+import { getSessionId } from '@/lib/utils';
 
 interface PrintArea {
     x: number;
@@ -44,6 +46,16 @@ export default function CheckoutForm({
             return;
         }
 
+        // Track payment attempt
+        trackEventAction({
+            eventType: 'payment_attempt',
+            eventName: 'payment_submitted',
+            sessionId: getSessionId(),
+            metadata: {
+                amount_cents: amount
+            }
+        });
+
         setLoading(true);
         setErrorMessage(null);
 
@@ -57,6 +69,20 @@ export default function CheckoutForm({
         });
 
         if (error) {
+            // Track payment failure
+            trackEventAction({
+                eventType: 'payment_failure',
+                eventName: 'payment_failed',
+                sessionId: getSessionId(),
+                metadata: {
+                    amount_cents: amount,
+                    error_type: error.type,
+                    error_code: error.code,
+                    // Don't log full message - may contain PII
+                    decline_code: error.decline_code
+                }
+            });
+
             setErrorMessage(error.message || "An unexpected error occurred.");
             setLoading(false);
         } else {

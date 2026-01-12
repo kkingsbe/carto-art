@@ -3,7 +3,7 @@
 
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ProductGroup, parseAspectRatio, findBestMatchingVariant } from '@/lib/utils/store';
+import { ProductGroup, parseAspectRatio, findBestMatchingVariant, variantMatchesAspectRatio } from '@/lib/utils/store';
 import { FrameMockupRenderer } from '@/components/ecommerce/FrameMockupRenderer';
 import { cn, getSessionId } from '@/lib/utils';
 import { ArrowRight, AlertTriangle } from 'lucide-react';
@@ -55,11 +55,20 @@ export function ProductCard({ product, designUrl: propDesignUrl }: ProductCardPr
 
     let displayVariant = product.thumbnailVariant;
     let showWarning = false;
+    let displayPrice = product.startingPrice;
 
     if (aspect) {
         // Use provided orientation or infer from aspect ratio
         const effectiveOrientation = orientation || (parseAspectRatio(aspect) < 1 ? 'portrait' : 'landscape');
         const targetRatio = parseAspectRatio(aspect, effectiveOrientation);
+
+        // Filter variants to match the user's aspect ratio (same logic as ProductDetailClient)
+        const filteredVariants = product.variants.filter(v => variantMatchesAspectRatio(v, targetRatio));
+
+        // Calculate min price from filtered variants only
+        if (filteredVariants.length > 0) {
+            displayPrice = Math.min(...filteredVariants.map(v => v.display_price_cents));
+        }
 
         const match = findBestMatchingVariant(product.variants, targetRatio, effectiveOrientation);
 
@@ -88,7 +97,7 @@ export function ProductCard({ product, designUrl: propDesignUrl }: ProductCardPr
                             metadata: {
                                 product_id: product.id,
                                 product_type: product.title,
-                                min_price: Math.ceil(product.minPrice / 100)
+                                min_price: Math.ceil(displayPrice / 100)
                             }
                         });
                     }
@@ -99,10 +108,26 @@ export function ProductCard({ product, designUrl: propDesignUrl }: ProductCardPr
 
         observer.observe(cardRef.current);
         return () => observer.disconnect();
-    }, [product.id, product.title, product.minPrice]);
+    }, [product.id, product.title, displayPrice]);
+
+    // Track product click when user navigates to product detail
+    const handleProductClick = () => {
+        trackEventAction({
+            eventType: 'product_click',
+            eventName: 'product_card_clicked',
+            sessionId: getSessionId(),
+            metadata: {
+                product_id: product.id,
+                product_type: product.title,
+                min_price: Math.ceil(displayPrice / 100),
+                aspect_ratio: aspect,
+                orientation: orientation
+            }
+        });
+    };
 
     return (
-        <Link href={href} className="group block h-full">
+        <Link href={href} className="group block h-full" onClick={handleProductClick}>
             <div ref={cardRef} className={cn(
                 "relative flex flex-col h-full overflow-hidden rounded-2xl",
                 "bg-white dark:bg-gray-900",
@@ -152,7 +177,7 @@ export function ProductCard({ product, designUrl: propDesignUrl }: ProductCardPr
 
                     <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100 dark:border-gray-800">
                         <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                            from ${Math.ceil(product.minPrice / 100)}
+                            from ${Math.ceil(displayPrice / 100)}
                         </div>
                         <span className="flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 group-hover:translate-x-1 transition-transform">
                             Select <ArrowRight className="w-4 h-4 ml-0.5" />

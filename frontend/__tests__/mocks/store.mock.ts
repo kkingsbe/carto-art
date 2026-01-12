@@ -160,12 +160,16 @@ export function createMockProductGroup(
 
     const minPrice = Math.min(...variants.map(v => v.display_price_cents));
     const thumbnailVariant = variants.find(v => v.mockup_template_url) || variants[0];
+    // startingPrice defaults to minPrice (matches real behavior when no DB override)
+    const startingPrice = overrides.startingPrice ?? minPrice;
 
     return {
         id: overrides.id ?? variants[0].product_id ?? 1,
         title: overrides.title ?? 'Framed Poster',
         description: overrides.description ?? 'Museum-quality matte paper, framed in semi-hardwood timber.',
+        features: overrides.features ?? [],
         minPrice,
+        startingPrice,
         variants,
         thumbnailVariant,
     };

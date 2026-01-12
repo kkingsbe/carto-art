@@ -82,9 +82,11 @@ export function FunnelChart() {
             findStep('Transition Success'),
             findStep('View Store'),
             findStep('View Product'),
+            findStep('Product Click'),
             findStep('Size Selected'),
             findStep('Shipping Ent.'),
-            findStep('Checkout'),
+            findStep('Payment View'),
+            findStep('Payment Attempt'),
             findStep('Purchase')
         ].filter(Boolean) as FunnelStep[];
 

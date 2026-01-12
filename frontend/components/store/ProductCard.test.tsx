@@ -77,7 +77,7 @@ describe('ProductCard', () => {
 
             render(<ProductCard product={product} />);
 
-            // Price should show $45 (minPrice / 100, rounded up)
+            // Price should show $45 (startingPrice / 100, rounded up)
             expect(screen.getByText(/from \$45/)).toBeInTheDocument();
         });
     });

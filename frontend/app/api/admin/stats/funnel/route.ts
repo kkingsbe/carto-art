@@ -58,11 +58,15 @@ export async function GET() {
         const clickPurchaseCount = getCount('shop_transition_start');
         const storeCount = getCount('store_view');
         const productCount = getCount('product_view');
+        const productClickCount = getCount('product_click');
         const productErrorCount = getCount('product_view_error');
 
         // Checkout steps
         const sizeSelectedCount = getCount('checkout_step_complete', 'size_selected');
         const shippingEnteredCount = getCount('checkout_step_complete', 'shipping_entered');
+        const paymentViewCount = getCount('checkout_payment_view');
+        const paymentAttemptCount = getCount('payment_attempt');
+        const paymentFailureCount = getCount('payment_failure');
 
         const checkoutCount = getCount('checkout_start');
         const purchaseCount = getCount('purchase_complete');
@@ -157,12 +161,18 @@ export async function GET() {
                 dropOff: Math.round((storeCount > 0 ? ((storeCount - productCount) / storeCount) : 0) * 100),
                 avgTimeNext: 0
             },
-
+            {
+                step: 'Product Click',
+                count: productClickCount,
+                percentage: Math.round((productClickCount / safeTotal) * 100),
+                dropOff: Math.round((productCount > 0 ? ((productCount - productClickCount) / productCount) : 0) * 100),
+                avgTimeNext: 0
+            },
             {
                 step: 'Size Selected',
                 count: sizeSelectedCount,
                 percentage: Math.round((sizeSelectedCount / safeTotal) * 100),
-                dropOff: Math.round((productCount > 0 ? ((productCount - sizeSelectedCount) / productCount) : 0) * 100),
+                dropOff: Math.round((productClickCount > 0 ? ((productClickCount - sizeSelectedCount) / productClickCount) : 0) * 100),
                 avgTimeNext: 0
             },
             {
@@ -173,17 +183,38 @@ export async function GET() {
                 avgTimeNext: 0
             },
             {
-                step: 'Checkout',
-                count: checkoutCount,
-                percentage: Math.round((checkoutCount / safeTotal) * 100),
-                dropOff: Math.round((shippingEnteredCount > 0 ? ((shippingEnteredCount - checkoutCount) / shippingEnteredCount) : 0) * 100),
+                step: 'Payment View',
+                count: paymentViewCount,
+                percentage: Math.round((paymentViewCount / safeTotal) * 100),
+                dropOff: Math.round((shippingEnteredCount > 0 ? ((shippingEnteredCount - paymentViewCount) / shippingEnteredCount) : 0) * 100),
+                avgTimeNext: 0
+            },
+            {
+                step: 'Payment Attempt',
+                count: paymentAttemptCount,
+                percentage: Math.round((paymentAttemptCount / safeTotal) * 100),
+                dropOff: Math.round((paymentViewCount > 0 ? ((paymentViewCount - paymentAttemptCount) / paymentViewCount) : 0) * 100),
                 avgTimeNext: 0
             },
             {
                 step: 'Purchase',
                 count: purchaseCount,
                 percentage: Math.round((purchaseCount / safeTotal) * 100),
-                dropOff: Math.round((checkoutCount > 0 ? ((checkoutCount - purchaseCount) / checkoutCount) : 0) * 100),
+                dropOff: Math.round((paymentAttemptCount > 0 ? ((paymentAttemptCount - purchaseCount) / paymentAttemptCount) : 0) * 100),
+                avgTimeNext: 0
+            },
+            {
+                step: 'Payment Failed',
+                count: paymentFailureCount,
+                percentage: Math.round((paymentFailureCount / safeTotal) * 100),
+                dropOff: 0,
+                avgTimeNext: 0
+            },
+            {
+                step: 'Checkout',
+                count: checkoutCount,
+                percentage: Math.round((checkoutCount / safeTotal) * 100),
+                dropOff: 0,
                 avgTimeNext: 0
             },
             {
