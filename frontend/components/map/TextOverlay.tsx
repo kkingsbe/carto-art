@@ -115,7 +115,7 @@ export function TextOverlay({ config }: TextOverlayProps) {
         }}
       >
         <div
-          className="relative text-center flex flex-col items-center"
+          className="relative text-center flex flex-col items-center max-w-full"
           style={
             typography.position === 'center' && backdropType !== 'none' && backdropType !== 'gradient'
               ? {

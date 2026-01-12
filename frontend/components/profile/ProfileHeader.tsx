@@ -139,12 +139,7 @@ export function ProfileHeader({ profile, stats, isOwnProfile }: ProfileHeaderPro
                                                     My Orders
                                                 </a>
                                             )}
-                                            <a
-                                                href="/profile/edit"
-                                                className="inline-flex flex-1 md:flex-none items-center justify-center px-6 py-2.5 bg-gradient-to-r from-[#c9a962] to-[#e0c47c] text-[#0a0f1a] rounded-xl text-sm font-bold hover:shadow-[0_0_25px_rgba(201,169,98,0.4)] hover:scale-105 active:scale-95 transition-all duration-300"
-                                            >
-                                                Edit Profile
-                                            </a>
+
                                         </>
                                     )}
                                 </div>

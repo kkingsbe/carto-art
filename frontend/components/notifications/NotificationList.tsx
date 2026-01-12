@@ -12,9 +12,13 @@ import { Button } from '@/components/ui/button';
 import { Loader2, CheckCheck, BellOff, Bell } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-export function NotificationList() {
-    const [notifications, setNotifications] = useState<NotificationData[]>([]);
-    const [loading, setLoading] = useState(true);
+interface NotificationListProps {
+    initialNotifications?: NotificationData[];
+}
+
+export function NotificationList({ initialNotifications }: NotificationListProps) {
+    const [notifications, setNotifications] = useState<NotificationData[]>(initialNotifications || []);
+    const [loading, setLoading] = useState(!initialNotifications);
 
     useEffect(() => {
         const fetchNotifications = async () => {

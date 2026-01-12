@@ -13,11 +13,12 @@ const LAST_SEEN_KEY = 'changelog_last_seen';
 interface ChangelogModalProps {
     trigger?: ReactNode;
     showFloatingButton?: boolean;
+    initialEntries?: ChangelogEntry[];
 }
 
-export function ChangelogModal({ trigger, showFloatingButton = false }: ChangelogModalProps) {
+export function ChangelogModal({ trigger, showFloatingButton = false, initialEntries }: ChangelogModalProps) {
     const [isOpen, setIsOpen] = useState(false);
-    const [entries, setEntries] = useState<ChangelogEntry[]>([]);
+    const [entries, setEntries] = useState<ChangelogEntry[]>(initialEntries || []);
     const [hasNew, setHasNew] = useState(false);
     const openTimeRef = useRef<number | null>(null);
 
