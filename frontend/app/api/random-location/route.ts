@@ -1,6 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { reverseGeocode } from '@/lib/geocoding/locationiq';
+import { MAP } from '@/lib/constants';
 
 export const runtime = 'nodejs';
 
@@ -62,7 +63,7 @@ export async function GET() {
 
                 if (location && location.name) {
                     // Found a valid location!
-                    const zoom = getRandomInRange(4, 12, 2);
+                    const zoom = getRandomInRange(4, MAP.MAX_ZOOM_CLAMPED, 2);
 
                     return NextResponse.json({
                         center: [point.lon, point.lat], // MapLibre uses [lng, lat]
@@ -83,7 +84,7 @@ export async function GET() {
         // Return a known safe spot (e.g. Paris)
         return NextResponse.json({
             center: [2.3522, 48.8566],
-            zoom: 10,
+            zoom: 10, // Default zoom for fallback
             country: 'France',
             name: 'Paris',
             fallback: true

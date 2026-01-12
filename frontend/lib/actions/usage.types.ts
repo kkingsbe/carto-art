@@ -6,6 +6,7 @@ export const CONFIG_KEYS = {
     FREE_TIER_PROJECT_LIMIT: 'free_tier_project_limit',
     ANON_DAILY_EXPORT_LIMIT: 'anon_daily_export_limit',
     PRODUCT_MARGIN_PERCENT: 'product_margin_percent',
+    SOFT_PAYWALL_DELAY_SECONDS: 'soft_paywall_delay_seconds',
 } as const;
 
 

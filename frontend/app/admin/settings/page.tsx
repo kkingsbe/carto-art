@@ -35,6 +35,11 @@ const CONFIG_LABELS: Record<string, { label: string; icon: React.ReactNode; desc
         icon: <Download className="w-4 h-4" />,
         description: 'Maximum exports per 24-hour rolling window for anonymous users',
     },
+    'soft_paywall_delay_seconds': {
+        label: 'Soft Paywall Delay',
+        icon: <Settings className="w-4 h-4" />,
+        description: 'Delay in seconds before showing the soft paywall modal to free tier users',
+    },
 };
 
 export default function SettingsPage() {

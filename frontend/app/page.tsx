@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Hero } from '@/components/landing/Hero';
 import { Features } from '@/components/landing/Features';
 import { StyleShowcase } from '@/components/landing/StyleShowcase';
@@ -17,7 +18,9 @@ export default async function LandingPage() {
       <HowToSchema />
       <Hero />
       <TopGallerySection />
-      <Pricing />
+      <Suspense fallback={<div className="py-24 bg-[#0a0f1a]" />}>
+        <Pricing />
+      </Suspense>
       <Features />
       <StyleShowcase />
       <FeaturedMaps />

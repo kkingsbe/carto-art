@@ -101,11 +101,6 @@ export async function GET(
         const text = new TextDecoder().decode(data);
         const json = JSON.parse(text);
 
-        // OpenFreeMap specific: Override maxzoom to 15 to unlock high-detail tiles
-        if (sourceKey === 'openfreemap' && json.maxzoom) {
-          json.maxzoom = 15;
-        }
-
         // Rewrite tile URLs to go through our proxy
         if (json.tiles && Array.isArray(json.tiles)) {
           json.tiles = json.tiles.map((url: string) => {

@@ -22,7 +22,7 @@ import { PosterCanvas } from '@/components/map/PosterCanvas';
 import { EditorToolbar } from '@/components/editor/EditorToolbar';
 import { applyPaletteToStyle } from '@/lib/styles/applyPalette';
 import { throttle } from '@/lib/utils';
-import { THROTTLE } from '@/lib/constants';
+import { THROTTLE, MAP } from '@/lib/constants';
 import { trackEventAction } from '@/lib/actions/events';
 import { getSessionId } from '@/lib/utils';
 import { getNumericRatio } from '@/lib/styles/dimensions';
@@ -49,7 +49,9 @@ import { publishMap, unpublishMap } from '@/lib/actions/maps';
 import { PublishModal } from '@/components/profile/PublishModal';
 import { LoginWall } from '@/components/auth/LoginWall';
 import { LoginWallModal } from '@/components/auth/LoginWallModal';
-import { ProjectLimitModal } from '@/components/controls/ProjectLimitModal';
+import { PaywallModal } from '@/components/controls/PaywallModal';
+import { getSiteConfig } from '@/lib/actions/usage';
+import { CONFIG_KEYS } from '@/lib/actions/usage.types';
 import type { Step } from 'react-joyride';
 
 interface PosterEditorProps {
@@ -150,6 +152,8 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
   const [showLoginWall, setShowLoginWall] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showProjectLimitModal, setShowProjectLimitModal] = useState(false);
+  const [showSoftPaywall, setShowSoftPaywall] = useState(false);
+  const [paywallDelay, setPaywallDelay] = useState(60);
 
   // Marker Dialog State
   const [pendingMarkerLocation, setPendingMarkerLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -368,6 +372,31 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
     }
   }, [searchParams, router]);
 
+  // Fetch soft paywall delay config
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const delay = await getSiteConfig(CONFIG_KEYS.SOFT_PAYWALL_DELAY_SECONDS);
+        setPaywallDelay(delay || 60);
+      } catch (err) {
+        console.error('Failed to fetch soft paywall delay config', err);
+      }
+    };
+    fetchConfig();
+  }, []);
+
+  // Soft Paywall Timer
+  useEffect(() => {
+    // Only show for free tier and only once per session
+    if (subscriptionTier !== 'free') return;
+
+    const timer = setTimeout(() => {
+      setShowSoftPaywall(true);
+    }, paywallDelay * 1000);
+
+    return () => clearTimeout(timer);
+  }, [subscriptionTier, paywallDelay]);
+
   // Randomization Logic
   const handleRandomize = useCallback(async () => {
     // Pick Random Style
@@ -418,7 +447,7 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
       const randomLng = (Math.random() * 360) - 180;
       const randomLat = (Math.random() * 170) - 85;
       newCenter = [randomLng, randomLat];
-      newZoom = Math.random() * 13 + 2;
+      newZoom = Math.random() * (MAP.MAX_ZOOM - MAP.MIN_ZOOM) + MAP.MIN_ZOOM;
       locationSubtitle = `${randomLat.toFixed(4)}°, ${randomLng.toFixed(4)}°`;
     }
 
@@ -590,8 +619,12 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
       setShowLoginWall(true);
       return;
     }
+    if (!currentMapId) {
+      toast.error('Please save your map before publishing to the gallery!');
+      return;
+    }
     setShowPublishModal(true);
-  }, [isAuthenticated]);
+  }, [isAuthenticated, currentMapId]);
 
   const handlePublish = useCallback(async (subtitle?: string) => {
     if (!currentMapId) return;
@@ -1054,9 +1087,26 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
       )}
 
       <LoginWallModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
+        isOpen={showLoginModal || showLoginWall}
+        onClose={() => {
+          setShowLoginModal(false);
+          setShowLoginWall(false);
+        }}
+        title={showLoginWall ? "Sign in to Publish" : "Sign in to Order Print"}
+        description={showLoginWall
+          ? "Create a free account to publish your maps to the community gallery and share them with the world."
+          : "Create a free account to order high-quality framed prints of your custom maps. Your design will be saved."
+        }
       />
+
+      {showPublishModal && currentMapId && currentMapName && (
+        <PublishModal
+          isOpen={showPublishModal}
+          onClose={() => setShowPublishModal(false)}
+          mapTitle={currentMapName}
+          onPublish={handlePublish}
+        />
+      )}
 
       {/* Mobile Tab Bar - Above Action Bar */}
       <div className="fixed left-0 right-0 z-40 md:hidden" style={{ bottom: 'calc(72px + env(safe-area-inset-bottom, 0px))' }}>
@@ -1171,15 +1221,19 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
         onClose={() => setIsAdvancedControlsOpen(false)}
       />
       {projectUsage && (
-        <ProjectLimitModal
+        <PaywallModal
           isOpen={showProjectLimitModal}
           onClose={() => setShowProjectLimitModal(false)}
-          usage={{
-            used: projectUsage.used,
-            limit: projectUsage.limit
-          }}
+          variant="project_limit"
+          usage={projectUsage}
         />
       )}
+
+      <PaywallModal
+        isOpen={showSoftPaywall}
+        onClose={() => setShowSoftPaywall(false)}
+        variant="soft"
+      />
     </div>
   );
 }

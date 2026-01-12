@@ -1,4 +1,5 @@
 import type { PosterConfig, PosterLocation } from '@/types/poster';
+import { MAP } from '@/lib/constants';
 import { getDefaultStyle } from '@/lib/styles';
 
 export const DEFAULT_LOCATION: PosterLocation = {
@@ -10,7 +11,7 @@ export const DEFAULT_LOCATION: PosterLocation = {
     [-122.5179, 37.7038], // SW corner
     [-122.3774, 37.8324], // NE corner
   ],
-  zoom: 12,
+  zoom: MAP.DEFAULT_ZOOM,
 };
 
 const defaultStyle = getDefaultStyle();

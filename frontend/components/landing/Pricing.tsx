@@ -3,8 +3,9 @@
 import { Check, X, Sparkles, Zap, Box, Film, Map } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { createCheckoutSession } from '@/lib/actions/subscription';
+import { createCheckoutSession, createCustomerPortalSession } from '@/lib/actions/subscription';
 import { useTransition } from 'react';
+import { useUserSubscription } from '@/hooks/useUserSubscription';
 
 // Pricing tiers configuration
 const TIERS = [
@@ -51,25 +52,31 @@ const TIERS = [
 export function Pricing() {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
+    const { isAuthenticated, subscriptionTier } = useUserSubscription();
 
     const handleAction = (tierName: string) => {
         if (tierName === 'Carto Plus') {
+            if (!isAuthenticated) {
+                router.push('/login?next=/#pricing');
+                return;
+            }
+
+            if (subscriptionTier === 'carto_plus') {
+                startTransition(async () => {
+                    try {
+                        await createCustomerPortalSession();
+                    } catch (err) {
+                        console.error('Failed to open portal:', err);
+                    }
+                });
+                return;
+            }
+
             startTransition(async () => {
                 try {
-                    // Pass empty string correctly to createCheckoutSession if needed,
-                    // check the signature in subscription.ts. 
-                    // The signature is createCheckoutSession(input?: string).
-                    // It redirects to session.url.
                     await createCheckoutSession();
                 } catch (err) {
-                    // If user is not logged in, redirect to login
-                    // The action throws 'User not authenticated' if not logged in.
-                    // But since this is a client component calling a server action,
-                    // catching the error here might not catch the redirect.
-                    // However, usually we should check auth on client or handle the error.
-                    // For now, let's assume if it fails, we redirect to login.
-                    console.error(err);
-                    router.push('/login?next=/profile'); // Or wherever appropriate
+                    console.error('Failed to create checkout session:', err);
                 }
             });
         } else {
@@ -159,7 +166,9 @@ export function Pricing() {
                                     <>Processing...</>
                                 ) : (
                                     <>
-                                        {tier.cta}
+                                        {tier.name === 'Carto Plus' && subscriptionTier === 'carto_plus'
+                                            ? 'Manage Subscription'
+                                            : tier.cta}
                                         {tier.highlighted && <Zap className="w-4 h-4" />}
                                     </>
                                 )}

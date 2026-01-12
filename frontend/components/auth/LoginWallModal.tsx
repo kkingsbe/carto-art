@@ -7,9 +7,11 @@ import { LoginWall } from './LoginWall';
 interface LoginWallModalProps {
     isOpen: boolean;
     onClose: () => void;
+    title?: string;
+    description?: string;
 }
 
-export function LoginWallModal({ isOpen, onClose }: LoginWallModalProps) {
+export function LoginWallModal({ isOpen, onClose, title, description }: LoginWallModalProps) {
     if (!isOpen) return null;
 
     return (
@@ -37,8 +39,8 @@ export function LoginWallModal({ isOpen, onClose }: LoginWallModalProps) {
                 </div>
 
                 <LoginWall
-                    title="Sign in to Order Print"
-                    description="Create a free account to order high-quality framed prints of your custom maps. Your design will be saved."
+                    title={title || "Sign in to Order Print"}
+                    description={description || "Create a free account to order high-quality framed prints of your custom maps. Your design will be saved."}
                     className="shadow-2xl shadow-blue-500/20 border-0 ring-1 ring-white/20"
                 />
             </div>

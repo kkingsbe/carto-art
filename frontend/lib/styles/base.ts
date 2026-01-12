@@ -33,7 +33,7 @@ export function getBaseSources(options: BaseSourcesOptions = {}) {
       type: 'vector',
       url: getOpenFreeMapPlanetTileJsonUrl(),
       minzoom: 0,
-      maxzoom: 15,
+      maxzoom: 14,
     },
     contours: {
       type: 'vector',

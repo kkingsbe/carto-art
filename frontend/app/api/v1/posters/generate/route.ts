@@ -8,6 +8,7 @@ import { randomUUID } from 'crypto';
 import { trackEvent } from '@/lib/events';
 
 import { getStyleById, getDefaultStyle } from '@/lib/styles';
+import { MAP } from '@/lib/constants';
 
 const SimplifiedPosterSchema = z.object({
     location: z.object({
@@ -27,8 +28,8 @@ const SimplifiedPosterSchema = z.object({
     camera: z.object({
         pitch: z.number().min(0).max(60).default(0),
         bearing: z.number().min(0).max(360).default(0),
-        zoom: z.number().min(0).max(20).default(12),
-    }).optional().default({ pitch: 0, bearing: 0, zoom: 12 }),
+        zoom: z.number().min(MAP.MIN_ZOOM_CLAMPED).max(MAP.EXPORT_MAX_ZOOM).default(MAP.DEFAULT_ZOOM),
+    }).optional().default({ pitch: 0, bearing: 0, zoom: MAP.DEFAULT_ZOOM }),
     options: z.object({
         // Core Layers
         buildings_3d: z.boolean().default(false),

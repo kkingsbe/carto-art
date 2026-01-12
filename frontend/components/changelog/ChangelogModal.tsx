@@ -55,8 +55,11 @@ export function ChangelogModal({ trigger, showFloatingButton = false }: Changelo
 
                 if (latestDate > lastSeenDate) {
                     setHasNew(true);
-                    if (!lastSeen && showFloatingButton) {
+                    if (showFloatingButton) {
                         setIsOpen(true);
+                        // Mark as seen so it doesn't pop up again on next load/refresh
+                        localStorage.setItem(LAST_SEEN_KEY, latestDate.toString());
+                        setHasNew(false);
                     }
                 }
             }

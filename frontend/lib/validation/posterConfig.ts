@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { PosterConfig } from '@/types/poster';
+import { MAP } from '@/lib/constants';
 
 /**
  * Zod schema for validating PosterConfig
@@ -15,7 +16,7 @@ export const PosterConfigSchema: z.ZodType<PosterConfig> = z.object({
       z.tuple([z.number(), z.number()]),
       z.tuple([z.number(), z.number()])
     ]).describe('Bounds must be [[SW], [NE]]'),
-    zoom: z.number().min(0).max(24),
+    zoom: z.number().min(MAP.MIN_ZOOM_CLAMPED).max(MAP.EXPORT_MAX_ZOOM),
   }),
   style: z.object({
     id: z.string().min(1),

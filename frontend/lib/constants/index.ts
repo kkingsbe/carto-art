@@ -52,17 +52,19 @@ export const HISTORY = {
  */
 export const MAP = {
   /** Maximum zoom level */
-  MAX_ZOOM: 14,
+  MAX_ZOOM: 18,
   /** Minimum zoom level */
   MIN_ZOOM: 1,
   /** Maximum allowed zoom (clamped) */
-  MAX_ZOOM_CLAMPED: 14.9,
+  MAX_ZOOM_CLAMPED: 18.9,
   /** Minimum allowed zoom (clamped) */
   MIN_ZOOM_CLAMPED: 1,
   /** Default pixel ratio for map rendering */
   PIXEL_RATIO: 2,
   /** Temporarily allow higher zoom for export */
   EXPORT_MAX_ZOOM: 24,
+  /** Default zoom level */
+  DEFAULT_ZOOM: 12,
 } as const;
 
 /**

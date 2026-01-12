@@ -31,7 +31,7 @@ export async function FinalCTA() {
 
         {/* Social proof */}
         <p className="text-sm text-[#d4cfc4]/60 mb-8">
-          Join {stats.totalUsers.toLocaleString()}+ creators who've made {stats.totalMaps.toLocaleString()}+ maps
+          Join {stats.totalUsers.toLocaleString()}+ creators who've made {stats.totalExports.toLocaleString()}+ maps
         </p>
 
         <Link

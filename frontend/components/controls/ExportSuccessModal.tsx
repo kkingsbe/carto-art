@@ -1,10 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { trackEventAction } from '@/lib/actions/events';
 import { getSessionId } from '@/lib/utils';
-import { X, MessageCircle, Heart, ExternalLink, Share2, Save, ShoppingBag, Check, Twitter, Link as LinkIcon, Upload, Sparkles } from 'lucide-react';
+import { X, Save, ShoppingBag, Check, Twitter, Upload, Clock, Star, Truck, Shield, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { SaveButton } from './SaveButton';
 import { Button } from '@/components/ui/control-components';
 
 interface ExportSuccessModalProps {
@@ -21,6 +20,17 @@ interface ExportSuccessModalProps {
     subscriptionTier?: 'free' | 'carto_plus';
 }
 
+// Calculate time remaining for urgency (resets daily at midnight UTC)
+function getTimeRemaining(): { hours: number; minutes: number } {
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setUTCHours(24, 0, 0, 0);
+    const diff = midnight.getTime() - now.getTime();
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    return { hours, minutes };
+}
+
 export function ExportSuccessModal({
     isOpen,
     onClose,
@@ -35,32 +45,18 @@ export function ExportSuccessModal({
     subscriptionTier = 'free'
 }: ExportSuccessModalProps) {
     const router = useRouter();
-    const [copied, setCopied] = useState(false);
 
-    // Personalized donation messaging based on export count
-    const getDonationMessage = () => {
-        if (exportCount >= 5) {
-            return {
-                title: `You've Created ${exportCount} Posters, All Free!`,
-                description: "You're clearly getting value from CartoArt. This tool took 100+ hours to build and costs money to run.",
-                cta: "Support the Project"
-            };
-        } else if (exportCount >= 3) {
-            return {
-                title: "Loving CartoArt? Keep It Free!",
-                description: "You've created multiple posters for free. A small tip helps keep this project alive for everyone.",
-                cta: "Buy Me a Coffee"
-            };
-        } else {
-            return {
-                title: "Keep CartoArt Free & Ad-Free",
-                description: "You just created something awesome for free. Help us keep it that way!",
-                cta: "Buy Me a Coffee"
-            };
-        }
-    };
+    // Urgency timer state
+    const [timeRemaining, setTimeRemaining] = useState(getTimeRemaining);
 
-    const donationMessage = getDonationMessage();
+    // Update timer every minute
+    useEffect(() => {
+        if (!isOpen) return;
+        const interval = setInterval(() => {
+            setTimeRemaining(getTimeRemaining());
+        }, 60000);
+        return () => clearInterval(interval);
+    }, [isOpen]);
 
     // Track modal view
     useEffect(() => {
@@ -111,22 +107,6 @@ export function ExportSuccessModal({
             document.body.style.overflow = '';
         };
     }, [isOpen, onClose]);
-
-    const handleCopyLink = async () => {
-        try {
-            await navigator.clipboard.writeText(window.location.href);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-
-            trackEventAction({
-                eventType: 'export_modal_share_click',
-                eventName: 'share_link_copied',
-                sessionId: getSessionId()
-            });
-        } catch (err) {
-            console.error('Failed to copy link', err);
-        }
-    };
 
     const handleShareTwitter = () => {
         const text = "Check out this map poster I designed with CartoArt! 🗺️✨";
@@ -234,79 +214,105 @@ export function ExportSuccessModal({
                     </button>
                 </div>
 
-                {/* Hero Header - UPDATED COPY */}
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 md:p-6 text-white text-center relative overflow-hidden shrink-0">
-                    <div className="relative z-10">
-                        <div className="mx-auto bg-white/20 w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center mb-2 md:mb-3 backdrop-blur-sm">
-                            <Check className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                {/* Compact Success Header */}
+                <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-3 text-white relative overflow-hidden shrink-0">
+                    <div className="relative z-10 flex items-center gap-3">
+                        <div className="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-sm">
+                            <Check className="w-4 h-4 text-white" />
                         </div>
-                        <h2 className="text-xl md:text-2xl font-bold mb-1">Your Design is Saved!</h2>
-                        <p className="text-sm md:text-base text-blue-100 font-medium">Your high-resolution poster is downloading...</p>
+                        <div>
+                            <h2 className="text-base font-bold">Download Started!</h2>
+                            <p className="text-xs text-emerald-100">Your poster is saving to your device</p>
+                        </div>
                     </div>
                 </div>
 
-                {/* Content Grid */}
-                <div className="p-3 md:p-5 grid gap-4 flex-1 overflow-y-auto overscroll-contain">
+                {/* MAIN CONTENT: Print-Focused Hero */}
+                <div className="p-4 md:p-6 flex-1 overflow-y-auto overscroll-contain">
 
-                    {/* Primary Action: Print (Prioritized & Enhanced) */}
+                    {/* Print CTA - The Hero Section */}
                     {onBuyPrint && (
-                        <div className="col-span-1">
-                            {/* Key change: Added border-blue-500/30 and ring effect for emphasis */}
-                            <div className="bg-white dark:bg-gray-800/80 p-5 rounded-2xl border border-blue-200 dark:border-blue-900/50 shadow-xl shadow-blue-500/10 relative overflow-hidden group ring-1 ring-blue-500/20">
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
+                        <div className="relative">
+                            {/* Urgency Banner */}
+                            <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-center py-2 px-4 rounded-t-xl flex items-center justify-center gap-2 text-sm font-medium">
+                                <Clock className="w-4 h-4" />
+                                <span>Limited time: 10% off your first order</span>
+                                <span className="bg-white/20 px-2 py-0.5 rounded text-xs font-bold">
+                                    {timeRemaining.hours}h {timeRemaining.minutes}m left
+                                </span>
+                            </div>
 
-                                {/* Recommended Badge */}
-                                <div className="absolute top-0 right-0 bg-blue-600 text-white text-[10px] sm:text-xs font-bold px-3 py-1 rounded-bl-xl shadow-sm z-10">
-                                    RECOMMENDED
-                                </div>
+                            <div className="bg-white dark:bg-gray-800 rounded-b-xl border border-t-0 border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden">
+                                <div className="p-5 md:p-6">
+                                    <div className="flex flex-col md:flex-row gap-6 items-center">
+                                        {/* Preview Mockup */}
+                                        {previewUrl && (
+                                            <div className="shrink-0 relative w-full md:w-auto flex justify-center">
+                                                {/* Room Context Background */}
+                                                <div className="relative bg-gradient-to-b from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-lg p-6 pb-2">
+                                                    {/* Wall texture hint */}
+                                                    <div className="absolute inset-0 opacity-5 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiMwMDAiLz48L3N2Zz4=')]" />
 
-                                <div className="relative flex flex-col sm:flex-row gap-6 items-center">
-                                    {previewUrl && (
-                                        <div className="shrink-0 relative transform group-hover:scale-[1.02] transition-transform duration-500 w-full sm:w-auto flex justify-center">
-                                            <div className="relative shadow-2xl rounded-sm overflow-hidden bg-white border-[8px] border-gray-900 dark:border-gray-200 max-w-[160px] sm:max-w-[200px]">
-                                                <div className="border-[6px] border-white bg-white">
-                                                    <img
-                                                        src={previewUrl}
-                                                        alt="Your Design"
-                                                        className="w-full h-auto block"
-                                                    />
+                                                    {/* Framed poster */}
+                                                    <div className="relative shadow-2xl">
+                                                        <div className="bg-gray-900 dark:bg-gray-200 p-1.5 rounded-sm">
+                                                            <div className="bg-white p-1">
+                                                                <img
+                                                                    src={previewUrl}
+                                                                    alt="Your Design"
+                                                                    className="w-32 md:w-40 h-auto block"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Shadow on "floor" */}
+                                                    <div className="h-1 bg-gradient-to-t from-gray-300 dark:from-gray-900 to-transparent mt-4 rounded-full mx-4" />
                                                 </div>
-                                                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/20 pointer-events-none" />
                                             </div>
-                                            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-[90%] h-4 bg-black/30 blur-xl rounded-full" />
-                                        </div>
-                                    )}
+                                        )}
 
-                                    <div className="flex-1 text-center sm:text-left space-y-3 w-full">
-                                        <div>
-                                            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white leading-tight">
-                                                The Ultimate Way to Display Your Map
-                                            </h3>
-                                            <p className="text-gray-600 dark:text-gray-400 mt-2 text-sm sm:text-base leading-relaxed">
-                                                You've made a great design. It deserves to be on your wall in museum-quality print.
-                                            </p>
-                                        </div>
+                                        {/* Content */}
+                                        <div className="flex-1 text-center md:text-left space-y-4">
+                                            <div>
+                                                <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white leading-tight">
+                                                    Get It On Your Wall
+                                                </h3>
+                                                <p className="text-gray-600 dark:text-gray-400 mt-2 text-base">
+                                                    Premium framed prints starting at <span className="font-bold text-gray-900 dark:text-white">$45</span>
+                                                </p>
+                                            </div>
 
-                                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-2 text-xs text-gray-500 dark:text-gray-400 py-1">
-                                            <span className="flex items-center gap-1.5">
-                                                <Check className="w-4 h-4 text-green-500" />
-                                                Ready to hang
-                                            </span>
-                                            <span className="flex items-center gap-1.5">
-                                                <Check className="w-4 h-4 text-green-500" />
-                                                Free Shipping
-                                            </span>
-                                        </div>
+                                            {/* Trust Signals */}
+                                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-gray-600 dark:text-gray-400">
+                                                <span className="flex items-center gap-1.5">
+                                                    <Truck className="w-4 h-4 text-blue-500" />
+                                                    Ships Worldwide
+                                                </span>
+                                                <span className="flex items-center gap-1.5">
+                                                    <Shield className="w-4 h-4 text-green-500" />
+                                                    Quality Guarantee
+                                                </span>
+                                                <span className="flex items-center gap-1.5">
+                                                    <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                                                    500+ Happy Customers
+                                                </span>
+                                            </div>
 
-                                        <div className="pt-2">
+                                            {/* CTA Button */}
                                             <Button
-                                                variant="default"
-                                                className="w-full sm:w-auto min-w-[200px] h-11 gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-base shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all hover:-translate-y-0.5"
                                                 onClick={onBuyPrint}
+                                                className="w-full md:w-auto min-w-[240px] h-14 gap-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 transition-all hover:-translate-y-0.5 hover:scale-[1.02]"
                                             >
                                                 <ShoppingBag className="w-5 h-5" />
                                                 View Print Options
+                                                <ChevronRight className="w-5 h-5" />
                                             </Button>
+
+                                            {/* Reassurance */}
+                                            <p className="text-xs text-gray-500 dark:text-gray-500">
+                                                No commitment - just browse sizes and prices
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -314,137 +320,40 @@ export function ExportSuccessModal({
                         </div>
                     )}
 
-                    {/* Secondary Actions Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Donation or Upsell */}
-                        {subscriptionTier === 'free' ? (
-                            <div
-                                className="rounded-xl border border-purple-200 dark:border-purple-900/50 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/10 dark:to-indigo-900/10 p-4 relative overflow-hidden flex flex-col justify-center group cursor-pointer"
-                                onClick={() => {
-                                    if (!isAuthenticated) {
-                                        router.push('/login');
-                                    } else {
-                                        import('@/lib/actions/subscription').then(({ createCheckoutSession }) => {
-                                            const searchParams = typeof window !== 'undefined' ? window.location.search.substring(1) : '';
-                                            createCheckoutSession(searchParams);
-                                        });
-                                    }
-                                }}
+                    {/* Minimized Secondary Actions - Collapsed into single row */}
+                    <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                        <div className="flex flex-wrap items-center justify-center gap-2">
+                            <span className="text-xs text-gray-500 dark:text-gray-500 mr-2">Or:</span>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-xs h-8 text-gray-600 dark:text-gray-400 hover:text-gray-900"
+                                onClick={handlePublishWithTracking}
                             >
-                                <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
-                                    <Sparkles className="w-16 h-16 text-purple-600 dark:text-purple-400" />
-                                </div>
-                                <div className="relative z-10 flex gap-3 items-start">
-                                    <div className="shrink-0 w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
-                                        <Sparkles className="w-5 h-5 fill-current" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <h4 className="font-bold text-gray-900 dark:text-white text-sm">
-                                            Unlock the Full Experience
-                                        </h4>
-                                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 mb-2 leading-relaxed">
-                                            Get unlimited exports, GIF/Video generation, commercial license, and more.
-                                        </p>
-                                        <button className="text-xs font-bold text-purple-700 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 flex items-center gap-1 transition-colors">
-                                            Upgrade to Plus <ExternalLink className="w-3 h-3" />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="rounded-xl border border-yellow-200 dark:border-yellow-900/50 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-yellow-900/10 dark:to-yellow-800/10 p-4 relative overflow-hidden flex flex-col justify-center">
-                                <div className="relative z-10 flex gap-3 items-start">
-                                    <div className="shrink-0 w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center text-yellow-600 dark:text-yellow-400">
-                                        <Heart className="w-5 h-5 fill-current" />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-gray-900 dark:text-white text-sm">
-                                            Enjoying the tool?
-                                        </h4>
-                                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 mb-2">
-                                            {donationMessage.description}
-                                        </p>
-                                        <a
-                                            href="https://buymeacoffee.com/kkingsbe"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            onClick={handleDonateClick}
-                                            className="text-xs font-bold text-yellow-700 dark:text-yellow-500 hover:underline flex items-center gap-1"
-                                        >
-                                            {donationMessage.cta} <ExternalLink className="w-3 h-3" />
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Other Actions Grouped */}
-                        <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 p-4 space-y-3">
-                            <h4 className="font-semibold text-gray-900 dark:text-white text-sm flex items-center gap-2">
-                                <Share2 className="w-4 h-4" />
-                                Other Actions
-                            </h4>
-
-                            <div className="grid grid-cols-2 gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="w-full text-xs h-9"
-                                    onClick={handlePublishWithTracking}
-                                >
-                                    <Upload className="w-3.5 h-3.5 mr-1.5" />
-                                    Publish
-                                </Button>
-
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="w-full text-xs h-9"
-                                    onClick={isAuthenticated ? () => handleSaveWithTracking(currentMapName || 'New Map') : handleSignUp}
-                                >
-                                    <Save className="w-3.5 h-3.5 mr-1.5" />
-                                    {isAuthenticated ? 'Save' : 'Save & Sign Up'}
-                                </Button>
-                            </div>
-
-                            <div className="flex gap-2">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="flex-1 text-xs h-8 bg-white dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700"
-                                    onClick={handleCopyLink}
-                                >
-                                    {copied ? <Check className="w-3.5 h-3.5 mr-1.5 text-green-500" /> : <LinkIcon className="w-3.5 h-3.5 mr-1.5" />}
-                                    {copied ? 'Copied' : 'Copy Link'}
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="flex-1 text-xs h-8 bg-white dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700"
-                                    onClick={handleShareTwitter}
-                                >
-                                    <Twitter className="w-3.5 h-3.5 mr-1.5 text-blue-400" />
-                                    Tweet
-                                </Button>
-                            </div>
+                                <Upload className="w-3.5 h-3.5 mr-1.5" />
+                                Publish to Gallery
+                            </Button>
+                            <span className="text-gray-300 dark:text-gray-700">|</span>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-xs h-8 text-gray-600 dark:text-gray-400 hover:text-gray-900"
+                                onClick={isAuthenticated ? () => handleSaveWithTracking(currentMapName || 'New Map') : handleSignUp}
+                            >
+                                <Save className="w-3.5 h-3.5 mr-1.5" />
+                                {isAuthenticated ? 'Save Project' : 'Sign Up to Save'}
+                            </Button>
+                            <span className="text-gray-300 dark:text-gray-700">|</span>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-xs h-8 text-gray-600 dark:text-gray-400 hover:text-gray-900"
+                                onClick={handleShareTwitter}
+                            >
+                                <Twitter className="w-3.5 h-3.5 mr-1.5" />
+                                Share
+                            </Button>
                         </div>
-                    </div>
-
-                </div>
-
-                {/* Discord Community CTA - Retained as footer */}
-                <div className="bg-gray-50 dark:bg-gray-800/50 p-3 border-t border-gray-100 dark:border-gray-800">
-                    <div className="flex items-center justify-between gap-3 text-xs text-gray-500 dark:text-gray-400">
-                        <span>Need help or want to share feedback?</span>
-                        <a
-                            href="https://discord.gg/UVKEfcfZVc"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors"
-                        >
-                            <MessageCircle className="w-3.5 h-3.5" />
-                            Join Discord
-                        </a>
                     </div>
                 </div>
             </div>
