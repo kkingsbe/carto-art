@@ -162,22 +162,7 @@ export function ProductModal({ isOpen, onClose, imageUrl, designId, aspectRatio 
     // Track payment form view (step 3)
     const hasTrackedPaymentViewRef = useRef(false);
 
-    // Track when user reaches payment step
-    useEffect(() => {
-        if (step === 3 && clientSecret && !hasTrackedPaymentViewRef.current) {
-            hasTrackedPaymentViewRef.current = true;
-            trackEventAction({
-                eventType: 'checkout_payment_view',
-                eventName: 'payment_form_viewed',
-                sessionId: getSessionId(),
-                metadata: {
-                    variant_id: selectedVariant?.id,
-                    variant_name: selectedVariant?.name,
-                    amount_cents: selectedVariant?.display_price_cents
-                }
-            });
-        }
-    }, [step, clientSecret, selectedVariant]);
+
 
     useEffect(() => {
         const fetchVariants = async () => {
@@ -227,6 +212,23 @@ export function ProductModal({ isOpen, onClose, imageUrl, designId, aspectRatio 
 
     const [clientSecret, setClientSecret] = useState("");
     const [uploadedDesignId, setUploadedDesignId] = useState<number | string | null>(designId || null);
+
+    // Track when user reaches payment step
+    useEffect(() => {
+        if (step === 3 && clientSecret && !hasTrackedPaymentViewRef.current) {
+            hasTrackedPaymentViewRef.current = true;
+            trackEventAction({
+                eventType: 'checkout_payment_view',
+                eventName: 'payment_form_viewed',
+                sessionId: getSessionId(),
+                metadata: {
+                    variant_id: selectedVariant?.id,
+                    variant_name: selectedVariant?.name,
+                    amount_cents: selectedVariant?.display_price_cents
+                }
+            });
+        }
+    }, [step, clientSecret, selectedVariant]);
 
     const methods = useForm({
         defaultValues: {
