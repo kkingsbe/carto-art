@@ -8,6 +8,9 @@ const meta: Meta<typeof PaywallModal> = {
         layout: 'centered',
     },
     tags: ['autodocs'],
+    args: {
+        inline: true,
+    },
 };
 
 export default meta;

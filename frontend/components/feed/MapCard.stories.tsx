@@ -24,10 +24,12 @@ type Story = StoryObj<typeof MapCard>;
 const mockMap = {
     id: '1',
     title: 'New York City Map',
+    subtitle: 'Manhattan, NY',
     description: 'A beautiful map of NYC',
     thumbnail_url: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?q=80&w=2070&auto=format&fit=crop',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
+    published_at: new Date().toISOString(),
     user_id: 'user1',
     is_public: true,
     view_count: 1234,

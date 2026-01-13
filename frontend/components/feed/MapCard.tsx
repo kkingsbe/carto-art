@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { TrendingUp, User, Copy, Eye, Heart, MapPin, Sparkles } from 'lucide-react';
+import { TrendingUp, User, Copy, Eye, Heart, Sparkles } from 'lucide-react';
 import type { FeedMap } from '@/lib/actions/feed';
 import { cn } from '@/lib/utils';
 
@@ -76,20 +76,27 @@ export function MapCard({ map, actionSlot, featured = false, index = 0 }: MapCar
     <div
       ref={cardRef}
       className={cn(
-        "gallery-card group relative flex flex-col rounded-3xl overflow-hidden",
-        "bg-gradient-to-br from-[#0c1424] to-[#050B14]",
-        "border border-white/5",
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6',
+        "gallery-card group relative flex flex-col rounded-[2rem] overflow-hidden",
+        "bg-[#0a0f1a]", // Fallback
+        "transition-all duration-700 ease-out",
+        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12',
         featured && "md:row-span-2"
       )}
       style={{
-        transitionProperty: 'opacity, transform, box-shadow, border-color',
-        transitionDuration: '0.6s',
-        transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+        transitionDelay: `${index * 50}ms`,
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
+      {/* Animated Border Gradient */}
+      <div className={cn(
+        "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700",
+        "bg-gradient-to-b from-white/10 to-transparent pointer-events-none z-10"
+      )} />
+
+      {/* Base Border */}
+      <div className="absolute inset-0 border border-white/5 group-hover:border-white/10 rounded-[2rem] pointer-events-none z-20 transition-colors duration-500" />
+
       {/* Primary Link (Stretched) - Covers the card up to z-10 */}
       <Link
         href={`/map/${map.id}`}
@@ -98,46 +105,46 @@ export function MapCard({ map, actionSlot, featured = false, index = 0 }: MapCar
       />
 
       {/* Image Section - Poster Preview */}
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#EBE9E4]">
+      <div className="relative aspect-[4/5] w-full overflow-hidden bg-[#151b2e]">
         {map.thumbnail_url ? (
           <>
             <img
               src={map.thumbnail_url}
               alt={map.title}
               className={cn(
-                "w-full h-full object-cover transition-all duration-700",
-                isHovered && "scale-105"
+                "w-full h-full object-cover transition-transform duration-1000 cubic-bezier(0.2, 0, 0, 1)",
+                isHovered && "scale-[1.03]"
               )}
               loading="lazy"
             />
 
-            {/* Gradient overlay on hover */}
-            <div
-              className={cn(
-                "absolute inset-0 bg-gradient-to-t from-[#050B14]/90 via-transparent to-transparent",
-                "transition-opacity duration-500",
-                isHovered ? "opacity-100" : "opacity-0"
-              )}
-            />
+            {/* Gradient overlay - Always present for text readability at bottom */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#050B14] via-[#050B14]/40 to-transparent opacity-60 transition-opacity duration-500 group-hover:opacity-80" />
 
-            {/* Subtle inner shadow for depth */}
-            <div className="absolute inset-0 shadow-[inset_0_0_60px_rgba(0,0,0,0.15)] pointer-events-none" />
+            {/* Top gradient for action buttons */}
+            <div className={cn(
+              "absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/60 to-transparent",
+              "opacity-0 transition-opacity duration-300",
+              isHovered && "opacity-100"
+            )} />
 
-            {/* Top Action Buttons */}
+            {/* Subtle highlight/noise texture could go here */}
+
+            {/* Top Action Buttons - Only visible on hover/focus */}
             <div className={cn(
               "absolute top-4 right-4 flex flex-col gap-2 z-30",
-              "transition-all duration-300",
+              "transition-all duration-300 ease-out",
               isHovered ? "translate-x-0 opacity-100" : "translate-x-4 opacity-0"
             )}>
               {/* Save Button */}
               <button
                 onClick={handleSave}
                 className={cn(
-                  "gallery-action-btn p-3 rounded-full shadow-lg backdrop-blur-md",
-                  "transition-all duration-300",
+                  "p-3 rounded-full backdrop-blur-md shadow-lg border border-white/10",
+                  "transition-all duration-300 hover:scale-110",
                   isSaved
-                    ? "bg-red-500/90 text-white"
-                    : "bg-white/90 hover:bg-white text-[#0a0f1a]"
+                    ? "bg-rose-500/90 text-white border-rose-500/50"
+                    : "bg-black/40 hover:bg-black/60 text-white"
                 )}
                 title={isSaved ? "Remove from saved" : "Save this map"}
               >
@@ -152,9 +159,10 @@ export function MapCard({ map, actionSlot, featured = false, index = 0 }: MapCar
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  // Custom navigation or action
                   router.push(`/editor?remix=${map.id}`);
                 }}
-                className="gallery-action-btn p-3 bg-white/90 hover:bg-white text-[#0a0f1a] rounded-full shadow-lg backdrop-blur-md transition-colors"
+                className="p-3 bg-black/40 hover:bg-black/60 text-white rounded-full shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-110 border border-white/10"
                 title="Remix this map"
               >
                 <Copy className="w-5 h-5" />
@@ -164,118 +172,104 @@ export function MapCard({ map, actionSlot, featured = false, index = 0 }: MapCar
             {/* Featured Badge */}
             {featured && (
               <div className="absolute top-4 left-4 z-20">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[#c9a962] to-[#b87333] rounded-full shadow-lg">
-                  <Sparkles className="w-3.5 h-3.5 text-[#0a0f1a]" />
-                  <span className="text-xs font-bold text-[#0a0f1a] uppercase tracking-wide">Featured</span>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#c9a962] text-[#0a0f1a] rounded-full shadow-[0_4px_20px_-4px_rgba(201,169,98,0.5)]">
+                  <Sparkles className="w-3.5 h-3.5 fill-[#0a0f1a]" />
+                  <span className="text-xs font-bold uppercase tracking-wide">Featured</span>
                 </div>
               </div>
             )}
-
-            {/* Bottom Stats Overlay (visible on hover) */}
-            <div className={cn(
-              "absolute bottom-0 left-0 right-0 p-4 z-20",
-              "transition-all duration-500",
-              isHovered ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
-            )}>
-              <div className="flex items-center gap-2">
-                {/* Vote Button */}
-                <button
-                  onClick={handleVote}
-                  className={cn(
-                    "gallery-action-btn flex items-center gap-2 px-4 py-2 rounded-full",
-                    "bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20",
-                    "transition-all duration-300",
-                    voteAnimation && "animate-vote-bounce"
-                  )}
-                >
-                  <TrendingUp className="w-4 h-4 text-[#c9a962]" />
-                  <span className="text-sm font-bold text-white">{map.vote_score}</span>
-                </button>
-
-                {map.view_count !== undefined && (
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20">
-                    <Eye className="w-4 h-4 text-blue-400" />
-                    <span className="text-sm font-bold text-white">{map.view_count}</span>
-                  </div>
-                )}
-              </div>
-            </div>
           </>
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-[#1a1f2e] border-b border-white/5">
-            <TrendingUp className="w-12 h-12 text-white/10 mb-4" />
-            <p className="text-white/20 text-xs font-bold tracking-widest uppercase">No Preview</p>
+          <div className="w-full h-full flex flex-col items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-1000">
+            {/* Abstract background for no preview */}
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 via-[#0a0f1a] to-[#0a0f1a]" />
+            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-500 via-transparent to-transparent" />
+
+            <TrendingUp className="w-12 h-12 text-white/10 mb-4 relative z-10" />
+            <p className="text-white/30 text-xs font-bold tracking-[0.2em] uppercase relative z-10">Map Preview</p>
           </div>
         )}
       </div>
 
-      {/* Content Section */}
-      <div className="flex flex-col p-5 bg-gradient-to-b from-[#050B14] to-[#0a0f1a] relative z-20">
-        {/* Title with gradient on hover */}
-        <h3 className={cn(
-          "text-xl font-bold mb-3 line-clamp-1 tracking-tight transition-colors duration-300",
-          isHovered ? "text-[#c9a962]" : "text-white"
-        )}>
-          {map.title}
-        </h3>
+      {/* Content Section - Overlaying the bottom of the image */}
+      <div className="absolute bottom-0 left-0 right-0 p-6 z-20 flex flex-col justify-end">
 
-        {/* Author Row */}
-        <div className="flex items-center justify-between">
-          <Link
-            href={`/user/${map.author.username}`}
-            className="flex items-center gap-3 group/author hover:opacity-80 transition-opacity z-30"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Avatar with ring on hover */}
-            <div className={cn(
-              "relative rounded-full transition-all duration-300",
-              isHovered && "ring-2 ring-[#c9a962]/50 ring-offset-2 ring-offset-[#050B14]"
-            )}>
-              {map.author.avatar_url ? (
-                <img src={map.author.avatar_url} alt={map.author.username} className="w-8 h-8 rounded-full border border-white/10" />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center border border-white/10">
-                  <User className="w-4 h-4 text-white/50" />
+        {/* Title & Stats */}
+        <div className="space-y-3 transform transition-transform duration-300 group-hover:-translate-y-2">
+          <h3 className={cn(
+            "text-2xl font-bold text-white leading-tight tracking-tight",
+            "line-clamp-2 drop-shadow-md"
+          )}>
+            {map.title}
+          </h3>
+
+          <div className="flex items-center justify-between">
+            <Link
+              href={`/user/${map.author.username}`}
+              className="flex items-center gap-2.5 group/author z-30 opacity-90 hover:opacity-100 transition-opacity"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="relative">
+                {map.author.avatar_url ? (
+                  <img
+                    src={map.author.avatar_url}
+                    alt={map.author.username}
+                    className="w-6 h-6 rounded-full ring-2 ring-white/20 group-hover/author:ring-[#c9a962] transition-all"
+                  />
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-white/10 ring-2 ring-white/20 flex items-center justify-center">
+                    <User className="w-3 h-3 text-white/70" />
+                  </div>
+                )}
+              </div>
+              <span className="text-sm font-medium text-white/90 shadow-black drop-shadow-sm group-hover/author:text-[#c9a962] transition-colors">
+                {map.author.display_name || map.author.username}
+              </span>
+            </Link>
+
+            {/* Published Date - Tiny and clean */}
+            <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">
+              {relativeTime(map.created_at)}
+            </span>
+          </div>
+        </div>
+
+        {/* Hover interaction area (Stats & Actions) */}
+        <div className={cn(
+          "grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
+        )}>
+          <div className="overflow-hidden">
+            <div className="pt-4 flex items-center justify-between border-t border-white/10 mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
+              {/* Stats */}
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={handleVote}
+                  className={cn(
+                    "flex items-center gap-2 group/vote transition-colors z-30",
+                    voteAnimation && "animate-vote-pulse"
+                  )}
+                >
+                  <TrendingUp className="w-4 h-4 text-[#c9a962]" />
+                  <span className="text-sm font-bold text-white/90">{map.vote_score}</span>
+                </button>
+
+                {map.view_count !== undefined && (
+                  <div className="flex items-center gap-2 text-white/60">
+                    <Eye className="w-4 h-4" />
+                    <span className="text-xs font-bold">{map.view_count}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Slot (e.g. quick view or similar, passed from parent) */}
+              {actionSlot && (
+                <div className="z-30">
+                  {actionSlot}
                 </div>
               )}
             </div>
-            <span className="text-sm font-medium text-[#d4cfc4] group-hover/author:text-[#c9a962] transition-colors">
-              {map.author.display_name || map.author.username}
-            </span>
-          </Link>
-
-          {/* Date Badge */}
-          <span className="text-[11px] font-bold text-[#d4cfc4]/30 uppercase tracking-widest">
-            {relativeTime(map.created_at).replace(' ago', '')}
-          </span>
-        </div>
-
-        {/* Stats Row (always visible, mobile-friendly) */}
-        <div className={cn(
-          "flex items-center justify-between mt-4 pt-4 border-t border-white/5",
-          "lg:hidden" // Hide on large screens where hover overlay shows stats
-        )}>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#141d2e] border border-white/5">
-              <TrendingUp className="w-3.5 h-3.5 text-[#c9a962]" />
-              <span className="text-xs font-bold text-[#f5f0e8]">{map.vote_score}</span>
-            </div>
-
-            {map.view_count !== undefined && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#141d2e] border border-white/5">
-                <Eye className="w-3.5 h-3.5 text-blue-400" />
-                <span className="text-xs font-bold text-[#f5f0e8]">{map.view_count}</span>
-              </div>
-            )}
           </div>
         </div>
-
-        {/* Action Slot (Profile Buttons) */}
-        {actionSlot && (
-          <div className="mt-6 pt-0 pointer-events-auto z-30 relative">
-            {actionSlot}
-          </div>
-        )}
       </div>
     </div>
   );

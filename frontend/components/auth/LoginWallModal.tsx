@@ -9,10 +9,40 @@ interface LoginWallModalProps {
     onClose: () => void;
     title?: string;
     description?: string;
+    inline?: boolean;
 }
 
-export function LoginWallModal({ isOpen, onClose, title, description }: LoginWallModalProps) {
-    if (!isOpen) return null;
+export function LoginWallModal({ isOpen, onClose, title, description, inline = false }: LoginWallModalProps) {
+    if (!isOpen && !inline) return null;
+
+    const content = (
+        <div className={cn(
+            "relative w-full max-w-md z-10 animate-in zoom-in-95 duration-300",
+            inline && "animate-none"
+        )}>
+            {/* Close Button - positioned outside strictly or inside depending on preference, 
+                using absolute positioning relative to this container */}
+            <div className="absolute -top-12 right-0 md:-right-12 z-20">
+                <button
+                    onClick={onClose}
+                    className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                    aria-label="Close"
+                >
+                    <X className="w-6 h-6" />
+                </button>
+            </div>
+
+            <LoginWall
+                title={title || "Sign in to Order Print"}
+                description={description || "Create a free account to order high-quality framed prints of your custom maps. Your design will be saved."}
+                className="shadow-2xl shadow-blue-500/20 border-0 ring-1 ring-white/20"
+            />
+        </div>
+    );
+
+    if (inline) {
+        return content;
+    }
 
     return (
         <div
@@ -25,25 +55,7 @@ export function LoginWallModal({ isOpen, onClose, title, description }: LoginWal
             />
 
             {/* Modal Content */}
-            <div className="relative w-full max-w-md z-10 animate-in zoom-in-95 duration-300">
-                {/* Close Button - positioned outside strictly or inside depending on preference, 
-                    using absolute positioning relative to this container */}
-                <div className="absolute -top-12 right-0 md:-right-12 z-20">
-                    <button
-                        onClick={onClose}
-                        className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
-                        aria-label="Close"
-                    >
-                        <X className="w-6 h-6" />
-                    </button>
-                </div>
-
-                <LoginWall
-                    title={title || "Sign in to Order Print"}
-                    description={description || "Create a free account to order high-quality framed prints of your custom maps. Your design will be saved."}
-                    className="shadow-2xl shadow-blue-500/20 border-0 ring-1 ring-white/20"
-                />
-            </div>
+            {content}
         </div>
     );
 }

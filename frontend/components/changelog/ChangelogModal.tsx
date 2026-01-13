@@ -14,22 +14,26 @@ interface ChangelogModalProps {
     trigger?: ReactNode;
     showFloatingButton?: boolean;
     initialEntries?: ChangelogEntry[];
+    inline?: boolean;
 }
 
-export function ChangelogModal({ trigger, showFloatingButton = false, initialEntries }: ChangelogModalProps) {
-    const [isOpen, setIsOpen] = useState(false);
+export function ChangelogModal({ trigger, showFloatingButton = false, initialEntries, inline = false }: ChangelogModalProps) {
+    const [isOpen, setIsOpen] = useState(() => {
+        if (typeof window === 'undefined') return false;
+        return sessionStorage.getItem('changelog_open') === 'true';
+    });
     const [entries, setEntries] = useState<ChangelogEntry[]>(initialEntries || []);
     const [hasNew, setHasNew] = useState(false);
     const openTimeRef = useRef<number | null>(null);
 
     useEffect(() => {
-        if (isOpen) {
+        if (isOpen && !inline) {
             openTimeRef.current = Date.now();
             trackEventAction({
                 eventType: 'changelog_view',
                 sessionId: getSessionId(),
             });
-        } else if (openTimeRef.current) {
+        } else if (openTimeRef.current && !isOpen) {
             const duration = Math.round((Date.now() - openTimeRef.current) / 1000);
             trackEventAction({
                 eventType: 'changelog_close',
@@ -38,11 +42,13 @@ export function ChangelogModal({ trigger, showFloatingButton = false, initialEnt
             });
             openTimeRef.current = null;
         }
-    }, [isOpen]);
+    }, [isOpen, inline]);
 
     useEffect(() => {
-        fetchAndCheck();
-    }, []);
+        if (!initialEntries) {
+            fetchAndCheck();
+        }
+    }, [initialEntries]);
 
     const fetchAndCheck = async () => {
         try {
@@ -56,7 +62,7 @@ export function ChangelogModal({ trigger, showFloatingButton = false, initialEnt
 
                 if (latestDate > lastSeenDate) {
                     setHasNew(true);
-                    if (showFloatingButton) {
+                    if (showFloatingButton && !inline) {
                         setIsOpen(true);
                         // Mark as seen so it doesn't pop up again on next load/refresh
                         localStorage.setItem(LAST_SEEN_KEY, latestDate.toString());
@@ -81,7 +87,79 @@ export function ChangelogModal({ trigger, showFloatingButton = false, initialEnt
         setIsOpen(false);
     };
 
-    if (entries.length === 0 && !trigger) return null;
+    if (entries.length === 0 && !trigger && !inline) return null;
+
+    const modalContent = (
+        <div
+            className="bg-[#0f1424] border border-white/10 rounded-2xl max-w-lg w-full max-h-[80vh] overflow-hidden shadow-2xl"
+            onClick={e => e.stopPropagation()}
+        >
+            {/* Header */}
+            <div className="p-6 border-b border-white/10 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                        <Sparkles className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-white">What's New</h2>
+                        <p className="text-sm text-white/50">Latest updates and features</p>
+                    </div>
+                </div>
+                {!inline && (
+                    <button
+                        onClick={handleClose}
+                        className="text-white/50 hover:text-white transition-colors"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                )}
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
+                {entries.length === 0 ? (
+                    <p className="text-white/50 text-center py-8">No updates yet. Check back soon!</p>
+                ) : (
+                    entries.map((entry, index) => (
+                        <div
+                            key={entry.id || index}
+                            className={cn(
+                                "relative pl-6 pb-6",
+                                index < entries.length - 1 && "border-l border-white/10"
+                            )}
+                        >
+                            <div className="absolute left-0 top-0 w-3 h-3 -translate-x-1.5 rounded-full bg-gradient-to-br from-amber-400 to-orange-500" />
+
+                            <div className="mb-2">
+                                <Badge variant="secondary" className="bg-white/5 text-white/50 text-xs">
+                                    {new Date(entry.published_at).toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                    })}
+                                </Badge>
+                            </div>
+
+                            <h3 className="text-lg font-semibold text-white mb-1">{entry.title}</h3>
+                            <p className="text-sm text-white/70 leading-relaxed">{entry.description}</p>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-white/10 bg-white/5">
+                <Button
+                    onClick={inline ? undefined : handleClose}
+                    className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+                >
+                    Got it!
+                </Button>
+            </div>
+        </div>
+    );
+
+    if (inline) return modalContent;
 
     return (
         <>
@@ -114,71 +192,7 @@ export function ChangelogModal({ trigger, showFloatingButton = false, initialEnt
                     className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
                     onClick={handleClose}
                 >
-                    <div
-                        className="bg-[#0f1424] border border-white/10 rounded-2xl max-w-lg w-full max-h-[80vh] overflow-hidden shadow-2xl"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        {/* Header */}
-                        <div className="p-6 border-b border-white/10 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-                                    <Sparkles className="w-5 h-5 text-white" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-white">What's New</h2>
-                                    <p className="text-sm text-white/50">Latest updates and features</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={handleClose}
-                                className="text-white/50 hover:text-white transition-colors"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        {/* Content */}
-                        <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
-                            {entries.length === 0 ? (
-                                <p className="text-white/50 text-center py-8">No updates yet. Check back soon!</p>
-                            ) : (
-                                entries.map((entry, index) => (
-                                    <div
-                                        key={entry.id}
-                                        className={cn(
-                                            "relative pl-6 pb-6",
-                                            index < entries.length - 1 && "border-l border-white/10"
-                                        )}
-                                    >
-                                        <div className="absolute left-0 top-0 w-3 h-3 -translate-x-1.5 rounded-full bg-gradient-to-br from-amber-400 to-orange-500" />
-
-                                        <div className="mb-2">
-                                            <Badge variant="secondary" className="bg-white/5 text-white/50 text-xs">
-                                                {new Date(entry.published_at).toLocaleDateString('en-US', {
-                                                    month: 'short',
-                                                    day: 'numeric',
-                                                    year: 'numeric'
-                                                })}
-                                            </Badge>
-                                        </div>
-
-                                        <h3 className="text-lg font-semibold text-white mb-1">{entry.title}</h3>
-                                        <p className="text-sm text-white/70 leading-relaxed">{entry.description}</p>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-
-                        {/* Footer */}
-                        <div className="p-4 border-t border-white/10 bg-white/5">
-                            <Button
-                                onClick={handleClose}
-                                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
-                            >
-                                Got it!
-                            </Button>
-                        </div>
-                    </div>
+                    {modalContent}
                 </div>
             )}
         </>

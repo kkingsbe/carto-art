@@ -19,6 +19,7 @@ export const Default: Story = {
         onClose: () => console.log('closed'),
         title: 'Sign in to Continue',
         description: 'Create a free account to access this feature.',
+        inline: true,
     },
 };
 

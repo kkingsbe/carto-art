@@ -20,13 +20,13 @@ export const Default: Story = {
         onExport: () => console.log('export'),
         isExporting: false,
         format: {
-            width: 18,
-            height: 24,
             orientation: 'portrait',
             aspectRatio: '2:3',
             margin: 10,
+            borderStyle: 'none',
         },
         onFormatChange: () => { },
+        inline: true,
     },
 };
 
@@ -55,6 +55,7 @@ export const LimitReached: Story = {
             limit: 3,
             allowed: false,
             remaining: 0,
+            nextAvailableAt: new Date(Date.now() + 3600000).toISOString(),
         },
         subscriptionTier: 'free',
     },
@@ -68,6 +69,7 @@ export const UpgradeNudge: Story = {
             limit: 3,
             allowed: true,
             remaining: 1,
+            nextAvailableAt: null,
         },
         subscriptionTier: 'free',
     },

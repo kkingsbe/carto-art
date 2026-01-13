@@ -22,6 +22,7 @@ export const Default: Story = {
         currentMapName: 'My Map',
         previewUrl: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?q=80&w=2070&auto=format&fit=crop',
         onBuyPrint: () => console.log('buy print'),
+        inline: true,
     },
 };
 
@@ -43,5 +44,23 @@ export const WithUnsavedChanges: Story = {
     args: {
         ...Default.args,
         hasUnsavedChanges: true,
+    },
+};
+
+export const MobileView: Story = {
+    args: {
+        ...Default.args,
+    },
+    parameters: {
+        viewport: {
+            defaultViewport: 'mobile1',
+        },
+    },
+};
+
+export const NoPrintOption: Story = {
+    args: {
+        ...Default.args,
+        onBuyPrint: undefined,
     },
 };

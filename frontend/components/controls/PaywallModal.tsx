@@ -19,20 +19,21 @@ interface PaywallModalProps {
         limit: number;
     } | null;
     countdown?: string | null;
+    inline?: boolean;
 }
 
-export function PaywallModal({ isOpen, onClose, variant, usage, countdown }: PaywallModalProps) {
+export function PaywallModal({ isOpen, onClose, variant, usage, countdown, inline = false }: PaywallModalProps) {
     const router = useRouter();
     const hasTrackedRef = useRef(false);
 
     // Track paywall shown event
     useEffect(() => {
-        if (!isOpen) {
+        if (!isOpen && !inline) {
             hasTrackedRef.current = false;
             return;
         }
 
-        if (isOpen && !hasTrackedRef.current) {
+        if ((isOpen || inline) && !hasTrackedRef.current) {
             trackEventAction({
                 eventType: 'paywall_shown',
                 eventName: `${variant}_paywall_displayed`,
@@ -45,9 +46,9 @@ export function PaywallModal({ isOpen, onClose, variant, usage, countdown }: Pay
             }).catch(() => { });
             hasTrackedRef.current = true;
         }
-    }, [isOpen, variant, usage]);
+    }, [isOpen, variant, usage, inline]);
 
-    if (!isOpen) return null;
+    if (!isOpen && !inline) return null;
 
     const handleUpgrade = async () => {
         trackEventAction({
@@ -115,6 +116,108 @@ export function PaywallModal({ isOpen, onClose, variant, usage, countdown }: Pay
 
     const content = getContent();
 
+    const modalContent = (
+        <div className={cn(
+            "relative w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 z-10",
+            inline && "animate-none"
+        )}>
+            {/* Close Button */}
+            <button
+                onClick={handleClose}
+                className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors z-20"
+            >
+                <X className="w-5 h-5" />
+            </button>
+
+            <div className="p-6 pt-10 text-center space-y-6">
+                {/* Icon Header */}
+                <div className="flex justify-center">
+                    <div className={cn("w-16 h-16 rounded-full flex items-center justify-center", content.iconBg)}>
+                        {content.icon}
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {content.title}
+                    </h2>
+                    <div className="text-gray-500 dark:text-gray-400 text-sm md:text-base">
+                        {content.description}
+                    </div>
+                </div>
+
+                {/* Progress Bar for Limits */}
+                {variant !== 'soft' && usage && (
+                    <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-4">
+                        <div className="flex justify-between text-sm mb-2">
+                            <span className="font-medium text-gray-700 dark:text-gray-300">Free Plan Usage</span>
+                            <span className="text-gray-500 dark:text-gray-400">{usage.used} / {usage.limit}</span>
+                        </div>
+                        <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-amber-500 rounded-full"
+                                style={{ width: `${Math.min(100, (usage.used / usage.limit) * 100)}%` }}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* Plus Benefits */}
+                <div className="grid grid-cols-1 gap-3 text-left">
+                    <div className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/30">
+                        <div className="mt-1 w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
+                            <Zap className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">Unlimited Exports</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">High-resolution PNGs without daily limits.</p>
+                        </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/30">
+                        <div className="mt-1 w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                            <Globe className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">Advanced 3D Terrain</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Volumetric elevation and custom shading.</p>
+                        </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/30">
+                        <div className="mt-1 w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
+                            <Shield className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">Commercial License</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Sell your designs and use them professionally.</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Upgrade Card */}
+                <div className="bg-gradient-to-r from-indigo-500 from-10% via-sky-500 via-30% to-emerald-500 to-90% p-[1px] rounded-xl text-left">
+                    <div className="bg-white dark:bg-gray-900 rounded-[11px] p-1">
+                        <button
+                            onClick={handleUpgrade}
+                            className="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-semibold hover:scale-[1.01] active:scale-[0.99] transition-transform flex items-center justify-center gap-2"
+                        >
+                            <Sparkles className="w-4 h-4 fill-current" />
+                            Upgrade to Carto Plus
+                        </button>
+                    </div>
+                </div>
+
+                <button
+                    onClick={handleClose}
+                    className="text-sm font-medium text-gray-500 hover:text-gray-900 dark:hover:text-gray-300 transition-colors"
+                >
+                    Maybe later
+                </button>
+            </div>
+        </div>
+    );
+
+    if (inline) return modalContent;
+
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
             {/* Backdrop */}
@@ -124,100 +227,7 @@ export function PaywallModal({ isOpen, onClose, variant, usage, countdown }: Pay
             />
 
             {/* Modal Content */}
-            <div className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 z-10">
-                {/* Close Button */}
-                <button
-                    onClick={handleClose}
-                    className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors z-20"
-                >
-                    <X className="w-5 h-5" />
-                </button>
-
-                <div className="p-6 pt-10 text-center space-y-6">
-                    {/* Icon Header */}
-                    <div className="flex justify-center">
-                        <div className={cn("w-16 h-16 rounded-full flex items-center justify-center", content.iconBg)}>
-                            {content.icon}
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                            {content.title}
-                        </h2>
-                        <div className="text-gray-500 dark:text-gray-400 text-sm md:text-base">
-                            {content.description}
-                        </div>
-                    </div>
-
-                    {/* Progress Bar for Limits */}
-                    {variant !== 'soft' && usage && (
-                        <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-4">
-                            <div className="flex justify-between text-sm mb-2">
-                                <span className="font-medium text-gray-700 dark:text-gray-300">Free Plan Usage</span>
-                                <span className="text-gray-500 dark:text-gray-400">{usage.used} / {usage.limit}</span>
-                            </div>
-                            <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-amber-500 rounded-full"
-                                    style={{ width: `${Math.min(100, (usage.used / usage.limit) * 100)}%` }}
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Plus Benefits */}
-                    <div className="grid grid-cols-1 gap-3 text-left">
-                        <div className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/30">
-                            <div className="mt-1 w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
-                                <Zap className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-semibold text-gray-900 dark:text-white">Unlimited Exports</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">High-resolution PNGs without daily limits.</p>
-                            </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/30">
-                            <div className="mt-1 w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
-                                <Globe className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-semibold text-gray-900 dark:text-white">Advanced 3D Terrain</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Volumetric elevation and custom shading.</p>
-                            </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/30">
-                            <div className="mt-1 w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
-                                <Shield className="w-3 h-3 text-purple-600 dark:text-purple-400" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-semibold text-gray-900 dark:text-white">Commercial License</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Sell your designs and use them professionally.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Upgrade Card */}
-                    <div className="bg-gradient-to-r from-indigo-500 from-10% via-sky-500 via-30% to-emerald-500 to-90% p-[1px] rounded-xl text-left">
-                        <div className="bg-white dark:bg-gray-900 rounded-[11px] p-1">
-                            <button
-                                onClick={handleUpgrade}
-                                className="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-semibold hover:scale-[1.01] active:scale-[0.99] transition-transform flex items-center justify-center gap-2"
-                            >
-                                <Sparkles className="w-4 h-4 fill-current" />
-                                Upgrade to Carto Plus
-                            </button>
-                        </div>
-                    </div>
-
-                    <button
-                        onClick={handleClose}
-                        className="text-sm font-medium text-gray-500 hover:text-gray-900 dark:hover:text-gray-300 transition-colors"
-                    >
-                        Maybe later
-                    </button>
-                </div>
-            </div>
+            {modalContent}
         </div>
     );
 }
