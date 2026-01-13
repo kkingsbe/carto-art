@@ -8,7 +8,28 @@ import { StorePageTracker } from '@/components/store/StorePageTracker';
 
 export const metadata = {
     title: 'Select Product | Carto Art',
-    description: 'Choose a product format for your map design.',
+    description: 'Choose a product format for your map design. Options include prints, framed posters, and canvas.',
+    openGraph: {
+        title: 'Select Product - Carto-Art Store',
+        description: 'Choose the perfect format for your custom map design.',
+        url: '/store',
+        locale: 'en_US',
+        type: 'website',
+        images: [
+            {
+                url: '/hero.jpg',
+                width: 1200,
+                height: 630,
+                alt: 'Carto-Art Store - Map Poster Products',
+            },
+        ],
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'Select Product - Carto-Art Store',
+        description: 'Choose the perfect format for your custom map design.',
+        images: ['/hero.jpg'],
+    },
 };
 
 interface StorePageProps {

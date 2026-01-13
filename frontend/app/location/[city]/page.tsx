@@ -109,6 +109,8 @@ export async function generateMetadata({ params }: { params: { city: string } })
         };
     }
 
+    const imageUrl = location.heroImage || '/hero.jpg';
+
     return {
         title: `Create a ${location.name} Map Poster | Free Custom Wall Art - Carto-Art`,
         description: location.description,
@@ -116,14 +118,23 @@ export async function generateMetadata({ params }: { params: { city: string } })
         openGraph: {
             title: `${location.name} Map Poster Maker - Free Custom Wall Art`,
             description: location.description,
-            images: location.heroImage ? [location.heroImage] : ['/hero.jpg'],
+            url: `/location/${location.slug}`,
+            locale: 'en_US',
             type: 'website',
+            images: [
+                {
+                    url: imageUrl,
+                    width: 1200,
+                    height: 630,
+                    alt: `${location.name} Map Poster`,
+                },
+            ],
         },
         twitter: {
             card: 'summary_large_image',
             title: `Create ${location.name} Map Art - Carto-Art`,
             description: location.description,
-            images: location.heroImage ? [location.heroImage] : ['/hero.jpg'],
+            images: [imageUrl],
         },
     };
 }

@@ -40,6 +40,8 @@ export async function generateMetadata({ params }: MapDetailPageProps): Promise<
     openGraph: {
       title: mapTitle,
       description,
+      url: `/map/${id}`,
+      locale: 'en_US',
       type: 'article',
       images: map.thumbnail_url
         ? [
@@ -50,13 +52,20 @@ export async function generateMetadata({ params }: MapDetailPageProps): Promise<
             alt: mapTitle,
           },
         ]
-        : [],
+        : [
+          {
+            url: '/hero.jpg',
+            width: 1200,
+            height: 630,
+            alt: 'Carto-Art Custom Map Poster',
+          },
+        ],
     },
     twitter: {
       card: 'summary_large_image',
       title: mapTitle,
       description,
-      images: map.thumbnail_url ? [map.thumbnail_url] : [],
+      images: map.thumbnail_url ? [map.thumbnail_url] : ['/hero.jpg'],
     },
   };
 }

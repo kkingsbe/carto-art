@@ -12,7 +12,27 @@ interface ProductDetailPageProps {
 
 export const metadata = {
     title: 'Customize Order | Carto Art',
-    description: 'Select size and frame options for your print.',
+    description: 'Select size and frame options for your print. Available in multiple sizes from small to large format.',
+    openGraph: {
+        title: 'Customize Your Order - Carto-Art',
+        description: 'Select size, frame, and finish options for your custom map poster.',
+        locale: 'en_US',
+        type: 'website',
+        images: [
+            {
+                url: '/hero.jpg',
+                width: 1200,
+                height: 630,
+                alt: 'Carto-Art - Customize Your Map Poster Order',
+            },
+        ],
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'Customize Your Order - Carto-Art',
+        description: 'Select size, frame, and finish options for your custom map poster.',
+        images: ['/hero.jpg'],
+    },
 };
 
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {

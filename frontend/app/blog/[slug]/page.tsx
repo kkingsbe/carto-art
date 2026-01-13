@@ -188,6 +188,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
         };
     }
 
+    const imageUrl = post.heroImage || '/hero.jpg';
+
     return {
         title: `${post.title} | Carto-Art Blog`,
         description: post.description,
@@ -195,16 +197,25 @@ export async function generateMetadata({ params }: { params: { slug: string } })
         openGraph: {
             title: post.title,
             description: post.description,
-            images: post.heroImage ? [post.heroImage] : ['/hero.jpg'],
+            url: `/blog/${post.slug}`,
+            locale: 'en_US',
             type: 'article',
             publishedTime: post.publishedDate,
             authors: [post.author],
+            images: [
+                {
+                    url: imageUrl,
+                    width: 1200,
+                    height: 630,
+                    alt: post.title,
+                },
+            ],
         },
         twitter: {
             card: 'summary_large_image',
             title: post.title,
             description: post.description,
-            images: post.heroImage ? [post.heroImage] : ['/hero.jpg'],
+            images: [imageUrl],
         },
     };
 }

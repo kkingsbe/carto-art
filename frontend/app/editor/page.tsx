@@ -12,7 +12,23 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Map Poster Editor - Create Custom Wall Art',
     description: 'Design custom map posters with our free online editor. Features 3D terrain, multiple styles, and high-res export.',
+    url: '/editor',
+    locale: 'en_US',
     type: 'website',
+    images: [
+      {
+        url: '/hero.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Carto-Art Map Poster Editor',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Map Poster Editor - Carto-Art',
+    description: 'Design custom map posters with 3D terrain, multiple styles, and high-res export. Free, no signup required.',
+    images: ['/hero.jpg'],
   },
 };
 

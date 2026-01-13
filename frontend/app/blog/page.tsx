@@ -13,7 +13,23 @@ export const metadata: Metadata = {
     openGraph: {
         title: 'Carto-Art Blog - Map Art Tips & Inspiration',
         description: 'Guides and inspiration for creating beautiful custom map posters.',
+        url: '/blog',
+        locale: 'en_US',
         type: 'website',
+        images: [
+            {
+                url: '/hero.jpg',
+                width: 1200,
+                height: 630,
+                alt: 'Carto-Art Blog - Map Art Tips & Inspiration',
+            },
+        ],
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'Map Art Blog - Carto-Art',
+        description: 'Tips, guides, and inspiration for creating beautiful custom map posters.',
+        images: ['/hero.jpg'],
     },
 };
 

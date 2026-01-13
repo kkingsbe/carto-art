@@ -32,9 +32,18 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Free Map Poster Maker - Turn Any Place Into Wall Art",
     description: "Create personalized map posters in minutes. Free to use, no watermarks, print-ready at 24×36\". Join thousands of creators worldwide.",
-    images: ["/hero.jpg"],
-    type: "website",
+    url: "/",
     siteName: "Carto-Art",
+    locale: "en_US",
+    type: "website",
+    images: [
+      {
+        url: "/hero.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Carto-Art - Free Map Poster Maker",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
