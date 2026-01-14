@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
+import type { Database } from '@/types/database';
+
+type OrderRow = Database['public']['Tables']['orders']['Row'];
 
 const trackingSchema = z.object({
     orderId: z.string().min(1),
@@ -15,11 +18,13 @@ export async function POST(request: Request) {
 
         // Fetch order
         // We select minimal details for security if needed, or full details
-        const { data: order, error } = await supabase
+        const { data, error } = await supabase
             .from('orders')
             .select('*')
             .eq('id', orderId)
             .single();
+
+        const order = data as OrderRow | null;
 
         if (error || !order) {
             // Return generic error to prevent enumeration/timing attacks?
