@@ -153,6 +153,7 @@ export function OrderSteps({ variants, designUrl, aspectRatio, orientation, prod
 
     const methods = useForm({
         defaultValues: {
+            email: '',
             shipping: {
                 name: '',
                 address: {
@@ -222,6 +223,7 @@ export function OrderSteps({ variants, designUrl, aspectRatio, orientation, prod
                         design_file_id: currentDesignId,
                         quantity: 1,
                         shipping: shippingData,
+                        email: methods.getValues().email,
                         mockup_data_url: mockupDataUrl
                     })
                 });
@@ -342,7 +344,7 @@ export function OrderSteps({ variants, designUrl, aspectRatio, orientation, prod
                                 <Button
                                     size="lg"
                                     className="w-full text-lg h-12"
-                                    onClick={!user && !isCheckingAuth ? handleLogin : handleNext}
+                                    onClick={handleNext}
                                     disabled={!selectedVariant || isCheckingAuth}
                                 >
                                     {isCheckingAuth ? (
@@ -350,8 +352,6 @@ export function OrderSteps({ variants, designUrl, aspectRatio, orientation, prod
                                             <Loader2 className="w-4 h-4 animate-spin mr-2" />
                                             Checking availability...
                                         </>
-                                    ) : !user ? (
-                                        'Sign In to Continue'
                                     ) : (
                                         'Continue to Shipping'
                                     )}

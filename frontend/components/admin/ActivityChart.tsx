@@ -28,6 +28,7 @@ const METRICS = [
     { id: 'poster_export', label: 'Exports', color: '#f59e0b' },
     { id: 'api_request', label: 'API Requests', color: '#06b6d4' },
     { id: 'total_users', label: 'Total Users', color: '#8b5cf6' },
+    { id: 'total_subscribers', label: 'Total Subscribers', color: '#10b981' },
     { id: 'search_location', label: 'Searches', color: '#8b5cf6' },
     { id: 'style_change', label: 'Styles', color: '#ec4899' },
     { id: 'donations', label: 'Donations', color: '#facc15' },

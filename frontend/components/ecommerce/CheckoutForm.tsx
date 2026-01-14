@@ -64,7 +64,7 @@ export default function CheckoutForm({
             confirmParams: {
                 // Return URL is required, but if we handle everything via webhooks/state,
                 // we might redirect to a success page.
-                return_url: `${window.location.origin}/profile/orders?order_success=true`,
+                return_url: `${window.location.origin}/order/success`,
             },
         });
 

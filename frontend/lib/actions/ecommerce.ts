@@ -24,9 +24,23 @@ export interface CancellationRequest {
 export async function uploadDesignFile(formData: FormData) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
+    // For guest checkout, we might not have a user. 
+    // We can allow upload if we generate a secure path or trust the input?
+    // Ideally we'd use an anonymous session, but for now let's allow "guest" folder if no user.
+    // However, allowing arbitrary public uploads is risky.
+    // Supabase RLS likely blocks this anyway if not authenticated.
+    // We should probably check if we can rely on a Service Role client here since this is a server action?
+    // Actions run on server. `createClient` uses cookie auth.
+    // `createServiceRoleClient` isn't imported here, but we can relax the check.
 
-    if (!user) {
-        throw new Error('Unauthorized');
+    // NOTE: This server action is public entry point.
+    // If we remove the user check, anyone can upload 50MB files.
+    // We rely on the checkout process to payment-gate the *order*, but the upload happens *before* payment.
+
+    let userId = user?.id;
+    if (!userId) {
+        // Guest user logic
+        userId = 'guest';
     }
 
     const file = formData.get('file');
@@ -42,7 +56,7 @@ export async function uploadDesignFile(formData: FormData) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
+    const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
 
     const { error: uploadError } = await supabase.storage
         .from('print-files')

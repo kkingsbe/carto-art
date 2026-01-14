@@ -223,6 +223,35 @@ export async function generateMockupTemplates(): Promise<{
 
     if (!(profile as any)?.is_admin) throw new Error('Admin only');
 
+    // Helper to save to storage
+    const saveMockupToStorage = async (url: string, variantId: number) => {
+        try {
+            console.log(`Downloading mockup from ${url}...`);
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`Failed to fetch mockup image: ${res.statusText}`);
+            const buffer = await res.arrayBuffer();
+
+            const filename = `variant_${variantId}_${Date.now()}.png`;
+            const { error: uploadError } = await supabase.storage
+                .from('mockups')
+                .upload(filename, Buffer.from(buffer), {
+                    contentType: 'image/png',
+                    upsert: true
+                });
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('mockups')
+                .getPublicUrl(filename);
+
+            return publicUrl;
+        } catch (e) {
+            console.error(`Failed to save mockup to storage for variant ${variantId}:`, e);
+            throw e;
+        }
+    };
+
     // Get all variants missing a mockup_template_url OR having an incorrect "api-template" URL
     const { data: variants, error } = await supabase
         .from('product_variants')
@@ -417,10 +446,14 @@ export async function generateMockupTemplates(): Promise<{
                         const printArea = await detectPrintArea(mockupUrl);
                         console.log(`Detected print area for variant ${variantId}:`, printArea);
 
+                        // Upload to Supabase Storage to make it permanent
+                        const permanentUrl = await saveMockupToStorage(mockupUrl, variantId);
+                        console.log(`Saved permanent URL: ${permanentUrl}`);
+
                         await (supabase as any)
                             .from('product_variants')
                             .update({
-                                mockup_template_url: mockupUrl,
+                                mockup_template_url: permanentUrl,
                                 mockup_print_area: printArea
                             })
                             .eq('id', variantId);
@@ -698,11 +731,33 @@ export async function regenerateVariantMockup(variantId: number) {
             };
         }
 
+        // Save to Supabase Storage
+        console.log(`Downloading mockup from ${mockupUrl}...`);
+        const res = await fetch(mockupUrl);
+        if (!res.ok) throw new Error(`Failed to fetch mockup image: ${res.statusText}`);
+        const buffer = await res.arrayBuffer();
+
+        const filename = `variant_${variantId}_${Date.now()}.png`;
+        const { error: uploadError } = await supabase.storage
+            .from('mockups')
+            .upload(filename, Buffer.from(buffer), {
+                contentType: 'image/png',
+                upsert: true
+            });
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl: permanentUrl } } = supabase.storage
+            .from('mockups')
+            .getPublicUrl(filename);
+
+        console.log(`Saved permanent URL: ${permanentUrl}`);
+
         // Update DB
         const { error } = await (supabase as any)
             .from('product_variants')
             .update({
-                mockup_template_url: mockupUrl,
+                mockup_template_url: permanentUrl,
                 mockup_print_area: printArea
             })
             .eq('id', variantId);

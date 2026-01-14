@@ -7,7 +7,7 @@ import { exportMapToPNG, downloadBlob } from '@/lib/export/exportCanvas';
 import type { ExportResolution } from '@/lib/export/resolution';
 import { logger } from '@/lib/logger';
 import { trackEventAction } from '@/lib/actions/events';
-import { uploadExportThumbnail } from '@/lib/actions/export-storage';
+import { getThumbnailUploadUrl } from '@/lib/actions/export-storage';
 import { getSessionId } from '@/lib/utils';
 
 
@@ -91,9 +91,23 @@ export function useMapExport(config: PosterConfig) {
       let thumbnailUrl: string | undefined;
       try {
         const thumbnailBlob = await createThumbnailFromBlob(blob, 400);
-        const formData = new FormData();
-        formData.append('file', thumbnailBlob, 'thumbnail.png');
-        thumbnailUrl = await uploadExportThumbnail(formData);
+
+        // Use client-side upload via signed URL to avoid server-side fetch issues
+        // and body size limits (though thumbnails are small, this is more robust)
+        const { signedUrl, publicUrl } = await getThumbnailUploadUrl('image/png');
+
+        const uploadRes = await fetch(signedUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'image/png' },
+          body: thumbnailBlob
+        });
+
+        if (!uploadRes.ok) {
+          throw new Error(`Upload failed with status: ${uploadRes.status}`);
+        }
+
+        thumbnailUrl = publicUrl;
+        logger.info('Thumbnail uploaded successfully via signed URL', { url: thumbnailUrl });
       } catch (thumbError) {
         logger.error('Failed to create/upload thumbnail for admin feed:', thumbError);
         // Don't fail the whole export just because thumbnail failed

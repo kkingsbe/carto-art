@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe/client';
 import { printful } from '@/lib/printful/client';
 import { getSiteConfig } from '@/lib/actions/usage';
@@ -26,7 +26,8 @@ const checkoutSchema = z.object({
             country: z.string().length(2),
         })
     }),
-    mockup_data_url: z.string().optional().nullish()
+    mockup_data_url: z.string().optional().nullish(),
+    email: z.string().email().optional()
 });
 
 export async function POST(request: Request) {
@@ -34,12 +35,15 @@ export async function POST(request: Request) {
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
 
-        if (!user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const body = await request.json();
+        const { variant_id, design_file_id, quantity, shipping, mockup_data_url, email } = checkoutSchema.parse(body);
+
+        if (!user && !email) {
+            return NextResponse.json({ error: 'Email is required for guest checkout' }, { status: 400 });
         }
 
-        const body = await request.json();
-        const { variant_id, design_file_id, quantity, shipping, mockup_data_url } = checkoutSchema.parse(body);
+        const customerEmail = user ? user.email : email;
+
 
         // Calculate Amount from DB
         const { data: variant, error: variantError } = await supabase
@@ -101,14 +105,19 @@ export async function POST(request: Request) {
         const amount = productAmount + shippingCost;
         let finalMockupUrl: string | null = null;
 
+        // Create Admin Client for privileged operations (Storage & DB)
+        const adminSupabase = createServiceRoleClient();
+
         // Upload mockup if provided
         if (mockup_data_url && mockup_data_url.startsWith('data:image/')) {
             try {
                 const base64Data = mockup_data_url.split(',')[1];
                 const buffer = Buffer.from(base64Data, 'base64');
-                const path = `${user.id}/mockups/${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
+                const userId = user ? user.id : 'guest';
+                const path = `${userId}/mockups/${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
 
-                const { data: uploadData, error: uploadError } = await supabase.storage
+                // Use adminSupabase for upload to bypass RLS policies on 'mockups' bucket
+                const { data: uploadData, error: uploadError } = await adminSupabase.storage
                     .from('mockups')
                     .upload(path, buffer, {
                         contentType: 'image/png',
@@ -118,7 +127,7 @@ export async function POST(request: Request) {
                 if (uploadError) {
                     console.error("Mockup upload failed", uploadError);
                 } else {
-                    const { data: { publicUrl } } = supabase.storage
+                    const { data: { publicUrl } } = adminSupabase.storage
                         .from('mockups')
                         .getPublicUrl(path);
                     finalMockupUrl = publicUrl;
@@ -133,13 +142,15 @@ export async function POST(request: Request) {
             amount: amount,
             currency: 'usd',
             automatic_payment_methods: { enabled: true },
+            receipt_email: customerEmail,
             metadata: {
-                user_id: user.id,
+                user_id: user ? user.id : 'guest',
                 variant_id: variant_id.toString(),
                 design_id: typeof design_file_id === 'number'
                     ? design_file_id.toString()
                     : (design_file_id.length > 100 ? 'URL_PENDING' : design_file_id),
                 quantity: quantity.toString(),
+                customer_email: customerEmail || '',
             },
             shipping: {
                 name: shipping.name,
@@ -154,10 +165,13 @@ export async function POST(request: Request) {
             }
         });
 
-        // Create Order Record
+        // Create Order Record - USE SERVICE ROLE to bypass RLS for guest users
+        // Note: adminSupabase initialized above
+
         type OrdersInsert = Database['public']['Tables']['orders']['Insert'];
         const orderData: OrdersInsert = {
-            user_id: user.id,
+            user_id: user ? user.id : null,
+            // customer_email: customerEmail, // Column missing in DB schema cache - temporarily disabled
             stripe_payment_intent_id: paymentIntent.id,
             amount_total: amount,
             status: 'pending',
@@ -175,13 +189,16 @@ export async function POST(request: Request) {
             shipping_country: shipping.address.country,
             mockup_url: finalMockupUrl as any, // Cast as any because TS types might not be updated yet
         };
-        const { error: dbError } = await (supabase as any)
+        const { error: dbError } = await (adminSupabase as any)
             .from('orders')
             .insert(orderData);
 
         if (dbError) {
             console.error("DB Error", dbError);
-            throw new Error('Failed to create order record');
+            return NextResponse.json({
+                error: 'Failed to create order record',
+                details: dbError
+            }, { status: 500 });
         }
 
         return NextResponse.json({

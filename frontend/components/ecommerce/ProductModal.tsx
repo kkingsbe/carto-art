@@ -232,6 +232,7 @@ export function ProductModal({ isOpen, onClose, imageUrl, designId, aspectRatio 
 
     const methods = useForm({
         defaultValues: {
+            email: '',
             shipping: {
                 name: '',
                 address: {
@@ -347,6 +348,7 @@ export function ProductModal({ isOpen, onClose, imageUrl, designId, aspectRatio 
 
                 // 2. Create Payment Intent
                 const shippingData = methods.getValues().shipping;
+                const email = methods.getValues().email;
 
                 const res = await fetch('/api/checkout', {
                     method: 'POST',
@@ -355,7 +357,8 @@ export function ProductModal({ isOpen, onClose, imageUrl, designId, aspectRatio 
                         variant_id: selectedVariant.id,
                         design_file_id: currentDesignId,
                         quantity: 1,
-                        shipping: shippingData
+                        shipping: shippingData,
+                        email: email
                     })
                 });
 

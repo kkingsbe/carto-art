@@ -19,6 +19,22 @@ export function ShippingForm() {
     return (
         <div className="grid gap-4 py-4">
             <div className="grid gap-2">
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    {...register("email", {
+                        required: "Email is required",
+                        pattern: {
+                            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                            message: "Invalid email address"
+                        }
+                    })}
+                />
+                {errors.email && <p className="text-red-500 text-xs">{String(errors.email.message)}</p>}
+            </div>
+            <div className="grid gap-2">
                 <Label htmlFor="name">Full Name</Label>
                 <Input
                     id="name"

@@ -27,12 +27,24 @@ export async function GET(request: NextRequest) {
     const msToFetch = days * 24 * 60 * 60 * 1000;
     const startTime = new Date(endMs - msToFetch);
 
-    const { data, error } = await (supabase.rpc as any)('get_activity_stats', {
+    let rpcName = 'get_activity_stats';
+    let params: any = {
         p_metric_type: eventType,
         p_start_time: startTime.toISOString(),
         p_end_time: endTime.toISOString(),
         p_interval_minutes: intervalMinutes
-    });
+    };
+
+    if (eventType === 'total_subscribers') {
+        rpcName = 'get_subscriber_history';
+        params = {
+            p_start_time: startTime.toISOString(),
+            p_end_time: endTime.toISOString(),
+            p_interval_minutes: intervalMinutes
+        };
+    }
+
+    const { data, error } = await (supabase.rpc as any)(rpcName, params);
 
     if (error) {
         console.error('Error fetching activity stats:', error);

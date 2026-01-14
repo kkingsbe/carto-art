@@ -14,9 +14,8 @@ export async function POST(request: Request) {
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
 
-        if (!user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+        // Allow guest uploads (handled by checkout) or require valid request
+        const userId = user ? user.id : 'guest';
 
         const body = await request.json();
         const { url } = uploadSchema.parse(body);
@@ -37,7 +36,7 @@ export async function POST(request: Request) {
             body: JSON.stringify({
                 role: 'printfile',
                 url: url,
-                filename: `user-${user.id}-${Date.now()}.png`,
+                filename: `user-${userId}-${Date.now()}.png`,
             }),
         });
 

@@ -175,6 +175,31 @@ export async function POST(request: Request) {
                     console.warn(`[Subscription] No profile found for customer ${customerId} to log event.`);
                 }
             }
+
+            // Track cancellation or downgrade
+            if (status === 'canceled' || status === 'unpaid' || (status === 'active' && tier === 'free')) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('id')
+                    .eq('stripe_customer_id', customerId)
+                    .single() as { data: { id: string } | null };
+
+                if (profile) {
+                    const { error: eventError } = await (supabase.from('page_events') as any).insert({
+                        user_id: profile.id,
+                        event_type: 'subscription_cancel',
+                        event_name: `Subscription ${status}`,
+                        page_url: 'webhook',
+                        metadata: {
+                            stripe_subscription_id: subscription.id,
+                            status: status
+                        }
+                    });
+                    if (eventError) {
+                        console.error(`[Subscription] Error logging cancel event:`, eventError);
+                    }
+                }
+            }
         }
 
         // Existing Order Layout Logic

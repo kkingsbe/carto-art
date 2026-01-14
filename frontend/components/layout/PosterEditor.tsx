@@ -788,10 +788,6 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
         onOpenCommandMenu={() => setIsCommandMenuOpen(true)}
         onStartWalkthrough={() => setRunTour(true)}
         onBuyPrint={isEcommerceEnabled ? async () => {
-          if (!isAuthenticated) {
-            setShowLoginModal(true);
-            return;
-          }
           setShowDonationModal(false);
 
           // Track shop transition start
