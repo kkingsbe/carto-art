@@ -3,7 +3,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { isFeatureEnabled } from '@/lib/feature-flags';
-import { createClient } from '@/lib/supabase/server';
 import { Eye, ArrowLeft, Share2, Bookmark } from 'lucide-react';
 import { getAllPosts, getPostBySlug } from '@/lib/blog/utils';
 import { ViewTracker } from '@/components/analytics/ViewTracker';
@@ -58,10 +57,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    const blogEnabled = await isFeatureEnabled('blog', user?.id);
+    // For static pages, we don't check user auth
+    // The blog is public anyway
+    const blogEnabled = await isFeatureEnabled('blog');
     if (!blogEnabled) {
         notFound();
     }

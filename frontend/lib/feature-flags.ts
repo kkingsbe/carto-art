@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAnonymousClient } from '@/lib/supabase/server';
 import { cache } from 'react';
 import type { Database } from '@/types/database';
 
@@ -7,7 +7,8 @@ import type { Database } from '@/types/database';
  * Uses React cache to avoid redundant hits in a single request.
  */
 export const getFeatureFlags = cache(async () => {
-    const supabase = await createClient();
+    // Use anonymous client to avoid accessing cookies which breaks static generation
+    const supabase = createAnonymousClient();
     const { data: flags } = await supabase
         .from('feature_flags')
         .select('*')
@@ -24,7 +25,8 @@ export const getFeatureFlags = cache(async () => {
  * - Percentage rollouts (deterministic based on user ID or session)
  */
 export async function isFeatureEnabled(key: string, userId?: string, sessionId?: string): Promise<boolean> {
-    const supabase = await createClient();
+    // Use anonymous client to avoid accessing cookies which breaks static generation
+    const supabase = createAnonymousClient();
 
     // We select * so we get all columns. 
     // We can't easily filter by dynamic column in the query if we want to support 
