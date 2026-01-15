@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { incrementMapView, incrementProfileView } from '@/lib/actions/analytics';
+import { incrementMapView, incrementProfileView, incrementBlogView } from '@/lib/actions/analytics';
 
 interface ViewTrackerProps {
-    type: 'map' | 'profile';
+    type: 'map' | 'profile' | 'blog';
     id: string;
 }
 
@@ -27,8 +27,10 @@ export function ViewTracker({ type, id }: ViewTrackerProps) {
 
         if (type === 'map') {
             incrementMapView(id);
-        } else {
+        } else if (type === 'profile') {
             incrementProfileView(id);
+        } else if (type === 'blog') {
+            incrementBlogView(id);
         }
     }, [type, id]);
 

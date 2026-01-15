@@ -1,6 +1,8 @@
 import { MetadataRoute } from 'next';
 
-export default function sitemap(): MetadataRoute.Sitemap {
+import { getAllPosts } from '@/lib/blog/utils';
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://cartoart.net';
 
     // Popular location pages
@@ -21,14 +23,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     }));
 
     // Blog posts
-    const blogPosts = [
-        'how-to-create-wedding-map-art',
-        'best-map-poster-ideas-new-home',
-    ];
-
-    const blogPages = blogPosts.map((slug) => ({
-        url: `${baseUrl}/blog/${slug}`,
-        lastModified: new Date(),
+    const allPosts = await getAllPosts();
+    const blogPages = allPosts.map((post) => ({
+        url: `${baseUrl}/blog/${post.slug}`,
+        lastModified: new Date(post.publishedDate),
         changeFrequency: 'monthly' as const,
         priority: 0.7,
     }));

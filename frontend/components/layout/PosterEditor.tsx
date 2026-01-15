@@ -60,6 +60,7 @@ interface PosterEditorProps {
 
 export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
   const [activeTab, setActiveTab] = useState<Tab>('essentials');
+
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
@@ -134,6 +135,11 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
     canUndo,
     canRedo,
   } = usePosterConfig();
+
+  useEffect(() => {
+    console.log('[PosterEditor] Render. Config Style ID:', config?.style?.id);
+  });
+
 
 
 
@@ -654,12 +660,14 @@ export function PosterEditor({ anonExportLimit }: PosterEditorProps) {
 
   // Apply palette colors and visibility to the current map style
   const mapStyle = useMemo(() => {
-    return applyPaletteToStyle(
+    const s = applyPaletteToStyle(
       config.style.mapStyle,
       config.palette,
       config.layers,
       config.style.layerToggles
     );
+    console.log('[PosterEditor] Computed mapStyle for:', config.style.id);
+    return s;
   }, [config.style.mapStyle, config.palette, config.layers, config.style.layerToggles]);
   // Handle adding a marker from the context menu
   const handleAddMarker = useCallback((lat: number, lng: number) => {

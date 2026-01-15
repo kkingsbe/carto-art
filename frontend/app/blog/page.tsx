@@ -1,10 +1,10 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { BLOG_POSTS } from './[slug]/page';
 import { isFeatureEnabled } from '@/lib/feature-flags';
 import { createClient } from '@/lib/supabase/server';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
+import { getAllPosts } from '@/lib/blog/utils';
 
 export const metadata: Metadata = {
     title: 'Map Art Blog | Tips, Guides & Inspiration - Carto-Art',
@@ -42,9 +42,7 @@ export default async function BlogIndexPage() {
         notFound();
     }
 
-    const posts = Object.values(BLOG_POSTS).sort(
-        (a, b) => new Date(b.publishedDate).getTime() - new Date(a.publishedDate).getTime()
-    );
+    const posts = await getAllPosts();
 
     return (
         <main className="min-h-screen bg-[#0a0f1a] text-[#f5f0e8]">

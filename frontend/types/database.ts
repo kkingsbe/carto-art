@@ -639,6 +639,46 @@ export interface Database {
           created_at?: string;
         };
       };
+      blog_views: {
+        Row: {
+          id: string;
+          slug: string;
+          viewer_id: string | null;
+          ip_hash: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          slug: string;
+          viewer_id?: string | null;
+          ip_hash?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          slug?: string;
+          viewer_id?: string | null;
+          ip_hash?: string | null;
+          created_at?: string;
+        };
+      },
+      blog_stats: {
+        Row: {
+          slug: string;
+          view_count: number;
+          updated_at: string;
+        };
+        Insert: {
+          slug: string;
+          view_count?: number;
+          updated_at?: string;
+        };
+        Update: {
+          slug?: string;
+          view_count?: number;
+          updated_at?: string;
+        };
+      },
       profile_views: {
         Row: {
           id: string;

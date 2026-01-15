@@ -214,9 +214,72 @@ export async function trackProfileView(targetUserId: string): Promise<TrackProfi
             return { success: false, notified: false };
         }
 
+
         return { success: true, notified: true };
     } catch (error) {
         logger.error('Error tracking profile view:', error);
         return { success: false, notified: false };
+    }
+}
+
+/**
+ * Increment view count for a blog post
+ * Includes:
+ * - 24h deduplication (by User ID or IP/UserAgent hash)
+ */
+export async function incrementBlogView(slug: string) {
+    try {
+        const supabase = (await createClient()) as any;
+        const { data: { user } } = await supabase.auth.getUser();
+
+        // 1. Get Visitor Identity
+        const headersList = await headers();
+        const forwardedFor = headersList.get('x-forwarded-for');
+        const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : 'unknown';
+        const userAgent = headersList.get('user-agent') || 'unknown';
+        const visitorHash = getVisitorHash(ip, userAgent);
+
+        // 2. Check for recent views (deduplication)
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+        let query = supabase.from('blog_views')
+            .select('id')
+            .eq('slug', slug)
+            .gt('created_at', twentyFourHoursAgo);
+
+        if (user) {
+            query = query.eq('viewer_id', user.id);
+        } else {
+            query = query.eq('ip_hash', visitorHash);
+        }
+
+        const { data: existingView } = await query.maybeSingle();
+
+        if (existingView) {
+            return;
+        }
+
+        // 3. Record new view
+        const { error: insertError } = await supabase.from('blog_views').insert({
+            slug: slug,
+            viewer_id: user?.id || null,
+            ip_hash: user ? null : visitorHash
+        } as any);
+
+        if (insertError) {
+            logger.error('Failed to log blog view:', insertError);
+            return;
+        }
+
+        // 4. Increment counter
+        const { error } = await supabase.rpc('increment_blog_view', {
+            post_slug: slug
+        });
+
+        if (error) {
+            logger.error('Failed to increment blog view counter:', error);
+        }
+    } catch (err) {
+        logger.error('Error in incrementBlogView:', err);
     }
 }

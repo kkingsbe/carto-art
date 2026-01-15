@@ -68,6 +68,8 @@ export function MapPreview({
   palette
 }: MapPreviewProps) {
   const mapRef = useRef<MapRef>(null);
+  console.log('[MapPreview] Received mapStyle:', mapStyle?.name);
+
   const [isLoading, setIsLoading] = useState(true);
   const [hasRenderedOnce, setHasRenderedOnce] = useState(false);
   const [hasError, setHasError] = useState(false);
