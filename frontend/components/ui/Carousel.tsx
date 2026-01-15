@@ -8,12 +8,14 @@ import { motion, AnimatePresence } from "framer-motion";
 interface CarouselProps {
     images: string[];
     aspectRatio?: "video" | "square" | "wide";
+    fit?: "cover" | "contain";
     className?: string;
 }
 
 export function Carousel({
     images,
     aspectRatio = "video",
+    fit = "cover",
     className = "",
 }: CarouselProps) {
     const [currentIndex, setCurrentIndex] = React.useState(0);
@@ -89,7 +91,7 @@ export function Carousel({
                         src={images[currentIndex]}
                         alt={`Slide ${currentIndex + 1}`}
                         fill
-                        className="object-cover"
+                        className={`object-${fit}`}
                         priority={currentIndex === 0}
                     />
                 </motion.div>

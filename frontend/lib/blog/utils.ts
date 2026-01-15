@@ -35,7 +35,7 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
             .from('blog_stats')
             .select('view_count')
             .eq('slug', slug)
-            .maybeSingle();
+            .maybeSingle() as { data: { view_count: number } | null };
 
         const { frontmatter, content } = await compileMDX<Omit<BlogPost, 'slug' | 'content'>>({
             source: fileContent,
@@ -81,7 +81,7 @@ export async function getAllPosts(): Promise<BlogPost[]> {
         const supabase = await createClient();
         const { data: allStats } = await supabase
             .from('blog_stats')
-            .select('slug, view_count');
+            .select('slug, view_count') as { data: Array<{ slug: string; view_count: number }> | null };
 
         const statsMap = new Map(allStats?.map(s => [s.slug, s.view_count]) || []);
 
