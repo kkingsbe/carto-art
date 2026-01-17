@@ -43,6 +43,9 @@ export function LayerControls({ layers, rendering, onLayersChange, onRenderingCh
   const dataLayers = availableToggles.filter(t =>
     ['streets', 'railroads', 'population', 'pois'].includes(t.id)
   );
+  const labelLayers = availableToggles.filter(t =>
+    ['labels-admin', 'labels-cities', 'labels-streets'].includes(t.id)
+  );
 
   const renderLayerItem = (item: LayerToggle) => {
     return (
@@ -224,6 +227,15 @@ export function LayerControls({ layers, rendering, onLayersChange, onRenderingCh
           <CollapsibleSection title="Data Layers" defaultOpen={true}>
             <div className="space-y-2">
               {dataLayers.map(renderLayerItem)}
+            </div>
+          </CollapsibleSection>
+        )}
+
+        {/* Labels */}
+        {labelLayers.length > 0 && (
+          <CollapsibleSection title="Labels" defaultOpen={true}>
+            <div className="space-y-2">
+              {labelLayers.map(renderLayerItem)}
             </div>
           </CollapsibleSection>
         )}

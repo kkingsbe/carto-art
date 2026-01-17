@@ -138,6 +138,80 @@ export function createLabelLayers(
   return layers;
 }
 
+/**
+ * Creates a street name label layer for road and street labels.
+ * Supports different styles matching the label layer system.
+ * Street names are smaller than city/state labels and appear at higher zoom levels.
+ */
+export function createStreetNameLayer(
+  palette: ColorPalette,
+  options: LabelLayerOptions = {}
+): any {
+  const {
+    style = 'halo',
+  } = options;
+
+  // Determine halo settings based on style
+  const getHaloSettings = () => {
+    switch (style) {
+      case 'none':
+        return { 'text-halo-width': 0, 'text-halo-blur': 0 };
+      case 'strong':
+        return { 'text-halo-width': 2, 'text-halo-blur': 0.5 };
+      case 'elevated':
+        return { 'text-halo-width': 1.5, 'text-halo-blur': 0.2 };
+      case 'glass':
+        return { 'text-halo-width': 3, 'text-halo-blur': 3 };
+      case 'vintage':
+        return { 'text-halo-width': 1, 'text-halo-blur': 0.8 };
+      case 'standard':
+      case 'halo':
+      default:
+        return { 'text-halo-width': 1.5, 'text-halo-blur': 1 };
+    }
+  };
+
+  const haloSettings = getHaloSettings();
+
+  // Determine colors based on style
+  let textColor = palette.text;
+  let haloColor = style !== 'none' ? palette.background : undefined;
+
+  if (style === 'vintage') {
+    textColor = '#4a3b2a';
+    haloColor = '#f4e4bc';
+  } else if (style === 'glass') {
+    textColor = '#000000';
+    haloColor = 'rgba(255, 255, 255, 0.7)';
+  } else if (style === 'elevated') {
+    haloColor = '#ffffff';
+  }
+
+  return {
+    id: 'labels-streets',
+    type: 'symbol',
+    source: 'openmaptiles',
+    'source-layer': 'transportation_name',
+    filter: ['has', 'name'], // Only show features with names
+    layout: {
+      'text-field': ['get', 'name'],
+      'text-font': ['Noto Sans Regular'],
+      'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 18, 14],
+      'text-anchor': 'bottom',
+      'text-offset': [0, 0.5],
+      'text-rotation-alignment': 'map',
+      'text-allow-overlap': false,
+      'text-padding': 2,
+    },
+    paint: {
+      'text-color': textColor,
+      'text-opacity': 0.9,
+      ...(haloColor ? { 'text-halo-color': haloColor } : {}),
+      ...haloSettings,
+    },
+  };
+}
+
 
 
 

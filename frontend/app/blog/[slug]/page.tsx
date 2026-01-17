@@ -6,6 +6,8 @@ import { isFeatureEnabled } from '@/lib/feature-flags';
 import { Eye, ArrowLeft, Share2, Bookmark } from 'lucide-react';
 import { getAllPosts, getPostBySlug } from '@/lib/blog/utils';
 import { ViewTracker } from '@/components/analytics/ViewTracker';
+import { BlogPostHeader } from '@/components/blog/BlogPostHeader';
+import { BlogAuthorCard } from '@/components/blog/BlogAuthorCard';
 
 export async function generateStaticParams() {
     const posts = await getAllPosts();
@@ -116,66 +118,15 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                 {/* Center Column (Content) */}
                 <article className="w-full min-w-0 max-w-3xl mx-auto lg:mx-0">
                     {/* Hero Header */}
-                    <header className="relative w-full rounded-2xl overflow-hidden mb-12 bg-[#0d1420] border border-[#f5f0e8]/10 shadow-2xl group">
-                        {/* Background Image */}
-                        {post.heroImage && (
-                            <>
-                                <Image
-                                    src={post.heroImage}
-                                    alt={post.title}
-                                    fill
-                                    className="object-cover transition-transform duration-700 group-hover:scale-105"
-                                    priority
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1a] via-[#0a0f1a]/80 to-transparent" />
-                            </>
-                        )}
-
-                        {/* Header Content */}
-                        <div className={`relative z-10 p-6 sm:p-10 md:p-14 flex flex-col justify-end min-h-[400px] ${!post.heroImage ? 'bg-[#0d1420]' : ''}`}>
-                            <div className="flex flex-wrap items-center gap-4 mb-6">
-                                <span className="bg-[#c9a962] text-[#0a0f1a] px-3 py-1 rounded font-bold text-sm uppercase tracking-wide shadow-lg">
-                                    {post.category}
-                                </span>
-                                {post.readTime && (
-                                    <span className="bg-[#0a0f1a]/60 backdrop-blur-sm border border-[#f5f0e8]/10 text-[#f5f0e8]/80 px-3 py-1 rounded text-sm font-medium">
-                                        {post.readTime}
-                                    </span>
-                                )}
-                            </div>
-
-                            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold mb-6 text-[#f5f0e8] leading-[1.1] tracking-tight drop-shadow-lg">
-                                {post.title}
-                            </h1>
-
-                            <div className="flex items-center gap-6 text-[#f5f0e8]/80">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#c9a962] to-[#8c7335] flex items-center justify-center text-[#0a0f1a] font-bold shadow-lg ring-2 ring-[#0a0f1a]/50">
-                                        {post.author[0]}
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="font-bold text-white text-sm">{post.author}</span>
-                                        <time dateTime={post.publishedDate} className="text-xs text-[#f5f0e8]/60">
-                                            {new Date(post.publishedDate).toLocaleDateString('en-US', {
-                                                year: 'numeric',
-                                                month: 'long',
-                                                day: 'numeric',
-                                            })}
-                                        </time>
-                                    </div>
-                                </div>
-                                {post.tags && post.tags.length > 0 && (
-                                    <div className="hidden sm:flex flex-wrap gap-2">
-                                        {post.tags.slice(0, 3).map((tag) => (
-                                            <span key={tag} className="text-[#c9a962] text-sm font-medium">
-                                                #{tag}
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </header>
+                    <BlogPostHeader
+                        title={post.title}
+                        category={post.category}
+                        readTime={post.readTime}
+                        author={post.author}
+                        publishedDate={post.publishedDate}
+                        heroImage={post.heroImage}
+                        tags={post.tags}
+                    />
 
                     {/* Content */}
                     <div
@@ -227,25 +178,12 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                 {/* Right Sidebar (Desktop) */}
                 <aside className="hidden lg:block space-y-8 sticky top-24 h-fit w-full max-w-[320px]">
                     {/* Author Card */}
-                    <div className="bg-[#0d1420] rounded-lg p-6 border-t-4 border-[#c9a962] shadow-xl">
-                        <div className="flex items-end gap-3 mb-4 -mt-10">
-                            <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-[#c9a962] to-[#8c7335] flex items-center justify-center text-[#0a0f1a] font-bold text-2xl shadow-lg ring-4 ring-[#0d1420]">
-                                {post.author[0]}
-                            </div>
-                            <div className="mb-1">
-                                <h3 className="font-bold text-lg">{post.author}</h3>
-                                <p className="text-xs text-[#f5f0e8]/50 uppercase tracking-wider font-bold">Post Author</p>
-                            </div>
-                        </div>
-                        <p className="text-[#f5f0e8]/80 text-sm leading-relaxed mb-4">
-                            Sharing tips and tricks for creating beautiful map posters. Part of the Carto-Art team building the best free map editor on the web.
-                        </p>
-                        <Link
-                            href="/editor"
-                            className="block w-full text-center bg-[#1a2333] hover:bg-[#253042] text-[#c9a962] py-2 rounded-md text-sm font-semibold transition-colors"
-                        >
-                            Start Creating
-                        </Link>
+                    {/* Author Card */}
+                    <div className="sticky top-24">
+                        <BlogAuthorCard
+                            author={post.author}
+                            description="Sharing tips and tricks for creating beautiful map posters. Part of the Carto-Art team building the best free map editor on the web."
+                        />
                     </div>
 
                     {/* More Articles */}

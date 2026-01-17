@@ -202,12 +202,16 @@ export function OrderSteps({ variants, designUrl, aspectRatio, orientation, prod
                     const uploadRes = await fetch('/api/printful/upload', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ url: designUrl }),
+                        body: JSON.stringify({
+                            url: designUrl,
+                            variant_id: selectedVariant.id // Pass variant_id for rotation logic
+                        }),
                     });
 
                     if (uploadRes.ok) {
                         const uploadData = await uploadRes.json();
                         currentDesignId = uploadData.id;
+                        console.log(`[OrderSteps] Upload successful, rotated: ${uploadData.rotated}`);
                     }
                 } catch (err) {
                     console.error('Printful upload error, using direct URL:', err);

@@ -67,6 +67,7 @@ export const DEFAULT_CONFIG: PosterConfig = {
     labelStyle: 'elevated',
     labelAdminSize: 1.0,
     labelCitiesSize: 1.0,
+    'labels-streets': false, // Street names toggle (off by default to maintain clean aesthetic)
     boundaries: false,
     marker: true,
     markerType: 'crosshair',

@@ -156,6 +156,7 @@ export interface PosterConfig {
     labelAdminSize?: number; // Size for state & country names
     'labels-cities'?: boolean; // Toggle for city names
     labelCitiesSize?: number; // Size for city names
+    'labels-streets'?: boolean; // Toggle for street names
     boundaries?: boolean; // Toggle for administrative boundaries (country/state/county)
     marker: boolean;
     markerType?: 'pin' | 'crosshair' | 'dot' | 'ring' | 'heart' | 'home';

@@ -303,35 +303,55 @@ export const printful = {
                         const w = parseFloat(match[1]);
                         const h = parseFloat(match[2]);
                         const targetRatio = w / h;
-                        console.log(`[DEBUG] Target ratio: ${targetRatio.toFixed(3)} (${w}x${h})`);
+                        const rotatedRatio = h / w; // Inverse ratio for rotated images
+                        console.log(`[DEBUG] Target ratio: ${targetRatio.toFixed(3)} (${w}x${h}), Rotated ratio: ${rotatedRatio.toFixed(3)}`);
 
                         // Find template with closest aspect ratio
+                        // Since the upload endpoint rotates images when orientations differ,
+                        // we need to check the rotated ratio first, then fall back to original
                         let bestRatioDiff = Infinity;
+                        let usedRotatedRatio = false;
 
+                        // First pass: check rotated ratio (since image may have been rotated)
                         for (const tmpl of templatesData.result.templates) {
                             if (!tmpl.print_area_width || !tmpl.print_area_height) continue;
                             const tmplRatio = tmpl.print_area_width / tmpl.print_area_height;
-                            const diff = Math.abs(tmplRatio - targetRatio);
+                            const diff = Math.abs(tmplRatio - rotatedRatio);
 
-                            // Also check the inverse ratio (landscape/portrait swap)
-                            // Ideally we want exact orientation match if possible, but Printful might rotate?
-                            // No, for "Canvas", orientation matters. "12x36" is typically portrait or landscape depending on WxH.
-                            // If user says "12x36", it's usually WxH. So 1:3.
-                            // If template is 3:1, it's rotated. 
-                            // Printful templates usually have specific orientation.
-                            // Let's favor EXACT match first.
-
-                            // Only check DIRECT ratio first
                             if (diff < bestRatioDiff) {
                                 bestRatioDiff = diff;
                                 bestTemplate = tmpl;
                             }
                         }
 
-                        // If direct match is poor, check rotated?
-                        // For now let's stick to direct match.
+                        // If rotated ratio match is poor, try original ratio
+                        if (bestRatioDiff > 0.05) {
+                            console.log(`[DEBUG] Rotated ratio match is poor (${bestRatioDiff.toFixed(3)}), trying original ratio...`);
+                            let originalRatioDiff = Infinity;
 
-                        console.log(`[DEBUG] Best template found: ID ${bestTemplate.template_id}, Ratio: ${(bestTemplate.print_area_width / bestTemplate.print_area_height).toFixed(3)}, Diff: ${bestRatioDiff.toFixed(3)}`);
+                            for (const tmpl of templatesData.result.templates) {
+                                if (!tmpl.print_area_width || !tmpl.print_area_height) continue;
+                                const tmplRatio = tmpl.print_area_width / tmpl.print_area_height;
+                                const diff = Math.abs(tmplRatio - targetRatio);
+
+                                if (diff < originalRatioDiff) {
+                                    originalRatioDiff = diff;
+                                    bestTemplate = tmpl;
+                                }
+                            }
+
+                            // Use original ratio if it's a better match
+                            if (originalRatioDiff < bestRatioDiff) {
+                                bestRatioDiff = originalRatioDiff;
+                                usedRotatedRatio = false;
+                            } else {
+                                usedRotatedRatio = true;
+                            }
+                        } else {
+                            usedRotatedRatio = true;
+                        }
+
+                        console.log(`[DEBUG] Best template found: ID ${bestTemplate.template_id}, Ratio: ${(bestTemplate.print_area_width / bestTemplate.print_area_height).toFixed(3)}, Diff: ${bestRatioDiff.toFixed(3)}, Used rotated ratio: ${usedRotatedRatio}`);
 
                         if (bestRatioDiff < 0.05) {
                             console.log(`[DEBUG] Found matching template ID ${bestTemplate.template_id}`);
@@ -420,7 +440,7 @@ export const printful = {
             }
 
             const errorBody = await response.json();
-            console.error('Printful Create Mockup Task Failed:', JSON.stringify(errorBody, null, 2));
+            // console.error('Printful Create Mockup Task Failed:', JSON.stringify(errorBody, null, 2)); // Moved below
 
             // Handle rate limiting (429)
             if (response.status === 429) {
@@ -436,6 +456,24 @@ export const printful = {
                 continue;
             }
 
+            // Handle "File type front is not allowed" error (common for some AOP products like tapestries)
+            // Error code is usually MG-4, message contains "File type front is not allowed"
+            const errorMsg = errorBody.result || (errorBody.error && errorBody.error.message) || '';
+            if (errorMsg.includes('File type front is not allowed')) {
+                const hasFrontPlacement = validFiles.some(f => f.placement === 'front');
+                if (hasFrontPlacement) {
+                    console.log(`[DEBUG] Caught 'front' placement error. Switching to 'front_dtfabric' and retrying...`);
+                    // Update placements in validFiles
+                    validFiles.forEach(f => {
+                        if (f.placement === 'front') f.placement = 'front_dtfabric';
+                    });
+
+                    // Add a small delay and retry
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    continue;
+                }
+            }
+
             // Extract message for other errors
             let msg = '';
             if (typeof errorBody.error === 'string') msg = errorBody.error;
@@ -443,6 +481,7 @@ export const printful = {
             else if (errorBody.result) msg = errorBody.result;
             else msg = JSON.stringify(errorBody);
 
+            console.error('Printful Create Mockup Task Failed:', JSON.stringify(errorBody, null, 2));
             lastError = new Error(`Printful Error: ${msg}`);
             break; // Don't retry non-rate-limit errors
         }

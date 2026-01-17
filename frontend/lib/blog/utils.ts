@@ -4,6 +4,7 @@ import { compileMDX } from 'next-mdx-remote/rsc';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/server';
 import { Carousel } from '@/components/ui/Carousel';
+import { ZoomImage } from '@/components/mdx/ZoomImage';
 
 export interface BlogPost {
     title: string;
@@ -46,7 +47,8 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
                 }
             },
             components: {
-                Image,
+                Image: ZoomImage,
+                img: ZoomImage,
                 Carousel,
                 // Add other components here if needed
             }

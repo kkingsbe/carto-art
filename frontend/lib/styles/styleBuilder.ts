@@ -2,7 +2,7 @@ import type { PosterStyle, ColorPalette } from '@/types/poster';
 import { getBaseSources } from './base';
 import { createBaseLayers, BaseLayerOptions } from './layers/base';
 import { createRoadLayers, RoadLayerOptions } from './layers/roads';
-import { createLabelLayers, LabelLayerOptions } from './layers/labels';
+import { createLabelLayers, LabelLayerOptions, createStreetNameLayer } from './layers/labels';
 import { createBoundaryLayers, BoundaryLayerOptions } from './layers/boundaries';
 import { createPOILayers, POILayerOptions } from './layers/poi';
 import { createTerrainLayers, TerrainLayerOptions } from './layers/terrain';
@@ -139,7 +139,11 @@ export function buildStyle(options: StyleBuildOptions): PosterStyle {
   const roadLayers = createRoadLayers(defaultPalette, roadOptions);
   layers.push(...roadLayers);
 
-  // 8.5 Railroads (after roads, before 3D buildings)
+  // 8.5 Street names (after roads, before other labels)
+  const streetNameLayer = createStreetNameLayer(defaultPalette, labelOptions);
+  layers.push(streetNameLayer);
+
+  // 8.6 Railroads (after roads, before 3D buildings)
   const railroadLayers = createRailroadLayers(defaultPalette);
   layers.push(...railroadLayers);
 

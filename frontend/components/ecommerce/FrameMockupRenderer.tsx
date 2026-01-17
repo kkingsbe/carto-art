@@ -168,7 +168,7 @@ export function FrameMockupRenderer({
                     name: '1. Resized Design',
                     url: designCanvas.toDataURL(),
                     description: needsRotation
-                        ? 'Design rotated 90° and scaled to cover the print area'
+                        ? 'Design rotated 90° CW and scaled to cover the print area'
                         : 'Design scaled to cover the print area'
                 });
 
@@ -387,30 +387,8 @@ export function FrameMockupRenderer({
                 ctx.putImageData(imageData, 0, 0);
 
                 // Convert to data URL
-                // If we rotated the design, we need to rotate the final composite back
-                let finalDataUrl: string;
-
-                if (needsRotation) {
-                    // Rotate the final composite 90° counter-clockwise to restore original orientation
-                    const rotatedFinalCanvas = document.createElement('canvas');
-                    // Swap dimensions back
-                    rotatedFinalCanvas.width = canvas.height;
-                    rotatedFinalCanvas.height = canvas.width;
-                    const rotatedFinalCtx = rotatedFinalCanvas.getContext('2d');
-
-                    if (rotatedFinalCtx) {
-                        // Rotate 90° counter-clockwise
-                        rotatedFinalCtx.translate(0, rotatedFinalCanvas.height);
-                        rotatedFinalCtx.rotate(-Math.PI / 2);
-                        rotatedFinalCtx.drawImage(canvas, 0, 0);
-                        finalDataUrl = rotatedFinalCanvas.toDataURL('image/png');
-                        log('Step 6: Rotated final composite back 90° CCW');
-                    } else {
-                        finalDataUrl = canvas.toDataURL('image/png');
-                    }
-                } else {
-                    finalDataUrl = canvas.toDataURL('image/png');
-                }
+                // The design has been rotated to match print area orientation, keep it that way
+                const finalDataUrl = canvas.toDataURL('image/png');
 
                 setCompositeUrl(finalDataUrl);
 
@@ -418,7 +396,7 @@ export function FrameMockupRenderer({
                     name: '4. Final Result',
                     url: finalDataUrl,
                     description: needsRotation
-                        ? 'Final composited output (rotated back to original orientation)'
+                        ? 'Final composited output (design rotated to match print area orientation)'
                         : 'Final composited output'
                 });
 

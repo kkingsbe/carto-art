@@ -164,6 +164,11 @@ export function getBaseLayerToggles(
       name: 'City Names',
       layerIds: customLayerIds['labels-cities'] || ['labels-city'],
     },
+    {
+      id: 'labels-streets',
+      name: 'Street Names',
+      layerIds: customLayerIds['labels-streets'] || ['labels-streets'],
+    },
   ];
 
   // Validate layer IDs if allLayerIds is provided

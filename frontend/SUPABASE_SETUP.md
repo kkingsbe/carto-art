@@ -20,12 +20,22 @@ This guide will help you set up Supabase for the CartoArt social features.
    - `comments` table
    - All necessary indexes, triggers, and RLS policies
 
-## 3. Set Up Storage Bucket
+## 3. Set Up Storage Buckets
 
+### Map Thumbnails Bucket
 1. Go to Storage in your Supabase dashboard
 2. Create a new bucket named `map-thumbnails`
 3. Set it to **Public** bucket
 4. Optionally configure file size limits (recommended: 5MB max)
+
+### Print Files Bucket
+1. Go to Storage in your Supabase dashboard
+2. Create a new bucket named `print-files`
+3. Set it to **Public** bucket
+4. Optionally configure file size limits (recommended: 5MB max)
+5. Run the migration `supabase/migrations/20260116220000_setup_printful_storage.sql` to set up proper storage policies
+
+**Note:** The `print-files` bucket is used for Printful uploads and design uploads. The Printful upload endpoint uploads rotated images to this bucket before sending them to Printful.
 
 ## 4. Configure OAuth Providers
 

@@ -35,7 +35,7 @@ begin
         be.bucket_start,
         (
             select count(distinct user_id)
-            from page_eventspe
+            from page_events pe
             where pe.event_type = 'subscription_upgrade'
             and pe.created_at <= be.bucket_end
             -- Ideally we would subtract cancellations here effectively

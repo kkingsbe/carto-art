@@ -1,7 +1,7 @@
 'use server';
 
 import { printful } from '@/lib/printful/client';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import sharp from 'sharp';
 
 interface PrintArea {
@@ -232,7 +232,11 @@ export async function generateMockupTemplates(): Promise<{
             const buffer = await res.arrayBuffer();
 
             const filename = `variant_${variantId}_${Date.now()}.png`;
-            const { error: uploadError } = await supabase.storage
+
+            // Use Service Role client to bypass RLS for admin uploads
+            const supabaseAdmin = createServiceRoleClient();
+
+            const { error: uploadError } = await supabaseAdmin.storage
                 .from('mockups')
                 .upload(filename, Buffer.from(buffer), {
                     contentType: 'image/png',
@@ -241,7 +245,7 @@ export async function generateMockupTemplates(): Promise<{
 
             if (uploadError) throw uploadError;
 
-            const { data: { publicUrl } } = supabase.storage
+            const { data: { publicUrl } } = supabaseAdmin.storage
                 .from('mockups')
                 .getPublicUrl(filename);
 
@@ -638,6 +642,39 @@ export async function debugMockupResponse(variantId: number): Promise<any> {
 }
 
 /**
+ * Update print area for a specific variant (useful for fixing incorrect stored values)
+ */
+export async function updateVariantPrintArea(variantId: number, printArea: { x: number; y: number; width: number; height: number }) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) throw new Error('Unauthorized');
+
+    // Check admin
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single<{ is_admin: boolean }>();
+
+    if (!(profile as any)?.is_admin) throw new Error('Admin only');
+
+    console.log(`Updating print area for variant ${variantId}:`, printArea);
+
+    const { error } = await (supabase as any)
+        .from('product_variants')
+        .update({
+            mockup_print_area: printArea,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', variantId);
+
+    if (error) throw error;
+
+    return { success: true, printArea };
+}
+
+/**
  * Force regenerate mockup for a specific variant
  */
 export async function regenerateVariantMockup(variantId: number) {
@@ -738,7 +775,11 @@ export async function regenerateVariantMockup(variantId: number) {
         const buffer = await res.arrayBuffer();
 
         const filename = `variant_${variantId}_${Date.now()}.png`;
-        const { error: uploadError } = await supabase.storage
+
+        // Use Service Role client to bypass RLS
+        const supabaseAdmin = createServiceRoleClient();
+
+        const { error: uploadError } = await supabaseAdmin.storage
             .from('mockups')
             .upload(filename, Buffer.from(buffer), {
                 contentType: 'image/png',
@@ -747,7 +788,7 @@ export async function regenerateVariantMockup(variantId: number) {
 
         if (uploadError) throw uploadError;
 
-        const { data: { publicUrl: permanentUrl } } = supabase.storage
+        const { data: { publicUrl: permanentUrl } } = supabaseAdmin.storage
             .from('mockups')
             .getPublicUrl(filename);
 
