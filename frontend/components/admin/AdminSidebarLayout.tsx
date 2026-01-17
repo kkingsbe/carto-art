@@ -21,7 +21,10 @@ import {
     ShoppingCart,
     Package,
     XCircle,
-    Star
+    Star,
+    FlaskConical,
+    Database,
+    RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -52,6 +55,9 @@ export function AdminSidebarLayout({ children }: AdminSidebarLayoutProps) {
         { label: 'Cancellations', href: '/admin/cancellations', icon: XCircle },
         { label: 'Featured Maps', href: '/admin/featured', icon: Star },
         { label: 'Catalog', href: '/admin/catalog', icon: ShoppingCart },
+        { label: 'Mockup Lab', href: '/admin/debug/mockup', icon: FlaskConical },
+        { label: 'Product Data', href: '/admin/debug/product-data', icon: Database },
+        { label: 'Regen Mockups', href: '/admin/debug/regen-616', icon: RefreshCw },
     ];
 
     const isActive = (href: string) => {

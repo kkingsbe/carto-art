@@ -28,20 +28,39 @@ export function ProductPreviewGrid({
         // Defensive check for "undefined" string which might be passed in URL
         if (!designUrl || designUrl === 'undefined' || variants.length === 0) return;
 
+        console.log(`[ProductPreviewGrid] Starting preview generation for ${variants.length} variants`, {
+            designUrl: designUrl.substring(0, 50) + '...'
+        });
+
         const generatePreviews = async () => {
             // Load design image once
             if (!designImageRef.current) {
                 try {
+                    console.log(`[ProductPreviewGrid] Loading design image...`);
                     const img = new Image();
                     img.crossOrigin = "anonymous";
                     img.src = designUrl;
                     await new Promise((resolve, reject) => {
-                        img.onload = resolve;
-                        img.onerror = reject;
+                        img.onload = () => {
+                            console.log(`[ProductPreviewGrid] Design image loaded successfully`, {
+                                width: img.width,
+                                height: img.height,
+                                naturalWidth: img.naturalWidth,
+                                naturalHeight: img.naturalHeight
+                            });
+                            resolve(img);
+                        };
+                        img.onerror = (e) => {
+                            console.error(`[ProductPreviewGrid] Failed to load design image`, {
+                                error: e,
+                                src: designUrl.substring(0, 100)
+                            });
+                            reject(e);
+                        };
                     });
                     designImageRef.current = img;
                 } catch (e) {
-                    console.error("Failed to load design image", e);
+                    console.error("[ProductPreviewGrid] Failed to load design image", e);
                     return;
                 }
             }
@@ -50,6 +69,7 @@ export function ProductPreviewGrid({
             variants.forEach(async (variant) => {
                 if (previews.has(variant.id) || generating.has(variant.id)) return;
 
+                console.log(`[ProductPreviewGrid] Starting preview generation for variant ${variant.id}`);
                 setGenerating(prev => new Set(prev).add(variant.id));
 
                 try {
@@ -60,10 +80,23 @@ export function ProductPreviewGrid({
                     );
 
                     if (previewUrl) {
+                        console.log(`[ProductPreviewGrid] Successfully generated preview for variant ${variant.id}`);
                         setPreviews(prev => new Map(prev).set(variant.id, previewUrl));
+                    } else {
+                        console.warn(`[ProductPreviewGrid] Preview generation returned null for variant ${variant.id}`);
                     }
                 } catch (e) {
-                    console.error("Failed to generate preview for", variant.id);
+                    console.error("[ProductPreviewGrid] Failed to generate preview for variant", variant.id, {
+                        error: e,
+                        errorMessage: e instanceof Error ? e.message : String(e),
+                        errorStack: e instanceof Error ? e.stack : undefined,
+                        errorName: e instanceof Error ? e.name : undefined,
+                        variantId: variant.id,
+                        designUrl: designUrl.substring(0, 100),
+                        hasDesignImage: !!designImageRef.current,
+                        designImageComplete: designImageRef.current?.complete,
+                        designImageNaturalWidth: designImageRef.current?.naturalWidth
+                    });
                 } finally {
                     setGenerating(prev => {
                         const next = new Set(prev);

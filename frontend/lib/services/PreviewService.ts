@@ -1,14 +1,174 @@
 import { ProductVariant } from "../constants/products";
 
-// Helper to load an image
-const loadImage = (src: string): Promise<HTMLImageElement> => {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.onload = () => resolve(img);
-        img.onerror = (e) => reject(e);
-        img.src = src;
-    });
+// Cache for template images to avoid repeated proxy requests
+const templateImageCache = new Map<string, HTMLImageElement>();
+
+/**
+ * Determines if a URL needs to be proxied.
+ * S3 URLs need proxying for CORS, but Supabase URLs can be loaded directly.
+ */
+function needsProxy(url: string): boolean {
+    try {
+        const parsed = new URL(url);
+        // Only proxy S3 URLs (they need CORS handling)
+        return parsed.hostname.includes('s3') || parsed.hostname.includes('amazonaws.com');
+    } catch {
+        // Invalid URL, don't proxy
+        return false;
+    }
+}
+
+/**
+ * Returns the appropriate URL for loading an image.
+ * S3 URLs are proxied, Supabase URLs are loaded directly.
+ */
+function getProxiedUrl(url: string): string {
+    if (!url || url === 'undefined') return url;
+    
+    // Check if already proxied to avoid double proxying
+    if (url.includes('/api/proxy-image')) return url;
+    
+    // Only proxy S3 URLs
+    if (needsProxy(url)) {
+        return `/api/proxy-image?url=${encodeURIComponent(url)}`;
+    }
+    
+    // Load Supabase URLs and others directly
+    return url;
+}
+
+// Helper to load an image with timeout and retry logic
+const loadImage = (
+    src: string,
+    options: { timeout?: number; retries?: number } = {}
+): Promise<HTMLImageElement> => {
+    const { timeout = 10000, retries = 2 } = options;
+
+    const attemptLoad = (attempt: number): Promise<HTMLImageElement> => {
+        return new Promise((resolve, reject) => {
+            console.log(`[PreviewService] Attempting to load image (attempt ${attempt + 1}/${retries + 1})`, {
+                src: src.substring(0, 100),
+                fullSrc: src,
+                isProxyUrl: src.includes('/api/proxy-image'),
+                isS3Url: src.includes('s3.amazonaws.com') || src.includes('s3-accelerate.amazonaws.com'),
+                isSupabaseUrl: src.includes('supabase.co'),
+                isDataUrl: src.startsWith('data:'),
+                isHttp: src.startsWith('http://') || src.startsWith('https://'),
+                cacheHit: src.includes('/api/proxy-image') && templateImageCache.has(src)
+            });
+
+            // Check cache first for proxied template images (S3 URLs only)
+            if (src.includes('/api/proxy-image') && templateImageCache.has(src)) {
+                const cached = templateImageCache.get(src);
+                if (cached && cached.complete) {
+                    console.log(`[PreviewService] Using cached template image: ${src.substring(0, 50)}...`);
+                    resolve(cached);
+                    return;
+                }
+            }
+
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+
+            // Set timeout
+            const timeoutId = setTimeout(() => {
+                const error = new Error(`Image load timeout after ${timeout}ms`);
+                console.error(`[PreviewService] Load timeout (attempt ${attempt + 1}/${retries + 1})`, {
+                    src: src.substring(0, 100),
+                    timeout
+                });
+                reject(error);
+            }, timeout);
+
+            img.onload = () => {
+                clearTimeout(timeoutId);
+                console.log(`[PreviewService] Successfully loaded image (attempt ${attempt + 1}/${retries + 1})`, {
+                    src: src.substring(0, 100),
+                    width: img.width,
+                    height: img.height
+                });
+
+                // Cache only proxied template images (S3 URLs)
+                // Supabase URLs are loaded directly and don't need caching
+                if (src.includes('/api/proxy-image')) {
+                    templateImageCache.set(src, img);
+                }
+
+                resolve(img);
+            };
+
+            img.onerror = (e) => {
+                clearTimeout(timeoutId);
+
+                // Extract detailed error information from the Event object
+                const event = e as Event;
+                const target = event.target as HTMLImageElement;
+
+                // Log individual properties to avoid serialization issues
+                console.error("[PreviewService] Image load error details:", {
+                    src: src.substring(0, 100),
+                    eventType: event.type,
+                    eventBubbles: event.bubbles,
+                    eventCancelable: event.cancelable,
+                    targetSrc: target?.src?.substring(0, 100) || 'undefined',
+                    targetComplete: target?.complete,
+                    targetNaturalWidth: target?.naturalWidth,
+                    targetNaturalHeight: target?.naturalHeight,
+                    targetWidth: target?.width,
+                    targetHeight: target?.height,
+                    currentSrc: target?.currentSrc?.substring(0, 100) || 'undefined',
+                    crossOrigin: target?.crossOrigin,
+                    attempt: attempt + 1,
+                    maxAttempts: retries + 1,
+                    // Check if this is a proxy URL
+                    isProxyUrl: src.includes('/api/proxy-image'),
+                    // Check if this is an S3 URL
+                    isS3Url: src.includes('s3.amazonaws.com') || src.includes('s3-accelerate.amazonaws.com'),
+                    // Check if this is a Supabase URL
+                    isSupabaseUrl: src.includes('supabase.co'),
+                    // Check if design URL (not proxy)
+                    isDesignUrl: !src.includes('/api/proxy-image'),
+                });
+
+                // Also log the raw event for inspection
+                console.error("[PreviewService] Raw error event:", event);
+
+                const errorDetails = {
+                    src: src.substring(0, 100),
+                    errorMessage: e instanceof Error ? e.message : String(e),
+                    errorName: e instanceof Error ? e.name : undefined,
+                    attempt: attempt + 1,
+                    maxAttempts: retries + 1,
+                    imgComplete: img.complete,
+                    imgNaturalWidth: img.naturalWidth,
+                    imgNaturalHeight: img.naturalHeight
+                };
+                console.error("[PreviewService] Failed to load image", errorDetails);
+                reject(new Error(`Failed to load image: ${src.substring(0, 50)}...`));
+            };
+
+            img.src = src;
+        });
+    };
+
+    // Implement retry logic
+    const loadWithRetry = async (attempt: number): Promise<HTMLImageElement> => {
+        try {
+            return await attemptLoad(attempt);
+        } catch (error) {
+            if (attempt < retries) {
+                console.log(`[PreviewService] Retrying image load (attempt ${attempt + 2}/${retries + 1})`, {
+                    src: src.substring(0, 100)
+                });
+                // Exponential backoff
+                await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 500));
+                return loadWithRetry(attempt + 1);
+            }
+            throw error;
+        }
+    };
+
+    return loadWithRetry(0);
 };
 
 // Helper to draw image cover (same as in FrameMockupRenderer)
@@ -53,15 +213,46 @@ export async function generateVariantPreview(
     cachedDesignImage?: HTMLImageElement
 ): Promise<string | null> {
     if (!variant.mockup_template_url || !variant.mockup_print_area) {
+        console.log(`[PreviewService] Skipping variant ${variant.id}: missing mockup data`);
         return null;
     }
 
+    console.log(`[PreviewService] Generating preview for variant ${variant.id}`, {
+        hasCachedDesignImage: !!cachedDesignImage,
+        designUrl: designUrl.substring(0, 100) + '...',
+        templateUrl: variant.mockup_template_url.substring(0, 100) + '...',
+        fullTemplateUrl: variant.mockup_template_url,
+        fullDesignUrl: designUrl,
+        variantId: variant.id,
+        variantName: variant.name
+    });
+
     try {
+        // Validate cached design image if provided
+        if (cachedDesignImage) {
+            if (!cachedDesignImage.complete || cachedDesignImage.naturalWidth === 0) {
+                console.warn(`[PreviewService] Cached design image is not complete, will reload`, {
+                    variantId: variant.id,
+                    complete: cachedDesignImage.complete,
+                    naturalWidth: cachedDesignImage.naturalWidth,
+                    naturalHeight: cachedDesignImage.naturalHeight
+                });
+                // Fall through to load the image
+            } else {
+                console.log(`[PreviewService] Using cached design image for variant ${variant.id}`, {
+                    width: cachedDesignImage.width,
+                    height: cachedDesignImage.height
+                });
+            }
+        }
+
         const [templateParams, designImg] = await Promise.all([
-            // Load template
-            loadImage(`/api/proxy-image?url=${encodeURIComponent(variant.mockup_template_url)}`),
-            // Use cached design image if provided, otherwise load it
-            cachedDesignImage ? Promise.resolve(cachedDesignImage) : loadImage(designUrl)
+            // Load template - proxy only S3 URLs, load Supabase URLs directly
+            loadImage(getProxiedUrl(variant.mockup_template_url)),
+            // Use cached design image if provided and valid, otherwise load it
+            (cachedDesignImage && cachedDesignImage.complete && cachedDesignImage.naturalWidth > 0)
+                ? Promise.resolve(cachedDesignImage)
+                : loadImage(designUrl)
         ]);
 
         const canvas = document.createElement('canvas');
@@ -204,7 +395,18 @@ export async function generateVariantPreview(
         return finalCanvas.toDataURL('image/jpeg', 0.85);
 
     } catch (e) {
-        console.error("Error generating preview for variant", variant.id, e);
+        console.error("[PreviewService] Error generating preview for variant", variant.id, {
+            error: e,
+            errorMessage: e instanceof Error ? e.message : String(e),
+            errorStack: e instanceof Error ? e.stack : undefined,
+            errorName: e instanceof Error ? e.name : undefined,
+            variantId: variant.id,
+            hasMockupTemplateUrl: !!variant.mockup_template_url,
+            hasMockupPrintArea: !!variant.mockup_print_area,
+            designUrl: designUrl.substring(0, 100),
+            templateUrl: variant.mockup_template_url?.substring(0, 100),
+            printArea: variant.mockup_print_area
+        });
         return null;
     }
 }

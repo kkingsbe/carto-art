@@ -20,6 +20,7 @@ interface FrameMockupRendererProps {
     onDebug?: (msg: string) => void;
     onDebugStages?: (stages: { name: string; url: string; description?: string }[]) => void;
     onRendered?: (url: string) => void;
+    onError?: () => void;
 }
 
 /**
@@ -35,7 +36,8 @@ export function FrameMockupRenderer({
     alt = 'Product preview',
     onDebug,
     onDebugStages,
-    onRendered
+    onRendered,
+    onError
 }: FrameMockupRendererProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [compositeUrl, setCompositeUrl] = useState<string | null>(null);
@@ -414,6 +416,10 @@ export function FrameMockupRenderer({
                 setError(msg);
                 // Fallback to raw design
                 setCompositeUrl(designUrl);
+                // Call onError callback if provided
+                if (onError) {
+                    onError();
+                }
             } finally {
                 setIsLoading(false);
             }

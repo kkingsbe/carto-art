@@ -1,8 +1,7 @@
-
 import { regenerateVariantMockup } from '@/lib/actions/printful';
 import { createClient } from '@/lib/supabase/server';
 
-export default async function Regen616Page() {
+export default async function AdminRegen616Page() {
     const variantIds = [
         17626, 17624, 17625, 15706, 17620,
         17621, 17623, 15701, 15702, 17622,
@@ -33,11 +32,18 @@ export default async function Regen616Page() {
     }
 
     return (
-        <div className="p-4">
-            <h1>Regeneration Results</h1>
-            <pre className="whitespace-pre-wrap text-xs">
-                {JSON.stringify(results, null, 2)}
-            </pre>
+        <div className="space-y-6">
+            <div>
+                <h1 className="text-2xl font-bold tracking-tight">Regenerate Mockups</h1>
+                <p className="text-gray-500 dark:text-gray-400">
+                    Regenerate mockups for specific variants.
+                </p>
+            </div>
+            <div className="bg-white dark:bg-gray-900 rounded-lg border p-4">
+                <pre className="whitespace-pre-wrap text-xs">
+                    {JSON.stringify(results, null, 2)}
+                </pre>
+            </div>
         </div>
     );
 }
