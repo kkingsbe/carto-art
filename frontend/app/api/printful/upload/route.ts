@@ -20,10 +20,10 @@ async function rotateImageIfNeeded(
     supabase: any
 ): Promise<{ buffer: Buffer; rotated: boolean }> {
     try {
-        // 1. Get variant print area from database
+        // 1. Get variant print area and template URL from database
         const { data: variant } = await supabase
             .from('product_variants')
-            .select('mockup_print_area')
+            .select('mockup_print_area, mockup_template_url')
             .eq('id', variantId)
             .single();
 
@@ -46,20 +46,59 @@ async function rotateImageIfNeeded(
             return { buffer: imageBuffer, rotated: false };
         }
 
-        // 3. Determine orientations using percentages (Assume square template or relative usage)
-        // printArea.width/height are percentages (0-1).
-        // Comparing them directly is valid to determine aspect ratio of the print area itself
-        // assuming the underlying substrate is square-ish or the print area defines the shape.
-        // For standard Printful templates (which are usually square component-wise), this is safe.
+        // 3. Determine design orientation
         const designIsPortrait = designHeight > designWidth;
-        const printAreaIsPortrait = printArea.height > printArea.width;
+        const designAspectRatio = designWidth / designHeight;
 
-        console.log(`[Rotation] Design: ${designWidth}×${designHeight} (${designIsPortrait ? 'portrait' : 'landscape'})`);
-        console.log(`[Rotation] Print Area: ${(printArea.width * 100).toFixed(1)}% × ${(printArea.height * 100).toFixed(1)}% (${printAreaIsPortrait ? 'portrait' : 'landscape'})`);
+        console.log(`[Rotation] Design: ${designWidth}×${designHeight} (${designIsPortrait ? 'portrait' : 'landscape'}, ratio: ${designAspectRatio.toFixed(3)})`);
 
-        // 4. Rotate if orientations differ
+        // 4. Determine print area orientation
+        // CRITICAL: Must match client logic EXACTLY (FrameMockupRenderer line 117)
+        // Client does: printAreaPx.height > printAreaPx.width
+        // where printAreaPx = printArea * templateDimensions
+        // We MUST fetch template to get actual pixel dimensions
+        
+        let printAreaIsPortrait: boolean;
+        let printAreaAspectRatio: number;
+
+        if (variant.mockup_template_url) {
+            try {
+                const templateResponse = await fetch(variant.mockup_template_url);
+                if (!templateResponse.ok) {
+                    throw new Error('Template fetch failed');
+                }
+                const templateBuffer = Buffer.from(await templateResponse.arrayBuffer());
+                const templateMetadata = await sharp(templateBuffer).metadata();
+                const templateWidth = templateMetadata.width || 1;
+                const templateHeight = templateMetadata.height || 1;
+                
+                // Calculate actual print area dimensions in pixels (SAME AS CLIENT)
+                const printAreaPxWidth = printArea.width * templateWidth;
+                const printAreaPxHeight = printArea.height * templateHeight;
+                
+                printAreaIsPortrait = printAreaPxHeight > printAreaPxWidth;
+                printAreaAspectRatio = printAreaPxWidth / printAreaPxHeight;
+                
+                console.log(`[Rotation] Template: ${templateWidth}×${templateHeight}`);
+                console.log(`[Rotation] Print Area (pixels): ${printAreaPxWidth.toFixed(0)}×${printAreaPxHeight.toFixed(0)} (${printAreaIsPortrait ? 'portrait' : 'landscape'}, ratio: ${printAreaAspectRatio.toFixed(3)})`);
+            } catch (templateError) {
+                console.error(`[Rotation] Could not fetch template:`, templateError);
+                // Fallback: assume square template (percentage comparison)
+                printAreaIsPortrait = printArea.height > printArea.width;
+                printAreaAspectRatio = printArea.width / printArea.height;
+                console.log(`[Rotation] ⚠️ Fallback to percentage comparison: ${(printArea.width * 100).toFixed(1)}% × ${(printArea.height * 100).toFixed(1)}% (${printAreaIsPortrait ? 'portrait' : 'landscape'})`);
+            }
+        } else {
+            // No template URL - fallback to percentage comparison
+            printAreaIsPortrait = printArea.height > printArea.width;
+            printAreaAspectRatio = printArea.width / printArea.height;
+            console.log(`[Rotation] No template URL - using percentage comparison: ${(printArea.width * 100).toFixed(1)}% × ${(printArea.height * 100).toFixed(1)}% (${printAreaIsPortrait ? 'portrait' : 'landscape'})`);
+        }
+
+        // 5. Rotate if orientations differ
         if (designIsPortrait !== printAreaIsPortrait) {
-            console.log(`[Rotation] Rotating image for variant ${variantId} (orientations differ)`);
+            console.log(`[Rotation] ⚠️ Orientations differ - rotating image 90° clockwise`);
+            console.log(`[Rotation] Design is ${designIsPortrait ? 'portrait' : 'landscape'}, print area is ${printAreaIsPortrait ? 'portrait' : 'landscape'}`);
 
             const rotatedBuffer = await sharp(imageBuffer)
                 .rotate(90) // Rotate 90° clockwise
@@ -67,12 +106,12 @@ async function rotateImageIfNeeded(
 
             // Verify rotation by checking new dimensions
             const rotatedMetadata = await sharp(rotatedBuffer).metadata();
-            console.log(`[Rotation] After rotation: ${rotatedMetadata.width}×${rotatedMetadata.height}`);
+            console.log(`[Rotation] ✓ After rotation: ${rotatedMetadata.width}×${rotatedMetadata.height}`);
 
             return { buffer: rotatedBuffer, rotated: true };
         }
 
-        console.log(`[Rotation] No rotation needed for variant ${variantId} (orientations match)`);
+        console.log(`[Rotation] ✓ No rotation needed - orientations match`);
         return { buffer: imageBuffer, rotated: false };
 
     } catch (error) {
