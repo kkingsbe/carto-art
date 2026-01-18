@@ -5,7 +5,7 @@ import Map, { type MapRef, Source, Layer, Marker } from 'react-map-gl/maplibre';
 import maplibregl from 'maplibre-gl';
 import { Loader2 } from 'lucide-react';
 import type { PosterLocation, LayerToggle, PosterConfig, CustomMarker, ColorPalette } from '@/types/poster';
-import { hexToRgb, isColorDark } from '@/lib/utils/color';
+import { hexToRgb, hexToRgbTuple, isColorDark } from '@/lib/utils/color';
 import { cn } from '@/lib/utils';
 import { MarkerIcon } from './MarkerIcon';
 import { MapContextMenu } from './MapContextMenu';
@@ -693,7 +693,7 @@ export function MapPreview({
             const isDark = isColorDark(palette.background);
 
             // Highlight color: from background (same as 2D hillshade)
-            const bgRgb = hexToRgb(palette.background);
+            const bgRgb = hexToRgbTuple(palette.background);
             if (bgRgb) {
               derivedHighlightColor = bgRgb;
             }
@@ -701,7 +701,7 @@ export function MapPreview({
             // Shadow color: from hillshade color or secondary/text (same as 2D hillshade)
             const shadowHex = palette.hillshade || palette.secondary || palette.text;
             if (shadowHex) {
-              const shadowRgb = hexToRgb(shadowHex);
+              const shadowRgb = hexToRgbTuple(shadowHex);
               if (shadowRgb) {
                 derivedShadowColor = shadowRgb;
               }
@@ -710,7 +710,7 @@ export function MapPreview({
             // Terrain base color: blend between shadow and highlight for mid-tones
             // Use landuse color if available, otherwise mix shadow and highlight
             const baseHex = palette.landuse || palette.background;
-            const baseRgb = hexToRgb(baseHex);
+            const baseRgb = hexToRgbTuple(baseHex);
             if (baseRgb) {
               // Mix with a slight tint toward the shadow color for terrain depth
               derivedTerrainColor = [

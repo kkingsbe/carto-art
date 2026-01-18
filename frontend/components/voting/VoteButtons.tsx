@@ -1,11 +1,8 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { ChevronUp, ChevronDown } from 'lucide-react';
-import { Button } from '@/components/ui/control-components';
-import { voteOnMap, removeVote } from '@/lib/actions/votes';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { ArrowUp, ArrowDown } from 'lucide-react';
 
 interface VoteButtonsProps {
   mapId: string;
@@ -14,73 +11,63 @@ interface VoteButtonsProps {
 }
 
 export function VoteButtons({ mapId, initialVote, initialScore }: VoteButtonsProps) {
-  const [vote, setVote] = useState<number | null>(initialVote);
+  const [userVote, setUserVote] = useState<number | null>(initialVote);
   const [score, setScore] = useState(initialScore);
-  const [isPending, startTransition] = useTransition();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleVote = async (value: 1 | -1) => {
-    const newVote = vote === value ? null : value;
-    const scoreDelta = newVote === null
-      ? -vote! // Removing vote
-      : vote === null
-        ? newVote // Adding new vote
-        : newVote - vote; // Changing vote
+  const handleVote = async (value: number) => {
+    if (isLoading) return;
 
-    // Optimistic update
-    setVote(newVote);
-    setScore(score + scoreDelta);
+    setIsLoading(true);
 
-    startTransition(async () => {
-      try {
-        if (newVote === null) {
-          await removeVote(mapId);
-          toast.success('Vote removed');
-        } else {
-          await voteOnMap(mapId, newVote);
-          toast.success(newVote === 1 ? 'Upvoted!' : 'Downvoted');
-        }
-      } catch (error: any) {
-        // Revert on error
-        setVote(vote);
-        setScore(score);
-        toast.error(error.message || 'Failed to vote');
-        console.error('Failed to vote:', error);
+    try {
+      // If clicking the same vote, remove the vote
+      if (userVote === value) {
+        setUserVote(null);
+        setScore(score - value);
+        // TODO: Call API to remove vote
+      } else {
+        // If changing vote, adjust score by the difference
+        const voteChange = userVote ? value - userVote : value;
+        setUserVote(value);
+        setScore(score + voteChange);
+        // TODO: Call API to submit vote
       }
-    });
+    } catch (error) {
+      console.error('Failed to vote:', error);
+      // Revert on error
+      setUserVote(userVote);
+      setScore(score);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="flex items-center gap-2">
       <Button
-        variant="ghost"
+        variant={userVote === 1 ? 'default' : 'outline'}
         size="sm"
         onClick={() => handleVote(1)}
-        disabled={isPending}
-        className={cn(
-          "p-1",
-          vote === 1 && "text-blue-600 dark:text-blue-400"
-        )}
+        disabled={isLoading}
+        className="gap-1"
       >
-        <ChevronUp className="w-5 h-5" />
+        <ArrowUp className="w-4 h-4" />
       </Button>
 
-      <span className="text-sm font-semibold text-gray-900 dark:text-white min-w-[2rem] text-center">
+      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[2rem] text-center">
         {score}
       </span>
 
       <Button
-        variant="ghost"
+        variant={userVote === -1 ? 'default' : 'outline'}
         size="sm"
         onClick={() => handleVote(-1)}
-        disabled={isPending}
-        className={cn(
-          "p-1",
-          vote === -1 && "text-blue-600 dark:text-blue-400"
-        )}
+        disabled={isLoading}
+        className="gap-1"
       >
-        <ChevronDown className="w-5 h-5" />
+        <ArrowDown className="w-4 h-4" />
       </Button>
     </div>
   );
 }
-

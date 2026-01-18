@@ -91,20 +91,20 @@ export function ErrorToast({ error, onDismiss }: ErrorToastProps) {
 
 interface ErrorToastContainerProps {
   errors: Array<{ id: string; error: AppError; timestamp: number }>;
-  onDismiss: (id: string) => void;
+  clearError: (id: string) => void;
 }
 
 /**
  * Container component for displaying multiple error toasts.
  */
-export function ErrorToastContainer({ errors, onDismiss }: ErrorToastContainerProps) {
+export function ErrorToastContainer({ errors, clearError }: ErrorToastContainerProps) {
   if (errors.length === 0) return null;
 
   return (
     <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
       {errors.map(({ id, error }) => (
         <div key={id} className="pointer-events-auto">
-          <ErrorToast error={error} onDismiss={() => onDismiss(id)} />
+          <ErrorToast error={error} onDismiss={() => clearError(id)} />
         </div>
       ))}
     </div>

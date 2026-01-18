@@ -31,7 +31,11 @@ function setToCache(key: string, payload: unknown) {
 async function getUserId(request: NextRequest): Promise<string | null> {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    if (!supabase) {
+      // Anonymous version - no Supabase client
+      return null;
+    }
+    const { data: { user } } = await (supabase as any).auth.getUser();
     return user?.id ?? null;
   } catch {
     // If auth fails, use IP as fallback identifier

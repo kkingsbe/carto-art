@@ -38,7 +38,6 @@ export function calculateTargetResolution(
     height = Math.round(width / numericRatio);
   }
 
-
   return {
     name: base.name,
     description: base.description,
@@ -61,4 +60,34 @@ export function getPhysicalDimensions(width: number, height: number, dpi: number
   return `${round(wInches)} × ${round(hInches)} in`;
 }
 
+// PNG-only export resolutions
+export const PNG_RESOLUTIONS: BaseExportResolution[] = [
+  {
+    name: 'Small',
+    longEdge: 12,
+    dpi: 150,
+    description: 'Perfect for web sharing and small prints'
+  },
+  {
+    name: 'Medium',
+    longEdge: 18,
+    dpi: 150,
+    description: 'Good for standard prints (8×10 in)'
+  },
+  {
+    name: 'Large',
+    longEdge: 24,
+    dpi: 150,
+    description: 'High quality for larger prints (12×16 in)'
+  },
+  {
+    name: 'Extra Large',
+    longEdge: 36,
+    dpi: 150,
+    description: 'Maximum quality for professional printing (18×24 in)'
+  }
+];
 
+export function getPngResolutions(aspectRatio: PosterConfig['format']['aspectRatio']): ExportResolution[] {
+  return PNG_RESOLUTIONS.map(res => calculateTargetResolution(res, aspectRatio, 'landscape'));
+}

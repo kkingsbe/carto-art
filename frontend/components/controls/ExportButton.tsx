@@ -13,7 +13,7 @@ import type { ExportResolution } from '@/lib/export/resolution';
 import type { PosterConfig } from '@/types/poster';
 import type { GifExportOptions } from '@/hooks/useGifExport';
 import type { VideoExportOptions } from '@/hooks/useVideoExport';
-import type { ExportUsageResult } from '@/lib/actions/usage';
+import type { ExportUsageResult } from '@/lib/actions/usage.types';
 
 interface ExportButtonProps {
   onExport: (resolution: ExportResolution, gifOptions?: GifExportOptions, videoOptions?: VideoExportOptions, stlOptions?: StlExportOptions) => Promise<void> | void;

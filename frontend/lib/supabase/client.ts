@@ -1,12 +1,37 @@
-import { createBrowserClient } from '@supabase/ssr';
-import type { Database } from '@/types/database';
-import { SUPABASE_URL, SUPABASE_ANON_KEY, getRequiredEnv } from '@/lib/utils/env';
+// Stub Supabase client for anonymous mode
+// This is a no-op implementation since we're removing Supabase
 
-export function createClient() {
-  // Validate env vars when client is created, not at module load time
-  const url = SUPABASE_URL || getRequiredEnv('NEXT_PUBLIC_SUPABASE_URL');
-  const key = SUPABASE_ANON_KEY || getRequiredEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY');
-  
-  return createBrowserClient<Database>(url, key);
+export interface User {
+  id: string;
+  email: string;
+  [key: string]: any;
 }
 
+export interface Auth {
+  getUser(): Promise<{ data: { user: User | null }; error: any }>;
+  signOut(): Promise<{ error: any }>;
+  onAuthStateChange(callback: (event: string, session: any) => void): {
+    data: { subscription: { unsubscribe: () => void } };
+  };
+}
+
+export interface SupabaseClient {
+  auth: Auth;
+}
+
+export function createClient(): SupabaseClient {
+  // Return a no-op client for anonymous mode
+  return {
+    auth: {
+      getUser: async () => ({ data: { user: null }, error: null }),
+      signOut: async () => ({ error: null }),
+      onAuthStateChange: (callback) => ({
+        data: {
+          subscription: {
+            unsubscribe: () => {},
+          },
+        },
+      }),
+    },
+  };
+}

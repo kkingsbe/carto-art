@@ -97,8 +97,7 @@ export function ColorControls({ palette, presets, onPaletteChange }: ColorContro
                   type="button"
                   onClick={() => {
                     onPaletteChange(preset);
-                    trackEventAction({
-                      eventType: 'palette_change',
+                    trackEventAction('palette_change', {
                       eventName: preset.name,
                       metadata: { paletteId: preset.id }
                     });

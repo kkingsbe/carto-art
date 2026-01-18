@@ -1,58 +1,38 @@
-import LZString from 'lz-string';
-import { PosterConfig } from '@/types/poster';
+// URL state encoding/decoding for poster config
+import type { PosterConfig } from '@/types/poster';
 import { getStyleById } from '@/lib/styles';
 import { logger } from '@/lib/logger';
 
-/**
- * Encodes a config object into a compressed URL-safe string.
- * We save IDs for Style and Palette to keep the URL short.
- */
 export function encodeConfig(config: PosterConfig): string {
-  const compact = {
-    l: config.location,
-    s: config.style.id,
-    p: config.palette.id,
-    t: config.typography,
-    f: config.format,
-    ly: config.layers,
-  };
+  // Simplified encoding for anonymous version
+  const params = new URLSearchParams();
+  params.set('style', config.style.id);
+  params.set('lat', config.location.center[1].toString());
+  params.set('lng', config.location.center[0].toString());
+  params.set('zoom', config.location.zoom.toString());
+  return params.toString();
+}
+
+export function decodeConfig(searchParams: URLSearchParams | string): Partial<PosterConfig> {
+  // Simplified decoding for anonymous version
+  const params = typeof searchParams === 'string' ? new URLSearchParams(searchParams) : searchParams;
   
-  try {
-    const json = JSON.stringify(compact);
-    return LZString.compressToEncodedURIComponent(json);
-  } catch (e) {
-    logger.error('Failed to encode config', e);
-    return '';
-  }
+  const styleId = params.get('style') || 'minimal';
+  const lat = parseFloat(params.get('lat') || '0');
+  const lng = parseFloat(params.get('lng') || '0');
+  const zoom = parseFloat(params.get('zoom') || '2');
+  
+  const style = getStyleById(styleId);
+  
+  return {
+    style,
+    location: {
+      center: [lng, lat] as [number, number],
+      zoom,
+      name: 'Custom Location',
+      city: '',
+      subtitle: '',
+      bounds: [[lng - 0.1, lat - 0.1], [lng + 0.1, lat + 0.1]],
+    },
+  };
 }
-
-/**
- * Decodes a compressed string back into a partial config.
- */
-export function decodeConfig(encoded: string): Partial<PosterConfig> | null {
-  try {
-    const json = LZString.decompressFromEncodedURIComponent(encoded);
-    if (!json) return null;
-    
-    const data = JSON.parse(json);
-    
-    const style = getStyleById(data.s);
-    if (!style) return null;
-
-    // Find the palette by ID within the style
-    const palette = style.palettes.find(p => p.id === data.p) || style.defaultPalette;
-
-    return {
-      location: data.l,
-      style,
-      palette,
-      typography: data.t,
-      format: data.f,
-      layers: data.ly,
-    };
-  } catch (e) {
-    logger.error('Failed to decode config', e);
-    return null;
-  }
-}
-

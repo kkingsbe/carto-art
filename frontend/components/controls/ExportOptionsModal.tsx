@@ -431,7 +431,29 @@ export function ExportOptionsModal({
 
                         {/* CTA Section - Different for Anon vs Authenticated */}
                         {!isAuthenticated ? (
-                            <LoginWall />
+                            <LoginWall>
+                                <div className="bg-gradient-to-r from-indigo-500 from-10% via-sky-500 via-30% to-emerald-500 to-90% p-[1px] rounded-xl">
+                                    <div className="bg-white dark:bg-gray-900 rounded-[11px] p-5">
+                                        <div className="text-center space-y-3">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <Sparkles className="w-5 h-5 text-amber-500 fill-amber-500" />
+                                                <h4 className="font-bold text-gray-900 dark:text-white">
+                                                    Sign Up for Free
+                                                </h4>
+                                            </div>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                Create a free account to continue exporting your maps.
+                                            </p>
+                                            <button
+                                                onClick={handleSignUp}
+                                                className="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-semibold hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                                            >
+                                                Sign Up Free
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </LoginWall>
                         ) : (
                             /* Upgrade CTA for Logged In Users */
                             <div className="bg-gradient-to-r from-indigo-500 from-10% via-sky-500 via-30% to-emerald-500 to-90% p-[1px] rounded-xl">

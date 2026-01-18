@@ -19,6 +19,9 @@ export async function addManualDonation(formData: {
     }
 
     const supabase = await createClient();
+    if (!supabase) {
+        throw new Error('Supabase client not available');
+    }
 
     const { error } = await (supabase as any).from('donations').insert({
         id: `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
