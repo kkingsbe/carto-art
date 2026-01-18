@@ -4,8 +4,8 @@ const { printful } = require('./lib/printful/client');
 const fs = require('fs');
 
 async function run() {
-    const logBuffer = [];
-    const log = (...args) => {
+    const logBuffer: string[] = [];
+    const log = (...args: any[]) => {
         console.log(...args);
         logBuffer.push(args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '));
     };
@@ -44,7 +44,8 @@ async function run() {
             });
             log(`SUCCESS: Task created! Task Key: ${task.task_key}`);
         } catch (err) {
-            log(`FAILED: wrapper call failed with error: ${err.message}`);
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            log(`FAILED: wrapper call failed with error: ${errorMessage}`);
         }
 
     } catch (e) {

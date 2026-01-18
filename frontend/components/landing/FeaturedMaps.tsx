@@ -1,18 +1,25 @@
 import { getActiveFeaturedMaps } from '@/lib/actions/featured-maps';
+import { getMarginAdjustedVariants, getProducts } from '@/lib/actions/ecommerce';
+import { groupVariantsByProduct } from '@/lib/utils/store';
 import { isFeatureEnabled } from '@/lib/feature-flags';
 import Link from 'next/link';
-import { ArrowRight, ShoppingBag } from 'lucide-react';
-import { cn } from '@/lib/utils'; // Assuming this exists, typical in shadcn
+import { ShoppingBag } from 'lucide-react';
+import { FeaturedMapCard } from './FeaturedMapCard';
 
 export async function FeaturedMaps() {
-  const [isEnabled, maps] = await Promise.all([
+  const [isEnabled, maps, allVariants, productsData] = await Promise.all([
     isFeatureEnabled('ecommerce'),
-    getActiveFeaturedMaps()
+    getActiveFeaturedMaps(),
+    getMarginAdjustedVariants(),
+    getProducts()
   ]);
 
   if (!isEnabled || maps.length === 0) {
     return null;
   }
+
+  // Group variants by products for the ProductQuickBuy component
+  const products = groupVariantsByProduct(allVariants, productsData);
 
   return (
     <section className="py-24 relative overflow-hidden">
@@ -32,76 +39,18 @@ export async function FeaturedMaps() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {maps.map((map, index) => (
-            <div
+            <FeaturedMapCard
               key={map.id}
-              className="group relative block h-full"
-            >
-              <div className="relative h-full bg-[#111827] rounded-2xl overflow-hidden border border-gray-800 transition-all duration-300 hover:border-amber-500/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.15)] ring-offset-2 focus-within:ring-2 flex flex-col">
-                {/* Image Container */}
-                <div className="aspect-[4/5] w-full overflow-hidden relative">
-                  <Link href={map.link_url} className="block w-full h-full">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={map.image_url}
-                      alt={map.title}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      loading={index < 3 ? "eager" : "lazy"}
-                    />
-
-                    {/* Overlay Gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1a] via-transparent to-transparent opacity-60 transition-opacity duration-300" />
-                  </Link>
-
-                  {/* Floating Action Button (Desktop Hover) - Links to Store */}
-                  <div className="absolute bottom-4 right-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 hidden md:block z-10">
-                    <Link
-                      href={`/store?image=${encodeURIComponent(map.image_url)}`}
-                      className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-500 text-black shadow-lg hover:bg-amber-400 hover:scale-110 transition-all"
-                    >
-                      <ShoppingBag className="w-5 h-5" />
-                    </Link>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="p-6 flex flex-col flex-grow">
-                  <Link href={map.link_url} className="block mb-2 group-hover:text-amber-200 transition-colors">
-                    <div className="flex items-start justify-between gap-4">
-                      <h3 className="text-xl font-bold text-white">
-                        {map.title}
-                      </h3>
-                    </div>
-                  </Link>
-
-                  <Link href={map.link_url} className="flex-grow block mb-6">
-                    {map.description && (
-                      <p className="text-sm text-gray-400 line-clamp-2">
-                        {map.description}
-                      </p>
-                    )}
-                  </Link>
-
-                  {/* CTA Button - Links to Store */}
-                  <div className="mt-auto pt-2">
-                    <Link
-                      href={`/store?image=${encodeURIComponent(map.image_url)}`}
-                      className="w-full py-3 rounded-lg bg-gray-800 group-hover:bg-amber-500 group-hover:text-black text-white font-medium text-center transition-all duration-300 flex items-center justify-center gap-2"
-                    >
-                      <span className="group-hover:hidden">View Details</span>
-                      <span className="hidden group-hover:inline-flex items-center gap-2">
-                        Buy Print <ArrowRight className="w-4 h-4" />
-                      </span>
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
+              map={map}
+              products={products}
+              index={index}
+            />
           ))}
         </div>
 
         <div className="mt-16 text-center">
           <Link
-            href="/store"
+            href="/store-home"
             className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-full bg-amber-500 hover:bg-amber-400 text-black font-semibold transition-all hover:scale-105 active:scale-95"
           >
             <ShoppingBag className="w-5 h-5" />

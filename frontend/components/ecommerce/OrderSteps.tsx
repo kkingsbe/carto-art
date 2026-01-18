@@ -9,12 +9,14 @@ import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { ChevronLeft, Loader2, Package, Truck, CreditCard, Check } from 'lucide-react';
+import { ChevronLeft, Loader2, Package, Truck, CreditCard, Check, Shield, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ProductPreviewGrid } from './ProductPreviewGrid';
 import { FrameMockupRenderer } from './FrameMockupRenderer';
 import { trackEventAction } from '@/lib/actions/events';
 import { getSessionId } from '@/lib/utils';
+import { SizeSelectorGrid } from '@/components/store/SizeSelector';
+import { MobileStickyCart } from '@/components/store/MobileStickyCart';
+import { parseVariantDimensions } from '@/lib/utils/store';
 
 // Replace with your actual Publishable Key from environment
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -27,7 +29,7 @@ function StepIndicator({ currentStep, onChangeStep }: { currentStep: number, onC
     ];
 
     return (
-        <div className="flex items-center justify-center gap-2 mb-8">
+        <div className="flex items-center justify-center gap-2 md:gap-4 mb-6 md:mb-8">
             {steps.map((step, index) => {
                 const isCompleted = currentStep > step.number;
                 const isCurrent = currentStep === step.number;
@@ -42,11 +44,11 @@ function StepIndicator({ currentStep, onChangeStep }: { currentStep: number, onC
                         >
                             <div
                                 className={cn(
-                                    "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300",
-                                    isCompleted && "bg-primary text-primary-foreground",
-                                    isCurrent && "bg-primary text-primary-foreground ring-4 ring-primary/20",
-                                    !isCompleted && !isCurrent && "bg-muted text-muted-foreground",
-                                    canNavigate && "group-hover:bg-primary/80"
+                                    "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all duration-300",
+                                    isCompleted && "bg-green-500 text-white",
+                                    isCurrent && "bg-gray-900 dark:bg-white text-white dark:text-gray-900 ring-4 ring-gray-900/10 dark:ring-white/20",
+                                    !isCompleted && !isCurrent && "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500",
+                                    canNavigate && "group-hover:bg-gray-200 dark:group-hover:bg-gray-700"
                                 )}
                             >
                                 {isCompleted ? (
@@ -56,8 +58,8 @@ function StepIndicator({ currentStep, onChangeStep }: { currentStep: number, onC
                                 )}
                             </div>
                             <span className={cn(
-                                "text-xs mt-1 font-medium transition-colors",
-                                (isCompleted || isCurrent) ? "text-foreground" : "text-muted-foreground"
+                                "text-xs mt-1.5 font-medium transition-colors hidden sm:block",
+                                (isCompleted || isCurrent) ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-gray-500"
                             )}>
                                 {step.label}
                             </span>
@@ -65,8 +67,8 @@ function StepIndicator({ currentStep, onChangeStep }: { currentStep: number, onC
                         {index < steps.length - 1 && (
                             <div
                                 className={cn(
-                                    "w-12 h-0.5 mx-2 mb-5 transition-colors",
-                                    currentStep > step.number ? "bg-primary" : "bg-muted"
+                                    "w-8 md:w-16 h-0.5 mx-2 md:mx-3 mb-0 sm:mb-5 transition-colors",
+                                    currentStep > step.number ? "bg-green-500" : "bg-gray-200 dark:bg-gray-700"
                                 )}
                             />
                         )}
@@ -267,16 +269,32 @@ export function OrderSteps({ variants, designUrl, aspectRatio, orientation, prod
         }
     }, [step]);
 
+    // Get size label for display
+    const getSizeLabel = (variant: any) => {
+        if (!variant) return '';
+        const dims = parseVariantDimensions(variant.name);
+        return dims ? `${dims.width}×${dims.height}"` : variant.name;
+    };
+
     return (
-        <div className="max-w-5xl mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto px-4 py-6 md:py-8 pb-32 md:pb-8">
             <StepIndicator currentStep={step} onChangeStep={setStep} />
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* Left Column: Preview (Always visible on large screens) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+                {/* Left Column: Preview */}
                 <div className="lg:col-span-7 space-y-6">
-                    <div className="sticky top-24">
-                        <div className="relative rounded-2xl overflow-hidden border bg-slate-50/50 shadow-sm">
-                            <div className="aspect-[4/3] relative flex items-center justify-center p-8">
+                    <div className="lg:sticky lg:top-24">
+                        {/* Main Preview */}
+                        <div className="relative rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950 shadow-sm">
+                            {/* Subtle texture */}
+                            <div 
+                                className="absolute inset-0 opacity-[0.02] dark:opacity-[0.05]"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+                                }}
+                            />
+                            
+                            <div className="aspect-[4/3] relative flex items-center justify-center p-6 md:p-10">
                                 {selectedVariant?.mockup_template_url ? (
                                     <FrameMockupRenderer
                                         templateUrl={selectedVariant.mockup_template_url}
@@ -294,66 +312,94 @@ export function OrderSteps({ variants, designUrl, aspectRatio, orientation, prod
                                     />
                                 )}
                             </div>
+
+                            {/* Size badge */}
+                            {selectedVariant && (
+                                <div className="absolute bottom-4 left-4 px-3 py-1.5 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm text-sm font-medium text-gray-900 dark:text-white shadow-sm">
+                                    {getSizeLabel(selectedVariant)}
+                                </div>
+                            )}
                         </div>
 
-                        {/* Only show product grid in step 1 on desktop */}
-                        <div className="hidden lg:block mt-8">
-                            {step === 1 && (
-                                <>
-                                    <h3 className="text-lg font-semibold mb-4">Select Size</h3>
-                                    <ProductPreviewGrid
-                                        variants={variants}
-                                        designUrl={designUrl}
-                                        selectedVariantId={selectedVariant?.id}
-                                        onSelectVariant={setSelectedVariant}
-                                    />
-                                </>
-                            )}
+                        {/* Trust signals - Desktop only */}
+                        <div className="hidden lg:flex items-center justify-center gap-6 mt-6 text-sm text-gray-500 dark:text-gray-400">
+                            <div className="flex items-center gap-1.5">
+                                <Shield className="w-4 h-4" />
+                                <span>Quality Guaranteed</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <Truck className="w-4 h-4" />
+                                <span>Free Shipping $75+</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Right Column: Actions / Forms */}
                 <div className="lg:col-span-5">
-                    <div className="bg-card border rounded-xl p-6 shadow-sm">
+                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 md:p-6 shadow-sm">
                         {step === 1 && (
                             <div className="space-y-6">
-                                <div className="lg:hidden">
-                                    <h3 className="text-lg font-semibold mb-4">Select Size</h3>
-                                    <ProductPreviewGrid
-                                        variants={variants}
-                                        designUrl={designUrl}
-                                        selectedVariantId={selectedVariant?.id}
-                                        onSelectVariant={setSelectedVariant}
-                                    />
+                                {/* Header */}
+                                <div>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Sparkles className="w-5 h-5 text-amber-500" />
+                                        <span className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                                            Premium Quality
+                                        </span>
+                                    </div>
+                                    <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+                                        Select Your Size
+                                    </h2>
+                                    <p className="text-gray-500 dark:text-gray-400 mt-1">
+                                        Choose the perfect size for your space
+                                    </p>
                                 </div>
 
-                                <div>
-                                    <h2 className="text-2xl font-bold">{selectedVariant?.name}</h2>
-                                    <p className="text-3xl font-bold text-primary mt-2">
-                                        ${((selectedVariant?.display_price_cents || 0) / 100).toFixed(2)}
-                                    </p>
-                                    <div className="prose prose-sm dark:prose-invert mt-4 text-muted-foreground">
-                                        <p>{product?.description || "Museum-quality poster made on thick matte paper. Add a wonderful accent to your room and office with these posters that are sure to brighten any environment."}</p>
+                                {/* Size Selector */}
+                                <SizeSelectorGrid
+                                    variants={variants}
+                                    selectedVariantId={selectedVariant?.id}
+                                    onSelect={setSelectedVariant}
+                                />
+
+                                {/* Selected variant details */}
+                                {selectedVariant && (
+                                    <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <span className="font-semibold text-gray-900 dark:text-white">
+                                                {getSizeLabel(selectedVariant)}
+                                            </span>
+                                            <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                                                ${Math.ceil(selectedVariant.display_price_cents / 100)}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                                            {product?.description || "Museum-quality print on thick matte paper. Perfect for any room."}
+                                        </p>
                                         {product?.features && product.features.length > 0 && (
-                                            <ul className="mt-2 list-disc pl-4 space-y-1">
-                                                {product.features.map((feature: string, i: number) => (
-                                                    <li key={i}>{feature}</li>
+                                            <ul className="mt-3 space-y-1">
+                                                {product.features.slice(0, 3).map((feature: string, i: number) => (
+                                                    <li key={i} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                                        <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                                                        {feature}
+                                                    </li>
                                                 ))}
                                             </ul>
                                         )}
                                     </div>
-                                </div>
+                                )}
 
+                                {/* Desktop CTA */}
                                 <Button
                                     size="lg"
-                                    className="w-full text-lg h-12"
+                                    className="w-full text-lg h-14 hidden md:flex"
                                     onClick={handleNext}
                                     disabled={!selectedVariant || isCheckingAuth}
                                 >
                                     {isCheckingAuth ? (
                                         <>
-                                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
                                             Checking availability...
                                         </>
                                     ) : (
@@ -366,16 +412,44 @@ export function OrderSteps({ variants, designUrl, aspectRatio, orientation, prod
                         <FormProvider {...methods}>
                             {step === 2 && (
                                 <div className="space-y-6">
-                                    <div className="flex items-center gap-4 border-b pb-4">
-                                        <div className="w-16 h-16 rounded-md overflow-hidden bg-muted shrink-0">
-                                            {selectedVariant?.image_url && (
-                                                <img src={selectedVariant.image_url} className="w-full h-full object-cover" />
+                                    {/* Order summary */}
+                                    <div className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
+                                        <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 shrink-0">
+                                            {selectedVariant?.mockup_template_url ? (
+                                                <FrameMockupRenderer
+                                                    templateUrl={selectedVariant.mockup_template_url}
+                                                    printArea={getSafePrintArea(selectedVariant.mockup_print_area)}
+                                                    designUrl={designUrl}
+                                                    className="w-full h-full object-cover"
+                                                    alt="Preview"
+                                                />
+                                            ) : (
+                                                <img src={designUrl} className="w-full h-full object-cover" alt="Preview" />
                                             )}
                                         </div>
-                                        <div>
-                                            <div className="font-medium">{selectedVariant?.name}</div>
-                                            <div className="text-muted-foreground">${((selectedVariant?.display_price_cents || 0) / 100).toFixed(2)}</div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="font-semibold text-gray-900 dark:text-white">
+                                                {getSizeLabel(selectedVariant)}
+                                            </div>
+                                            <div className="text-lg font-bold text-gray-900 dark:text-white">
+                                                ${Math.ceil((selectedVariant?.display_price_cents || 0) / 100)}
+                                            </div>
                                         </div>
+                                        <button
+                                            onClick={() => setStep(1)}
+                                            className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                                        >
+                                            Change
+                                        </button>
+                                    </div>
+
+                                    <div>
+                                        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                                            Shipping Details
+                                        </h2>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                                            Where should we send your order?
+                                        </p>
                                     </div>
 
                                     <ShippingForm />
@@ -392,7 +466,7 @@ export function OrderSteps({ variants, designUrl, aspectRatio, orientation, prod
                                         </Button>
                                         <Button
                                             onClick={handleNext}
-                                            className="flex-1 h-11"
+                                            className="flex-1 h-12"
                                             type="button"
                                             disabled={isProcessing}
                                         >
@@ -412,16 +486,38 @@ export function OrderSteps({ variants, designUrl, aspectRatio, orientation, prod
 
                         {step === 3 && clientSecret && selectedVariant && (
                             <div className="space-y-6">
-                                <div className="flex items-center gap-4 border-b pb-4">
-                                    <div className="w-16 h-16 rounded-md overflow-hidden bg-muted shrink-0">
-                                        {selectedVariant?.image_url && (
-                                            <img src={selectedVariant.image_url} className="w-full h-full object-cover" />
+                                {/* Order summary */}
+                                <div className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
+                                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 shrink-0">
+                                        {selectedVariant?.mockup_template_url ? (
+                                            <FrameMockupRenderer
+                                                templateUrl={selectedVariant.mockup_template_url}
+                                                printArea={getSafePrintArea(selectedVariant.mockup_print_area)}
+                                                designUrl={designUrl}
+                                                className="w-full h-full object-cover"
+                                                alt="Preview"
+                                            />
+                                        ) : (
+                                            <img src={designUrl} className="w-full h-full object-cover" alt="Preview" />
                                         )}
                                     </div>
-                                    <div>
-                                        <div className="font-medium">{selectedVariant?.name}</div>
-                                        <div className="text-muted-foreground">${((selectedVariant?.display_price_cents || 0) / 100).toFixed(2)}</div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="font-semibold text-gray-900 dark:text-white">
+                                            {getSizeLabel(selectedVariant)}
+                                        </div>
+                                        <div className="text-lg font-bold text-gray-900 dark:text-white">
+                                            ${Math.ceil((selectedVariant?.display_price_cents || 0) / 100)}
+                                        </div>
                                     </div>
+                                </div>
+
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                                        Payment
+                                    </h2>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        Complete your order securely
+                                    </p>
                                 </div>
 
                                 <Elements stripe={stripePromise} options={{ clientSecret }}>
@@ -447,6 +543,16 @@ export function OrderSteps({ variants, designUrl, aspectRatio, orientation, prod
                     </div>
                 </div>
             </div>
+
+            {/* Mobile Sticky Cart - Only show on step 1 */}
+            {step === 1 && (
+                <MobileStickyCart
+                    productTitle="Print"
+                    selectedVariant={selectedVariant}
+                    onContinue={handleNext}
+                    isProcessing={isCheckingAuth}
+                />
+            )}
         </div>
     );
 }

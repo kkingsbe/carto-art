@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Printful Product Preview Generation - Executive Summary</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0c10;
+            --bg-elevated: #12161e;
+            --bg-card: #161b22;
+            --border: #2a3140;
+            --text: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #5c6a7a;
+            --green: #34d399;
+            --yellow: #fbbf24;
+            --red: #f87171;
+            --blue: #60a5fa;
+            --purple: #a78bfa;
+            --cyan: #22d3ee;
+            --orange: #fb923c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 48px 24px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 48px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .task-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-complete {
+            background: rgba(52, 211, 153, 0.15);
+            color: var(--green);
+            border: 1px solid rgba(52, 211, 153, 0.3);
+        }
+
+        .review-badge {
+            background: rgba(251, 191, 60, 0.15);
+            color: var(--orange);
+            border: 1px solid rgba(251, 191, 60, 0.3);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .review-badge:hover {
+            background: rgba(251, 191, 60, 0.25);
+        }
+
+        .timestamp {
+            margin-left: auto;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Intent Verification */
+        .intent-box {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 48px;
+        }
+
+        .intent-box-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .intent-row {
+            display: grid;
+            grid-template-columns: 100px 1fr auto;
+            gap: 12px;
+            align-items: start;
+            margin-bottom: 12px;
+        }
+
+        .intent-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .intent-label {
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .intent-value {
+            color: var(--text);
+        }
+
+        .match-verified {
+            color: var(--green);
+            font-weight: 600;
+        }
+
+        .match-partial {
+            color: var(--yellow);
+            font-weight: 600;
+        }
+
+        /* Behavioral Delta */
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: var(--text);
+        }
+
+        .delta-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 48px;
+        }
+
+        .delta-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--bg-elevated);
+            border-radius: 8px;
+            border-left: 3px solid;
+        }
+
+        .delta-changed {
+            border-left-color: var(--yellow);
+        }
+
+        .delta-same {
+            border-left-color: var(--green);
+        }
+
+        .delta-new {
+            border-left-color: var(--blue);
+        }
+
+        .delta-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-changed {
+            background: rgba(251, 191, 60, 0.2);
+            color: var(--orange);
+        }
+
+        .badge-same {
+            background: rgba(52, 211, 153, 0.2);
+            color: var(--green);
+        }
+
+        .badge-new {
+            background: rgba(96, 165, 250, 0.2);
+            color: var(--blue);
+        }
+
+        .delta-text {
+            color: var(--text);
+            font-size: 13px;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            padding: 16px 20px;
+            background: var(--bg-elevated);
+            border-radius: 8px;
+            margin-bottom: 48px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-green {
+            color: var(--green);
+        }
+
+        .stat-red {
+            color: var(--red);
+        }
+
+        /* Timeline */
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+            margin-bottom: 48px;
+        }
+
+        .timeline-step {
+            position: relative;
+            padding-left: 32px;
+        }
+
+        .timeline-step::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 6px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--border);
+        }
+
+        .timeline-step.info::before {
+            background: var(--cyan);
+        }
+
+        .timeline-step.success::before {
+            background: var(--green);
+        }
+
+        .timeline-step.decision::before {
+            background: var(--purple);
+        }
+
+        .timeline-step.warning::before {
+            background: var(--yellow);
+        }
+
+        .timeline-step::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 18px;
+            width: 2px;
+            height: calc(100% + 14px);
+            background: var(--border);
+        }
+
+        .timeline-step:last-child::after {
+            display: none;
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .step-type {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .type-info {
+            background: rgba(34, 211, 238, 0.15);
+            color: var(--cyan);
+        }
+
+        .type-success {
+            background: rgba(52, 211, 153, 0.15);
+            color: var(--green);
+        }
+
+        .type-decision {
+            background: rgba(167, 139, 250, 0.15);
+            color: var(--purple);
+        }
+
+        .type-warning {
+            background: rgba(251, 191, 60, 0.15);
+            color: var(--yellow);
+        }
+
+        .step-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .confidence-badge {
+            margin-left: auto;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .confidence-high {
+            background: rgba(52, 211, 153, 0.15);
+            color: var(--green);
+        }
+
+        .confidence-medium {
+            background: rgba(251, 191, 60, 0.15);
+            color: var(--orange);
+        }
+
+        .confidence-low {
+            background: rgba(248, 113, 113, 0.15);
+            color: var(--red);
+        }
+
+        .step-body {
+            color: var(--text-secondary);
+            font-size: 13px;
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+
+        .file-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .file-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-secondary);
+        }
+
+        .file-tag .added {
+            color: var(--green);
+        }
+
+        .file-tag .modified {
+            color: var(--yellow);
+        }
+
+        /* Attention Box */
+        .attention-box {
+            background: rgba(251, 191, 60, 0.1);
+            border: 1px solid rgba(251, 191, 60, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .attention-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--orange);
+            margin-bottom: 8px;
+        }
+
+        .attention-content {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Collapsible Sections */
+        .collapsible {
+            margin-bottom: 24px;
+        }
+
+        .collapsible-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .collapsible-header:hover {
+            background: var(--bg-card);
+        }
+
+        .collapsible-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .collapsible-icon {
+            color: var(--text-muted);
+            transition: transform 0.2s;
+        }
+
+        .collapsible-content {
+            padding: 16px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            margin-top: -1px;
+        }
+
+        .collapsible-content ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .collapsible-content li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .collapsible-content li:last-child {
+            border-bottom: none;
+        }
+
+        .collapsible-content strong {
+            color: var(--text);
+        }
+
+        /* Code Snippets */
+        .code-snippet {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            overflow-x: auto;
+        }
+
+        .code-snippet pre {
+            margin: 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            color: var(--text);
+        }
+
+        .code-snippet .kw {
+            color: var(--purple);
+        }
+
+        .code-snippet .fn {
+            color: var(--blue);
+        }
+
+        .code-snippet .tp {
+            color: var(--cyan);
+        }
+
+        .code-snippet .cm {
+            color: var(--text-muted);
+        }
+
+        .snippet-rationale {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Risk Section */
+        .risk-section {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .risk-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 16px;
+        }
+
+        .risk-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .risk-item {
+            padding: 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            border-left: 3px solid;
+        }
+
+        .risk-critical {
+            border-left-color: var(--red);
+        }
+
+        .risk-high {
+            border-left-color: var(--orange);
+        }
+
+        .risk-medium {
+            border-left-color: var(--yellow);
+        }
+
+        .risk-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .risk-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .risk-mitigation {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .mitigation-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--green);
+            margin-bottom: 4px;
+        }
+
+        .mitigation-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 24px 16px;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .timestamp {
+                margin-left: 0;
+            }
+
+            .stats-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+
+            .risk-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="task-title">Printful Product Preview Generation</h1>
+            <span class="status-badge status-complete">Analysis Complete</span>
+            <span class="timestamp">2025-01-16 • ~1 hour</span>
+        </header>
+
+        <!-- Intent Verification -->
+        <div class="intent-box">
+            <div class="intent-box-title">Intent Verification</div>
+            <div class="intent-row">
+                <span class="intent-label">Requested</span>
+                <span class="intent-value">Analyze Printful product preview generation flow for orientation, positioning, and robustness risks</span>
+            </div>
+            <div class="intent-row">
+                <span class="intent-label">Delivered</span>
+                <span class="intent-value">Comprehensive analysis of client-side canvas compositing system with identified risk points and mitigation strategies</span>
+            </div>
+            <div class="intent-row">
+                <span class="intent-label">Match</span>
+                <span class="match-verified">✓ Verified</span>
+            </div>
+        </div>
+
+        <!-- Behavioral Delta -->
+        <h2 class="section-title">Behavioral Delta</h2>
+        <div class="delta-list">
+            <div class="delta-item delta-same">
+                <span class="delta-badge badge-same">SAME</span>
+                <span class="delta-text">Client-side canvas compositing approach unchanged</span>
+            </div>
+            <div class="delta-item delta-same">
+                <span class="delta-badge badge-same">SAME</span>
+                <span class="delta-text">Chroma-key replacement algorithm unchanged</span>
+            </div>
+            <div class="delta-item delta-same">
+                <span class="delta-badge badge-same">SAME</span>
+                <span class="delta-text">Orientation matching logic unchanged</span>
+            </div>
+            <div class="delta-item delta-new">
+                <span class="delta-badge badge-new">NEW</span>
+                <span class="delta-text">Risk assessment and mitigation strategies documented</span>
+            </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span class="stat-value">2</span>
+                <span class="stat-label">Files Analyzed</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value stat-green">0</span>
+                <span class="stat-label">Lines Changed</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value stat-red">3</span>
+                <span class="stat-label">Risk Points Identified</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">N/A</span>
+                <span class="stat-label">Test Coverage</span>
+            </div>
+        </div>
+
+        <!-- Timeline -->
+        <h2 class="section-title">Analysis Timeline</h2>
+        <div class="timeline">
+            <!-- Step 1 -->
+            <div class="timeline-step info">
+                <div class="step-header">
+                    <span class="step-type type-info">Analysis</span>
+                    <span class="step-title">Examined FrameMockupRenderer component</span>
+                    <span class="confidence-badge confidence-high">High</span>
+                </div>
+                <div class="step-body">
+                    Analyzed [`components/ecommerce/FrameMockupRenderer.tsx`](components/ecommerce/FrameMockupRenderer.tsx:1) which implements client-side canvas compositing. Component loads template and design images, then composites them using canvas operations. Key finding: sophisticated chroma-key replacement system with multiple blend modes.
+                </div>
+                <div class="file-tags">
+                    <span class="file-tag"><span class="modified">components/ecommerce/FrameMockupRenderer.tsx</span></span>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="timeline-step info">
+                <div class="step-header">
+                    <span class="step-type type-info">Analysis</span>
+                    <span class="step-title">Examined ProductCard component</span>
+                    <span class="confidence-badge confidence-high">High</span>
+                </div>
+                <div class="step-body">
+                    Analyzed [`components/store/ProductCard.tsx`](components/store/ProductCard.tsx:1) which uses FrameMockupRenderer to display product previews. Component handles variant matching, aspect ratio filtering, and displays warnings for non-exact matches.
+                </div>
+                <div class="file-tags">
+                    <span class="file-tag"><span class="modified">components/store/ProductCard.tsx</span></span>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="timeline-step info">
+                <div class="step-header">
+                    <span class="step-type type-info">Analysis</span>
+                    <span class="step-title">Examined store page flow</span>
+                    <span class="confidence-badge confidence-high">High</span>
+                </div>
+                <div class="step-body">
+                    Analyzed [`app/store/page.tsx`](app/store/page.tsx:1) which orchestrates product selection. Page fetches products and variants, groups them, and displays ProductCard components with design URLs from URL parameters.
+                </div>
+                <div class="file-tags">
+                    <span class="file-tag"><span class="modified">app/store/page.tsx</span></span>
+                </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="timeline-step decision">
+                <div class="step-header">
+                    <span class="step-type type-decision">Decision</span>
+                    <span class="step-title">Identified orientation handling approach</span>
+                    <span class="confidence-badge confidence-high">High</span>
+                </div>
+                <div class="step-body">
+                    The system uses 90° clockwise rotation when design and print area orientations don't match. This is a simple approach that works for most cases but may not handle all aspect ratio combinations optimally.
+                </div>
+                <div class="code-snippet">
+                    <pre><span class="kw">const</span> needsRotation = designIsPortrait !== printAreaIsPortrait;
+
+<span class="kw">if</span> (needsRotation) {
+  <span class="cm">// Rotate 90° clockwise</span>
+  rotatedCtx.<span class="fn">rotate</span>(Math.PI / <span class="tp">2</span>);
+  rotatedCtx.<span class="fn">drawImage</span>(designImg, -designImg.width / <span class="tp">2</span>, -designImg.height / <span class="tp">2</span>);
+}</pre>
+                    <div class="snippet-rationale">
+                        <strong>Rationale:</strong> Simple 90° rotation is sufficient for most portrait/landscape mismatches but may not be optimal for all aspect ratio combinations.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 5 -->
+            <div class="timeline-step decision">
+                <div class="step-header">
+                    <span class="step-type type-decision">Decision</span>
+                    <span class="step-title">Identified chroma-key detection strategy</span>
+                    <span class="confidence-badge confidence-medium">Medium</span>
+                </div>
+                <div class="step-body">
+                    System samples a 7x7 grid within print area to find chroma key (magenta). Uses hue threshold of 30 degrees for matching. Assumes magenta is always the chroma key, which may not be true for all Printful templates.
+                </div>
+                <div class="code-snippet">
+                    <pre><span class="kw">const</span> steps = <span class="tp">7</span>;
+<span class="kw">for</span> (<span class="kw">let</span> iy = <span class="tp">1</span>; iy < steps; iy++) {
+  <span class="kw">for</span> (<span class="kw">let</span> ix = <span class="tp">1</span>; ix < steps; ix++) {
+    samplePoints.<span class="fn">push</span>({
+      x: printAreaPx.x + (printAreaPx.width * ix / steps),
+      y: printAreaPx.y + (printAreaPx.height * iy / steps)
+    });
+  }
+}
+
+<span class="kw">const</span> hueThreshold = <span class="tp">30</span>;</pre>
+                    <div class="snippet-rationale">
+                        <strong>Rationale:</strong> 7x7 grid provides good coverage while avoiding edge cases. 30° hue threshold balances precision with tolerance for color variations.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 6 -->
+            <div class="timeline-step warning">
+                <div class="step-header">
+                    <span class="step-type type-warning">Risk Assessment</span>
+                    <span class="step-title">Orientation and positioning risks identified</span>
+                    <span class="confidence-badge confidence-medium">Medium</span>
+                </div>
+                <div class="step-body">
+                    Identified three key risk areas: (1) Simple 90° rotation may not handle all aspect ratios, (2) Print area positioning is percentage-based without validation, (3) drawImageCover crops design which could cut off important content.
+                </div>
+                <div class="risk-section">
+                    <div class="risk-title">Risk Points</div>
+                    <div class="risk-grid">
+                        <div class="risk-item risk-high">
+                            <div class="risk-label">CRITICAL</div>
+                            <div class="risk-description">
+                                <strong>Content Cropping</strong><br>
+                                The drawImageCover function crops the design to fit the print area completely. This could result in important map features, labels, or custom markers being cut off if the aspect ratios don't align perfectly.
+                            </div>
+                            <div class="risk-mitigation">
+                                <div class="mitigation-title">Mitigation</div>
+                                <div class="mitigation-text">
+                                    Add validation to ensure design fits within print area before cropping. Consider using contain mode instead of cover mode, or add padding to preserve important content.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="risk-item risk-medium">
+                            <div class="risk-label">HIGH</div>
+                            <div class="risk-description">
+                                <strong>Limited Rotation Options</strong><br>
+                                Only 90° clockwise rotation is supported. Complex aspect ratio mismatches may require different rotation angles or scaling approaches.
+                            </div>
+                            <div class="risk-mitigation">
+                                <div class="mitigation-title">Mitigation</div>
+                                <div class="mitigation-text">
+                                    Implement configurable rotation angles (90°, 180°, 270°) or use affine transformations for arbitrary rotation. Add fallback to direct overlay when rotation fails.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="risk-item risk-medium">
+                            <div class="risk-label">HIGH</div>
+                            <div class="risk-description">
+                                <strong>Unvalidated Print Area</strong><br>
+                                Print area coordinates are passed as percentages without validation. Invalid values could cause unexpected positioning or rendering errors.
+                            </div>
+                            <div class="risk-mitigation">
+                                <div class="mitigation-title">Mitigation</div>
+                                <div class="mitigation-text">
+                                    Add validation for print area bounds (0-1 range). Provide fallback values for invalid coordinates. Log warnings for out-of-bounds values.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 7 -->
+            <div class="timeline-step warning">
+                <div class="step-header">
+                    <span class="step-type type-warning">Risk Assessment</span>
+                    <span class="step-title">Chroma-key detection risks identified</span>
+                    <span class="confidence-badge confidence-medium">Medium</span>
+                </div>
+                <div class="step-body">
+                    Identified two key risk areas: (1) Assumption that chroma key is always magenta, (2) Fixed hue threshold may not work for all templates.
+                </div>
+                <div class="risk-section">
+                    <div class="risk-title">Risk Points</div>
+                    <div class="risk-grid">
+                        <div class="risk-item risk-high">
+                            <div class="risk-label">CRITICAL</div>
+                            <div class="risk-description">
+                                <strong>Chroma Key Assumption</strong><br>
+                                System assumes chroma key is always magenta (high saturation). If Printful uses different chroma keys or the sampling misses the key, replacement will fail completely.
+                            </div>
+                            <div class="risk-mitigation">
+                                <div class="mitigation-title">Mitigation</div>
+                                <div class="mitigation-text">
+                                    Implement configurable chroma key detection. Add fallback to direct overlay mode when chroma-key detection fails. Log sampling results for debugging.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="risk-item risk-medium">
+                            <div class="risk-label">HIGH</div>
+                            <div class="risk-description">
+                                <strong>Fixed Hue Threshold</strong><br>
+                                30° hue threshold may be too permissive or too strict depending on template color variations. Could cause false positives or missed replacements.
+                            </div>
+                            <div class="risk-mitigation">
+                                <div class="mitigation-title">Mitigation</div>
+                                <div class="mitigation-text">
+                                    Make hue threshold configurable per product template. Implement adaptive threshold based on color distribution analysis. Add visual feedback for sampling results.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 8 -->
+            <div class="timeline-step success">
+                <div class="step-header">
+                    <span class="step-type type-success">Assessment</span>
+                    <span class="step-title">General robustness evaluation</span>
+                    <span class="confidence-badge confidence-high">High</span>
+                </div>
+                <div class="step-body">
+                    The system demonstrates good robustness with multiple blend modes (chroma, multiply, direct), debug staging support, and error handling with fallback to raw design. However, lacks comprehensive validation and has assumptions that could cause failures.
+                </div>
+                <div class="code-snippet">
+                    <pre><span class="kw">const</span> blendModes: <span class="tp">'chroma'</span> | <span class="tp">'multiply'</span> | <span class="tp">'direct'</span> = [<span class="tp">'chroma'</span>, <span class="tp">'multiply'</span>, <span class="tp">'direct'</span>];
+
+<span class="kw">let</span> blendMode: <span class="tp">'chroma'</span> | <span class="tp">'multiply'</span> | <span class="tp">'direct'</span> = <span class="tp">'chroma'</span>;</pre>
+                    <div class="snippet-rationale">
+                        <strong>Rationale:</strong> Multiple blend modes provide flexibility for different template types. Chroma mode for colored keys, multiply for neutrals, direct for black/invalid.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 9 -->
+            <div class="timeline-step info">
+                <div class="step-header">
+                    <span class="step-type type-info">Verification</span>
+                    <span class="step-title">Analysis complete, recommendations documented</span>
+                    <span class="confidence-badge confidence-high">High</span>
+                </div>
+                <div class="step-body">
+                    All code analysis complete. Risk points identified with mitigation strategies. System is functional but has areas for improvement to handle edge cases and reduce failure modes.
+                </div>
+                <div class="verification-section">
+                    <div class="verification-title">Analysis Status</div>
+                    <div class="verification-grid">
+                        <div class="verification-item">
+                            <div class="verification-label">Code Review</div>
+                            <div class="verification-value" style="color: var(--green)">Complete</div>
+                        </div>
+                        <div class="verification-item">
+                            <div class="verification-label">Risk Assessment</div>
+                            <div class="verification-value" style="color: var(--orange)">3 Risks Identified</div>
+                        </div>
+                        <div class="verification-item">
+                            <div class="verification-label">Mitigation Strategies</div>
+                            <div class="verification-value" style="color: var(--green)">Documented</div>
+                        </div>
+                        <div class="verification-item">
+                            <div class="verification-label">Testing</div>
+                            <div class="verification-value" style="color: var(--yellow)">Pending</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assumptions Made -->
+        <div class="collapsible">
+            <div class="collapsible-header">
+                <span class="collapsible-title">Assumptions Made</span>
+                <span class="collapsible-icon">▼</span>
+            </div>
+            <div class="collapsible-content">
+                <ul>
+                    <li><strong>Chroma key color:</strong> Assumed Printful templates always use magenta (#FF00FF) as chroma key. This is standard practice but may vary by template or product type.</li>
+                    <li><strong>Aspect ratio handling:</strong> Assumed 90° rotation is sufficient for most orientation mismatches. May not handle complex aspect ratio combinations optimally.</li>
+                    <li><strong>Print area validity:</strong> Assumed print area coordinates from Printful API are always valid. No validation currently implemented.</li>
+                    <li><strong>Design image quality:</strong> Assumed user-exported designs are always valid PNG images with correct dimensions. No validation currently implemented.</li>
+                    <li><strong>Template availability:</strong> Assumed Printful templates are always available and loadable. No fallback for missing templates currently implemented.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Potential Questions -->
+        <div class="collapsible">
+            <div class="collapsible-header">
+                <span class="collapsible-title">Potential Questions</span>
+                <span class="collapsible-icon">▼</span>
+            </div>
+            <div class="collapsible-content">
+                <ul>
+                    <li><strong>Why use canvas compositing?</strong> Client-side canvas compositing avoids server-side processing, reduces API calls, and provides instant preview. However, it requires more client-side code and may have performance implications for large images.</li>
+                    <li><strong>Why chroma-key replacement?</strong> Chroma-key replacement allows the design to blend seamlessly with the template background, preserving shadows, textures, and other template details while replacing only the placeholder color.</li>
+                    <li><strong>What if chroma detection fails?</strong> Current implementation falls back to direct overlay mode, which may not look as good. Consider adding user notification or alternative blending strategies.</li>
+                    <li><strong>How to improve orientation handling?</strong> Implement configurable rotation angles or use affine transformations for arbitrary rotation. Add preview mode to show how design will be positioned before final compositing.</li>
+                    <li><strong>What about edge cases?</strong> Consider handling cases where: design is smaller than print area, design has different aspect ratio than any available variant, or template has invalid print area coordinates.</li>
+                    <li><strong>How to test robustness?</strong> Create test cases with: various aspect ratios, different chroma key colors, invalid print areas, missing templates, and corrupted images. Verify fallback behavior and error handling.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Collapsible functionality
+        document.querySelectorAll('.collapsible-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const content = header.nextElementSibling;
+                const icon = header.querySelector('.collapsible-icon');
+                
+                if (content.style.display === 'none') {
+                    content.style.display = 'block';
+                    icon.style.transform = 'rotate(0deg)';
+                } else {
+                    content.style.display = 'none';
+                    icon.style.transform = 'rotate(-90deg)';
+                }
+            });
+        });
+
+        // Initialize collapsibles as closed
+        document.querySelectorAll('.collapsible-content').forEach(content => {
+            content.style.display = 'none';
+        });
+        document.querySelectorAll('.collapsible-icon').forEach(icon => {
+            icon.style.transform = 'rotate(-90deg)';
+        });
+    </script>
+</body>
+</html>

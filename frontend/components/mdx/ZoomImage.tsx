@@ -22,7 +22,7 @@ export function ZoomImage({ alt, ...props }: any) {
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <div className="relative group cursor-zoom-in overflow-hidden rounded-xl border border-[#f5f0e8]/10 my-8">
+                <span className="relative group cursor-zoom-in overflow-hidden rounded-xl border border-[#f5f0e8]/10 my-8 inline-block w-full">
                     {isOptimized ? (
                         <Image
                             alt={alt || "Blog post image"}
@@ -38,12 +38,12 @@ export function ZoomImage({ alt, ...props }: any) {
                             {...props}
                         />
                     )}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 duration-300">
-                        <div className="bg-black/50 p-2 rounded-full backdrop-blur-sm text-white">
+                    <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 duration-300">
+                        <span className="bg-black/50 p-2 rounded-full backdrop-blur-sm text-white">
                             <ZoomIn className="w-5 h-5" />
-                        </div>
-                    </div>
-                </div>
+                        </span>
+                    </span>
+                </span>
             </DialogTrigger>
             <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto h-auto p-0 border-none bg-transparent shadow-none flex items-center justify-center overflow-hidden">
                 <VisuallyHidden>

@@ -1,6 +1,5 @@
 
 require('dotenv').config({ path: '.env' });
-const { printful } = require('./lib/printful/client');
 
 async function main() {
     const productId = 614;
